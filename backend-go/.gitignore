@@ -40,3 +40,4 @@ backups/
 logs/
 *.log
 tmp/
+backend-go/pkg/media/media/test_uploads/
