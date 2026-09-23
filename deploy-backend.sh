@@ -110,7 +110,8 @@ elif [ -d "/home/afari/Projects/ns/backend-go" ] && [ -f "/home/afari/Projects/n
 elif [ -f "$SCRIPT_DIR/cmd/server/main.go" ]; then
     SRC_DIR="$SCRIPT_DIR"
 else
-    SRC_DIR=$(find /home /root /opt /var/www -maxdepth 4 -name "backend-go" -type d 2>/dev/null | while read -r d; do [ -f "$d/cmd/server/main.go" ] && echo "$d" && break; done)
+    SRC_DIR=$(find /home /root /opt /var/www -maxdepth 4 -name "backend-go" -type d 2>/dev/null | while read -r d; do [ -f "$d/cmd/server/main.go" ] && echo "$d" && break; done || true)
+    SRC_DIR=${SRC_DIR:-""}
 fi
 
 if [ -z "$SRC_DIR" ] || [ ! -f "$SRC_DIR/cmd/server/main.go" ]; then
