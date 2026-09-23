@@ -11,6 +11,9 @@
 
 set -e
 
+# Trap errors so failures in sub-scripts are clearly reported
+trap 'echo -e "\033[0;31m\n[ERROR] deploy-all.sh aborted at line $LINENO (exit code $?). Check output above for details.\033[0m" >&2' ERR
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors

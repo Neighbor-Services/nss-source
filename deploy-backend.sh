@@ -7,6 +7,9 @@
 
 set -e
 
+# Trap errors and print the line number for easier debugging
+trap 'echo -e "\033[0;31m[ERROR] deploy-backend.sh failed at line $LINENO — exit code $?\033[0m" >&2' ERR
+
 # Configuration
 APP_NAME="ns-backend"
 APP_DIR="/opt/ns/backend"
@@ -116,9 +119,9 @@ if [ -z "$SRC_DIR" ] || [ ! -f "$SRC_DIR/cmd/server/main.go" ]; then
 fi
 
 echo -e "${GREEN}✓ Found source at: $SRC_DIR${NC}"
-rsync -a --delete --exclude='bin' --exclude='.git' "$SRC_DIR/" "$APP_DIR/"
-chown -R $USER:$GROUP "$APP_DIR"
-chmod -R u+rwX,g+rX,o+rX "$APP_DIR"
+rsync -a --delete --exclude='bin' --exclude='.git' --exclude='.env' "$SRC_DIR/" "$APP_DIR/"
+chown -R $USER:$GROUP "$APP_DIR" || true
+chmod -R u+rwX,g+rX,o+rX "$APP_DIR" || true
 
 cd "$APP_DIR"
 
