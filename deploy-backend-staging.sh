@@ -78,22 +78,35 @@ apt-get install -y -qq git curl make postgresql postgresql-contrib nginx rsync
 
 echo -e "${YELLOW}Phase 2: Directory & Code Placement${NC}"
 
+mkdir -p /opt/ns
 mkdir -p "$APP_DIR/bin"
 mkdir -p "$APP_DIR/media"
 mkdir -p "$APP_DIR/logs"
+chmod 755 /opt /opt/ns "$APP_DIR"
 chown -R $USER:$GROUP "$APP_DIR"
 
 echo -e "${YELLOW}Copying Go backend files to $APP_DIR...${NC}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -d "$SCRIPT_DIR/backend-go" ]; then
-    rsync -a --delete --exclude='bin' --exclude='.git' "$SCRIPT_DIR/backend-go/" "$APP_DIR/"
-elif [ -f "$SCRIPT_DIR/go.mod" ]; then
-    rsync -a --delete --exclude='bin' --exclude='.git' "$SCRIPT_DIR/" "$APP_DIR/"
+
+if [ -d "$SCRIPT_DIR/backend-go" ] && [ -f "$SCRIPT_DIR/backend-go/cmd/server/main.go" ]; then
+    SRC_DIR="$SCRIPT_DIR/backend-go"
+elif [ -d "/home/afari/Projects/ns/backend-go" ] && [ -f "/home/afari/Projects/ns/backend-go/cmd/server/main.go" ]; then
+    SRC_DIR="/home/afari/Projects/ns/backend-go"
+elif [ -f "$SCRIPT_DIR/cmd/server/main.go" ]; then
+    SRC_DIR="$SCRIPT_DIR"
 else
-    echo -e "${RED}Error: backend-go directory not found!${NC}"
+    SRC_DIR=$(find /home /root /opt /var/www -maxdepth 4 -name "backend-go" -type d 2>/dev/null | while read -r d; do [ -f "$d/cmd/server/main.go" ] && echo "$d" && break; done)
+fi
+
+if [ -z "$SRC_DIR" ] || [ ! -f "$SRC_DIR/cmd/server/main.go" ]; then
+    echo -e "${RED}Error: backend-go source directory (containing cmd/server/main.go) not found!${NC}"
     exit 1
 fi
+
+echo -e "${GREEN}✓ Found source at: $SRC_DIR${NC}"
+rsync -a --delete --exclude='bin' --exclude='.git' "$SRC_DIR/" "$APP_DIR/"
 chown -R $USER:$GROUP "$APP_DIR"
+chmod -R u+rwX,g+rX,o+rX "$APP_DIR"
 
 cd "$APP_DIR"
 
@@ -139,6 +152,9 @@ if [ ! -f "$APP_DIR/.env" ]; then
     if [ -f "$APP_DIR/.env.example" ]; then
         echo -e "${YELLOW}Creating .env from .env.example...${NC}"
         cp "$APP_DIR/.env.example" "$APP_DIR/.env"
+    elif [ -f "$SRC_DIR/.env" ]; then
+        echo -e "${YELLOW}Copying existing .env...${NC}"
+        cp "$SRC_DIR/.env" "$APP_DIR/.env"
     elif [ -f "$SCRIPT_DIR/backend-go/.env" ]; then
         echo -e "${YELLOW}Copying existing .env...${NC}"
         cp "$SCRIPT_DIR/backend-go/.env" "$APP_DIR/.env"
@@ -156,16 +172,18 @@ fi
 
 echo -e "${YELLOW}Phase 4: Direct Compilation (Go Binary Build)${NC}"
 
+export PATH=$PATH:/usr/local/go/bin
+
 echo -e "${YELLOW}Downloading Go dependencies...${NC}"
-sudo -u $USER env PATH="$PATH" go mod tidy
+sudo -u $USER bash -c "cd '$APP_DIR' && env PATH=\"\$PATH:/usr/local/go/bin\" go mod tidy"
 
 echo -e "${YELLOW}Compiling Neighbor Service Staging API Server (cmd/server/main.go)...${NC}"
-sudo -u $USER env PATH="$PATH" go build -ldflags="-s -w" -o bin/server ./cmd/server/main.go
+sudo -u $USER bash -c "cd '$APP_DIR' && env PATH=\"\$PATH:/usr/local/go/bin\" go build -ldflags='-s -w' -o bin/server ./cmd/server/"
 chmod +x "$APP_DIR/bin/server"
 echo -e "${GREEN}✓ Staging API server compiled: $APP_DIR/bin/server${NC}"
 
 echo -e "${YELLOW}Compiling Admin Generator CLI (cmd/create_admin/main.go)...${NC}"
-sudo -u $USER env PATH="$PATH" go build -ldflags="-s -w" -o bin/create_admin ./cmd/create_admin/main.go
+sudo -u $USER bash -c "cd '$APP_DIR' && env PATH=\"\$PATH:/usr/local/go/bin\" go build -ldflags='-s -w' -o bin/create_admin ./cmd/create_admin/"
 chmod +x "$APP_DIR/bin/create_admin"
 echo -e "${GREEN}✓ Admin generator CLI compiled: $APP_DIR/bin/create_admin${NC}"
 
