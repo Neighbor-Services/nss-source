@@ -13,6 +13,8 @@ trap 'echo -e "\033[0;31m[ERROR] deploy-backend.sh failed at line $LINENO — ex
 # Configuration
 APP_NAME="ns-backend"
 APP_DIR="/opt/ns/backend"
+REPO_URL="https://github.com/Neighbor-Services/nss-source.git"
+REPO_CLONE_DIR="/opt/ns/repo"
 USER="afari"
 GROUP="www-data"
 DEFAULT_INSTANCES=5
@@ -115,8 +117,30 @@ else
 fi
 
 if [ -z "$SRC_DIR" ] || [ ! -f "$SRC_DIR/cmd/server/main.go" ]; then
-    echo -e "${RED}Error: backend-go source directory (containing cmd/server/main.go) not found!${NC}"
-    exit 1
+    echo -e "${YELLOW}Source not found locally. Cloning from GitHub: $REPO_URL${NC}"
+    apt-get install -y -qq git
+
+    if [ -d "$REPO_CLONE_DIR/.git" ]; then
+        echo -e "${YELLOW}Repo already cloned — pulling latest changes...${NC}"
+        git -C "$REPO_CLONE_DIR" pull --ff-only
+    else
+        read -p "Enter GitHub Personal Access Token (leave blank for public repo or SSH): " GH_TOKEN
+        if [ -n "$GH_TOKEN" ]; then
+            CLONE_URL=$(echo "$REPO_URL" | sed "s|https://|https://$GH_TOKEN@|")
+        else
+            CLONE_URL="$REPO_URL"
+        fi
+        mkdir -p "$REPO_CLONE_DIR"
+        git clone --depth=1 "$CLONE_URL" "$REPO_CLONE_DIR"
+    fi
+
+    SRC_DIR="$REPO_CLONE_DIR/backend-go"
+
+    if [ ! -f "$SRC_DIR/cmd/server/main.go" ]; then
+        echo -e "${RED}Error: backend-go/cmd/server/main.go not found in cloned repo ($REPO_CLONE_DIR).${NC}"
+        echo -e "${RED}Please verify the repository structure and try again.${NC}"
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✓ Found source at: $SRC_DIR${NC}"
