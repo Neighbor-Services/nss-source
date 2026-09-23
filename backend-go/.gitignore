@@ -21,7 +21,7 @@ sa.json
 # Binaries & Outputs
 bin/
 main
-server
+bin/server
 *.exe
 *.exe~
 *.dll
