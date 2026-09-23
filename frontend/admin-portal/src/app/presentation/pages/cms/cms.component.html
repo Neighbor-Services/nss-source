@@ -1,0 +1,622 @@
+<!-- Hope UI Hero Header Banner -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div>
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">Marketing CMS &amp; Public Site Content</h1>
+        <span class="live-pill"><span class="live-dot"></span> Live Sync Active</span>
+      </div>
+      <p class="hope-hero-subtitle">Control homepage hero headlines, dynamic FAQ accordions, customer testimonials, trust badges, and company story.</p>
+    </div>
+    <div class="action-row">
+      @if (activeTab() === 'FAQS') {
+        <button class="btn btn-primary" (click)="openCreateFaqModal()" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(30,58,138,0.3);">
+          <span>+ Add FAQ</span>
+        </button>
+      } @else if (activeTab() === 'TESTIMONIALS') {
+        <button class="btn btn-primary" (click)="openCreateTestimonialModal()" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(30,58,138,0.3);">
+          <span>+ Add Testimonial</span>
+        </button>
+      } @else if (activeTab() === 'STATS_ABOUT') {
+        <button class="btn btn-primary" (click)="openCreateStatModal()" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(30,58,138,0.3);">
+          <span>+ New Stat Counter</span>
+        </button>
+      }
+
+      <button class="btn-soft-light" [disabled]="isLoading()" (click)="loadAllCMS()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh Content' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Nav Tabs -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'HERO'" (click)="setTab('HERO')">
+      <span>Homepage Hero Banner</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'FAQS'" (click)="setTab('FAQS')">
+      <span>FAQs Matrix</span>
+      <span class="tab-badge">{{ faqs().length }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'TESTIMONIALS'" (click)="setTab('TESTIMONIALS')">
+      <span>Customer Testimonials</span>
+      <span class="tab-badge">{{ testimonials().length }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'STATS_ABOUT'" (click)="setTab('STATS_ABOUT')">
+      <span>Stats &amp; Company Story</span>
+    </button>
+  </div>
+</div>
+
+<!-- Floating Content Body -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- KPI Metric Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="setTab('HERO')" [class.kpi-active]="activeTab() === 'HERO'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">
+          <span class="live-dot"></span> {{ hero().is_active ? 'Live' : 'Draft' }}
+        </span>
+      </div>
+      <div>
+        <div class="kpi-label">HOMEPAGE HERO</div>
+        <div class="kpi-value">{{ hero().is_active ? 'Active' : 'Disabled' }}</div>
+      </div>
+      <div class="kpi-meta">Public marketing hero banner</div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('FAQS')" [class.kpi-active]="activeTab() === 'FAQS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">{{ faqs().length }} Questions</span>
+      </div>
+      <div>
+        <div class="kpi-label">FAQS ACCORDION</div>
+        <div class="kpi-value">{{ faqs().length }}</div>
+      </div>
+      <div class="kpi-meta">Public help &amp; escrow answers</div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('TESTIMONIALS')" [class.kpi-active]="activeTab() === 'TESTIMONIALS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">{{ testimonials().length }} Reviews</span>
+      </div>
+      <div>
+        <div class="kpi-label">TESTIMONIALS</div>
+        <div class="kpi-value">{{ testimonials().length }}</div>
+      </div>
+      <div class="kpi-meta">Verified customer stories</div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('STATS_ABOUT')" [class.kpi-active]="activeTab() === 'STATS_ABOUT'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">{{ stats().length }} Stats</span>
+      </div>
+      <div>
+        <div class="kpi-label">STATS &amp; STORY</div>
+        <div class="kpi-value">{{ stats().length }}</div>
+      </div>
+      <div class="kpi-meta">Counters &amp; company story</div>
+    </div>
+  </div>
+
+  <!-- TAB 1: HERO BANNER -->
+  @if (activeTab() === 'HERO') {
+    <div class="cms-grid-2">
+      <!-- Editor Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="header-left">
+            <h3 class="card-title">Hero Banner Editor</h3>
+            <p class="card-subtitle">Edit the primary headline, value pitch, and CTA links</p>
+          </div>
+          <div class="header-right">
+            <button class="btn btn-primary" [disabled]="isSaving()" (click)="saveHero()">
+              {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Primary Headline *</label>
+            <input type="text" class="form-control font-bold" [(ngModel)]="hero().headline" placeholder="e.g. Trusted Local Help, Right Around The Corner">
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label">Subheadline / Supporting Pitch *</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="hero().subheadline" placeholder="Connect with verified neighbors for home repairs, electrical, plumbing..."></textarea>
+          </div>
+
+          <div class="form-grid-2" style="margin-top: 14px;">
+            <div class="form-group">
+              <label class="form-label">Primary CTA Button Text</label>
+              <input type="text" class="form-control" [(ngModel)]="hero().cta_text" placeholder="e.g. Explore Services">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Primary CTA Target Link</label>
+              <input type="text" class="form-control font-mono" [(ngModel)]="hero().cta_link" placeholder="e.g. /categories">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label">Background Image URL (Optional)</label>
+            <input type="text" class="form-control font-mono" [(ngModel)]="hero().image" placeholder="https://images.unsplash.com/photo-...">
+          </div>
+
+          <div class="form-group checkbox-row" style="margin-top: 16px;">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="hero().is_active">
+              <span>Section is active and visible on public homepage</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Preview Card -->
+      <div class="card preview-card-wrapper">
+        <div class="card-header">
+          <div class="header-left">
+            <h3 class="card-title">Live Preview</h3>
+            <p class="card-subtitle">Real-time mock of public website hero view</p>
+          </div>
+          <span class="badge badge-success">
+            <span class="live-dot"></span> Live Render
+          </span>
+        </div>
+
+        <div class="card-body">
+          <div class="public-hero-mock">
+            <div class="mock-badge">
+              <span class="mock-dot"></span> Trusted Neighbor Community
+            </div>
+            <h2 class="mock-title">{{ hero().headline || 'Your Headline Here' }}</h2>
+            <p class="mock-sub">{{ hero().subheadline || 'Your subheadline text will appear right here to introduce your platform value proposition.' }}</p>
+            <div class="mock-cta-row">
+              <button class="mock-btn-primary">{{ hero().cta_text || 'Get Started' }} &rarr;</button>
+              <button class="mock-btn-secondary">How It Works</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: FAQS -->
+  @if (activeTab() === 'FAQS') {
+    <div class="card">
+      <div class="card-header">
+        <div class="header-left">
+          <h3 class="card-title">Frequently Asked Questions Matrix</h3>
+          <p class="card-subtitle">Help seekers and providers understand escrow, security, and booking workflows</p>
+        </div>
+        <div class="header-right">
+          <div class="filter-controls-row">
+            <div class="select-box">
+              <select class="form-control select-control" [(ngModel)]="faqCategoryFilter">
+                <option value="ALL">All Categories</option>
+                <option value="general">General</option>
+                <option value="seekers">Seekers &amp; Homeowners</option>
+                <option value="providers">Providers &amp; Pros</option>
+                <option value="payments">Payments &amp; Escrow</option>
+                <option value="trust_safety">Trust &amp; Safety</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" (click)="openCreateFaqModal()">+ Add FAQ</button>
+          </div>
+        </div>
+      </div>
+
+      @if (filteredFaqs().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon-wrap">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="empty-title">No FAQs in this Category</div>
+          <p class="empty-sub">Add helpful Q&amp;A entries to guide customers.</p>
+          <button class="btn btn-primary" (click)="openCreateFaqModal()">+ Add FAQ</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="hope-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Order</th>
+                <th>Question</th>
+                <th>Category</th>
+                <th>Answer Snippet</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (faq of filteredFaqs(); track faq.id) {
+                <tr>
+                  <td><span class="badge badge-secondary font-mono">#{{ faq.order }}</span></td>
+                  <td><span class="font-bold text-main">{{ faq.question }}</span></td>
+                  <td><span class="badge badge-info">{{ faq.category }}</span></td>
+                  <td><div class="message-preview-text">{{ faq.answer }}</div></td>
+                  <td>
+                    @if (faq.is_active) {
+                      <span class="badge badge-success">Active</span>
+                    } @else {
+                      <span class="badge badge-secondary">Hidden</span>
+                    }
+                  </td>
+                  <td class="text-right">
+                    <div class="action-btn-group">
+                      <button class="btn-icon" (click)="openEditFaqModal(faq)" title="Edit FAQ">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                      <button class="btn-icon text-danger" (click)="deleteFaq(faq)" title="Delete FAQ">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 3: TESTIMONIALS -->
+  @if (activeTab() === 'TESTIMONIALS') {
+    <div class="card">
+      <div class="card-header">
+        <div class="header-left">
+          <h3 class="card-title">Customer Stories &amp; Testimonials</h3>
+          <p class="card-subtitle">Showcase verified user reviews on the public marketing pages</p>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-primary" (click)="openCreateTestimonialModal()">+ Add Testimonial</button>
+        </div>
+      </div>
+
+      @if (testimonials().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon-wrap">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="empty-title">No Testimonials Added</div>
+          <p class="empty-sub">Add glowing reviews from satisfied seekers and trusted providers.</p>
+          <button class="btn btn-primary" (click)="openCreateTestimonialModal()">+ Add Testimonial</button>
+        </div>
+      } @else {
+        <div class="testimonials-grid">
+          @for (t of testimonials(); track t.id) {
+            <div class="testimonial-card-item">
+              <div class="t-top-row">
+                <div class="user-cell">
+                  <div class="user-avatar-badge">{{ t.name.charAt(0) }}</div>
+                  <div class="user-meta-info">
+                    <span class="user-fullname">{{ t.name }}</span>
+                    <span class="user-sub">{{ t.role || 'Verified Neighbor' }}</span>
+                  </div>
+                </div>
+                <div class="star-rating-box">
+                  @for (s of [1,2,3,4,5]; track s) {
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      [attr.fill]="s <= t.rating ? 'currentColor' : 'none'"
+                      [style.color]="s <= t.rating ? '#f59e0b' : '#d1d5db'">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                  }
+                </div>
+              </div>
+              <p class="t-quote-body">"{{ t.content }}"</p>
+              <div class="t-bottom-row">
+                @if (t.is_active) {
+                  <span class="badge badge-success">Live</span>
+                } @else {
+                  <span class="badge badge-secondary">Draft</span>
+                }
+                <div class="action-btn-group">
+                  <button class="btn-icon" (click)="openEditTestimonialModal(t)" title="Edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                  <button class="btn-icon text-danger" (click)="deleteTestimonial(t)" title="Delete">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 4: STATS & ABOUT -->
+  @if (activeTab() === 'STATS_ABOUT') {
+    <div class="stats-about-flow">
+      <!-- STATS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="header-left">
+            <h3 class="card-title">Homepage Stat Metric Counters</h3>
+            <p class="card-subtitle">Highlighted numbers displaying platform scale and success metrics</p>
+          </div>
+          <div class="header-right">
+            <button class="btn btn-primary" (click)="openCreateStatModal()">+ New Stat Counter</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="stat-counters-grid">
+            @for (s of stats(); track s.id) {
+              <div class="stat-counter-box">
+                <div class="stat-big-val">{{ s.value }}</div>
+                <div class="stat-sub-label">{{ s.label }}</div>
+                <div class="stat-actions-row">
+                  <span class="badge badge-secondary font-mono">Order: {{ s.order }}</span>
+                  <div class="action-btn-group">
+                    <button class="btn-icon" (click)="openEditStatModal(s)" title="Edit">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    <button class="btn-icon text-danger" (click)="deleteStat(s)" title="Delete">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ABOUT STORY -->
+      <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+          <div class="header-left">
+            <h3 class="card-title">Company Story &amp; Mission Page</h3>
+            <p class="card-subtitle">Content displayed on the public /about story page</p>
+          </div>
+          <div class="header-right">
+            <button class="btn btn-primary" [disabled]="isSaving()" (click)="saveAbout()">
+              {{ isSaving() ? 'Saving...' : 'Save About Page' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Page Title</label>
+              <input type="text" class="form-control font-bold" [(ngModel)]="about().title">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Story Headline</label>
+              <input type="text" class="form-control font-bold" [(ngModel)]="about().story_headline">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Year Founded</label>
+              <input type="text" class="form-control font-mono" [(ngModel)]="about().year_founded">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Cities Covered</label>
+              <input type="text" class="form-control font-mono" [(ngModel)]="about().cities_covered">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label">Mission Statement *</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="about().mission_text"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label">Vision Statement *</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="about().vision_text"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label">Company Story Text *</label>
+            <textarea class="form-control" rows="4" [(ngModel)]="about().story_text_1"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- FAQ MODAL -->
+@if (isFaqModalOpen()) {
+  <div class="modal-overlay" (click)="closeFaqModal()">
+    <div class="modal-dialog modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">{{ isFaqEditing() ? 'Edit FAQ' : 'Add New FAQ' }}</h3>
+          <p class="modal-subtitle">Customer help &amp; platform questions</p>
+        </div>
+        <button class="btn-close" (click)="closeFaqModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Question *</label>
+          <input type="text" class="form-control" [(ngModel)]="currentFaq().question" placeholder="e.g. How does payout protection work?">
+        </div>
+        <div class="form-grid-2" style="margin-top: 14px;">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-control select-control" [(ngModel)]="currentFaq().category">
+              <option value="general">General</option>
+              <option value="seekers">Seekers &amp; Homeowners</option>
+              <option value="providers">Providers &amp; Pros</option>
+              <option value="payments">Payments &amp; Escrow</option>
+              <option value="trust_safety">Trust &amp; Safety</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Display Order</label>
+            <input type="number" class="form-control font-mono" [(ngModel)]="currentFaq().order">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Answer *</label>
+          <textarea class="form-control" rows="6" [(ngModel)]="currentFaq().answer" placeholder="Detailed answer..."></textarea>
+        </div>
+        <div class="form-group checkbox-row" style="margin-top: 16px;">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="currentFaq().is_active">
+            <span>Active &amp; Visible on public site</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeFaqModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveFaq()">Save FAQ</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- TESTIMONIAL MODAL -->
+@if (isTestimonialModalOpen()) {
+  <div class="modal-overlay" (click)="closeTestimonialModal()">
+    <div class="modal-dialog modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">{{ isTestimonialEditing() ? 'Edit Testimonial' : 'Add Testimonial' }}</h3>
+          <p class="modal-subtitle">Customer quote &amp; 5-star rating</p>
+        </div>
+        <button class="btn-close" (click)="closeTestimonialModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Author Name *</label>
+            <input type="text" class="form-control" [(ngModel)]="currentTestimonial().name" placeholder="e.g. Sarah Jenkins">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role / Subtitle</label>
+            <input type="text" class="form-control" [(ngModel)]="currentTestimonial().role" placeholder="e.g. Homeowner in Austin, TX">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Star Rating (1-5)</label>
+          <input type="number" min="1" max="5" class="form-control font-mono" [(ngModel)]="currentTestimonial().rating">
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Testimonial Story *</label>
+          <textarea class="form-control" rows="5" [(ngModel)]="currentTestimonial().content" placeholder="Share their positive experience..."></textarea>
+        </div>
+        <div class="form-group checkbox-row" style="margin-top: 16px;">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="currentTestimonial().is_active">
+            <span>Publish live to public website</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeTestimonialModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveTestimonial()">Save Testimonial</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- STAT MODAL -->
+@if (isStatModalOpen()) {
+  <div class="modal-overlay" (click)="closeStatModal()">
+    <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">{{ isStatEditing() ? 'Edit Stat' : 'Add Stat Counter' }}</h3>
+          <p class="modal-subtitle">Platform metric counter</p>
+        </div>
+        <button class="btn-close" (click)="closeStatModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Metric Value *</label>
+            <input type="text" class="form-control font-bold" [(ngModel)]="currentStat().value" placeholder="e.g. 50k+">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Display Order</label>
+            <input type="number" class="form-control font-mono" [(ngModel)]="currentStat().order">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Metric Label *</label>
+          <input type="text" class="form-control" [(ngModel)]="currentStat().label" placeholder="e.g. Verified Neighborhood Handymen">
+        </div>
+        <div class="form-group checkbox-row" style="margin-top: 16px;">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="currentStat().is_active">
+            <span>Active &amp; Visible</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeStatModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveStat()">Save Stat</button>
+      </div>
+    </div>
+  </div>
+}

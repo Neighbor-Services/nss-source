@@ -1,0 +1,124 @@
+# ==============================================================================
+# Neighbor Service (NSA) — Global Git Ignore
+# ==============================================================================
+
+# ── Environment & Secret Configuration Files ──────────────────────────────────
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+!.env.*.example
+!*.env.example
+
+# ── Apple & Google Service Account Keys & Certificates ────────────────────────
+*.p8
+*.pem
+*.key
+*.crt
+*.p12
+*.keystore
+*.jks
+sa.json
+*service-account*.json
+firebase-service-account.json
+google-play-service-account.json
+google-services.json
+GoogleService-Info.plist
+
+# ── Database Snapshots & Local Dumps ──────────────────────────────────────────
+backups/
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# ── Go Build Artifacts ────────────────────────────────────────────────────────
+/backend-go/bin/
+/backend-go/main
+/backend-go/server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# ── Python / Django ───────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+venv*/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+media/
+staticfiles/
+
+# ── Node / Angular / Web Frontend ─────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.angular/
+dist/
+tmp/
+out-tsc/
+.sass-cache/
+
+# ── Flutter / Dart / Mobile ───────────────────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+android/app/debug/
+android/app/profile/
+android/app/release/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Pods/
+ios/.symlinks/
+*.lock
+
+# ── IDEs & System Files ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+*.log
+logs/
+*.pid

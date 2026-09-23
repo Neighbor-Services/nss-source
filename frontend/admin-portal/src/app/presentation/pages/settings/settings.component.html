@@ -1,0 +1,253 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Platform Settings &amp; Broadcast Console</h1>
+        <span class="live-pill"><span class="live-dot"></span> Live Configuration Engine</span>
+      </div>
+      <p class="hero-subtitle">Marketplace fee parameters, matching radii, runtime cache management, and global push broadcasts</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-soft-light" (click)="flushCache()" [disabled]="clearingCache()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="clearingCache()">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        <span>{{ clearingCache() ? 'Flushing Redis...' : 'Flush Application Cache' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'PARAMETERS'" (click)="activeTab.set('PARAMETERS')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>Operational Parameters</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'BROADCAST'" (click)="activeTab.set('BROADCAST')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+      </svg>
+      <span>Broadcast Console</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'INFRA_MESH'" (click)="activeTab.set('INFRA_MESH')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+      <span>Cache &amp; Infrastructure Mesh</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- TAB 1: OPERATIONAL PARAMETERS -->
+  @if (activeTab() === 'PARAMETERS') {
+    <div class="card form-panel-card">
+      <div class="panel-header">
+        <div class="panel-icon-badge blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Platform Operational Parameters</h3>
+          <p class="sub-text">Economic rules and geolocation radii applied across order matching</p>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <form (ngSubmit)="saveSettings()">
+          <div class="form-group">
+            <label class="form-label">Background Check Billing Policy</label>
+            <select [(ngModel)]="settings().backgroundCheckPaymentMode" name="bgPaymentMode" class="form-control select-control">
+              <option value="PLATFORM_PAYS">Platform Subsidized (Platform Absorbs Screening Cost)</option>
+              <option value="PROVIDER_PAYS">Provider Direct Pay (Provider Invoiced on Registration)</option>
+            </select>
+            <span class="form-help">Controls whether provider registration checkout invoices the background screening.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Background Screening Fee ($ USD)</label>
+            <input type="number" step="0.01" [(ngModel)]="settings().backgroundCheckFee" name="bgFee" class="form-control" />
+            <span class="form-help">Standard rate charged when provider-pay model is active.</span>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Service Matching Radius (KM)</label>
+              <input type="number" step="1" [(ngModel)]="settings().matchRadiusKm" name="matchRadius" class="form-control" />
+              <span class="form-help">Radius around seeker for provider suggestion.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Broadcast Alert Radius (KM)</label>
+              <input type="number" step="1" [(ngModel)]="settings().broadcastRadiusKm" name="broadcastRadius" class="form-control" />
+              <span class="form-help">Instant lead alert push radius for new jobs.</span>
+            </div>
+          </div>
+
+          <div class="panel-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="savingSettings() || loadingSettings()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/>
+              </svg>
+              <span>{{ savingSettings() ? 'Saving Parameters...' : 'Save System Settings' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: BROADCAST CONSOLE -->
+  @if (activeTab() === 'BROADCAST') {
+    <div class="card form-panel-card">
+      <div class="panel-header">
+        <div class="panel-icon-badge purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Platform Broadcast Console</h3>
+          <p class="sub-text">Dispatch real-time WebSocket &amp; mobile push notifications to users</p>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <form (ngSubmit)="sendBroadcast()">
+          <div class="form-group">
+            <label class="form-label">Target Audience Group</label>
+            <div class="target-options">
+              <label class="radio-pill" [class.selected]="broadcastTarget === 'ALL'">
+                <input type="radio" [(ngModel)]="broadcastTarget" name="target" value="ALL" />
+                <span>All Active Members</span>
+              </label>
+              <label class="radio-pill" [class.selected]="broadcastTarget === 'PROVIDER'">
+                <input type="radio" [(ngModel)]="broadcastTarget" name="target" value="PROVIDER" />
+                <span>Service Providers Only</span>
+              </label>
+              <label class="radio-pill" [class.selected]="broadcastTarget === 'SEEKER'">
+                <input type="radio" [(ngModel)]="broadcastTarget" name="target" value="SEEKER" />
+                <span>Home Seekers Only</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notification Headline / Subject</label>
+            <input type="text" [(ngModel)]="broadcastTitle" name="bTitle" class="form-control" placeholder="e.g. Platform Maintenance Notice or Holiday Promotion" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Broadcast Message Content</label>
+            <textarea [(ngModel)]="broadcastMessage" name="bMsg" rows="4" class="form-control" placeholder="Type your broadcast announcement message body here..." required></textarea>
+            <span class="form-help">Will be dispatched via WebSocket presence channels, Push tokens, and in-app inbox.</span>
+          </div>
+
+          <div class="panel-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="broadcasting()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+              <span>{{ broadcasting() ? 'Broadcasting...' : 'Dispatch Broadcast Now' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: INFRASTRUCTURE MESH & CACHE -->
+  @if (activeTab() === 'INFRA_MESH') {
+    <div class="deck-grid">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-emerald">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Redis Memory Cache Invalidation Engine</h4>
+            <p class="deck-sub">Atomic key purging and dynamic category tree cache refresh</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Cache Driver</span>
+              <span class="metric-val text-success">Redis 7.2 Cluster</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Default TTL</span>
+              <span class="metric-val">3,600 Seconds (1 Hr)</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Flushing the cache purges category hierarchies, provider geolocation indices, and localized pricing caches immediately across all active instances.
+          </p>
+          <button class="btn btn-secondary mt-3" (click)="flushCache()" [disabled]="clearingCache()">
+            {{ clearingCache() ? 'Flushing Redis Cluster...' : 'Execute Immediate Redis Invalidation' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Real-Time WebSocket &amp; FCM Broadcast Mesh</h4>
+            <p class="deck-sub">Persistent duplex connection broker for instant client push</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">WebSocket Transport</span>
+              <span class="metric-val text-success">Gorilla WS / WSS</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Push Dispatch Latency</span>
+              <span class="metric-val">&lt; 45ms P99</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Broadcast transmissions stream concurrently over active WebSocket client sessions and queue FCM push payloads to disconnected background devices.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+</div>

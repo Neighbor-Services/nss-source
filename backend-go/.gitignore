@@ -1,0 +1,42 @@
+# Go Backend .gitignore
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+
+# Service Account Keys & Certs
+*.p8
+*.pem
+*.key
+*.crt
+*.json
+!package.json
+!tsconfig*.json
+!firebase.json
+firebase-service-account.json
+google-play-service-account.json
+sa.json
+
+# Binaries & Outputs
+bin/
+main
+server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Database Backups & Local SQLite
+backups/
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs & Temp
+logs/
+*.log
+tmp/

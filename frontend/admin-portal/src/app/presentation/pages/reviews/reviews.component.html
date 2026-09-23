@@ -1,0 +1,311 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Reviews &amp; Ratings Moderation Queue</h1>
+        <span class="live-pill"><span class="live-dot"></span> Quality Assurance Active</span>
+      </div>
+      <p class="hero-subtitle">Moderate customer reviews, censor offensive submissions, prevent rating spam &amp; protect provider reputations.</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-primary" (click)="openCreateModal()" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(30,58,138,0.3);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>+ Add Review</span>
+      </button>
+
+      <button class="btn btn-soft-light" [disabled]="isLoading()" (click)="loadReviews()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh Reviews' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="selectedVisibility() === 'ALL'" (click)="setVisibilityFilter('ALL')">
+      <span>All Reviews</span>
+      <span class="tab-badge">{{ totalReviews() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedVisibility() === 'VISIBLE'" (click)="setVisibilityFilter('VISIBLE')">
+      <span>Publicly Visible</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedVisibility() === 'HIDDEN'" (click)="setVisibilityFilter('HIDDEN')">
+      <span>Hidden / Moderated</span>
+      @if (hiddenCount() > 0) {
+        <span class="tab-badge text-danger">{{ hiddenCount() }}</span>
+      }
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <span class="badge badge-info">{{ totalReviews() }} Feedbacks</span>
+      </div>
+      <div>
+        <div class="kpi-label">AVERAGE SATISFACTION</div>
+        <div class="kpi-value rating-value">
+          {{ averageRating() | number:'1.1-1' }}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-meta">Platform-wide rating benchmark</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Moderation</span>
+      </div>
+      <div>
+        <div class="kpi-label">HIDDEN / SUPPRESSED</div>
+        <div class="kpi-value">{{ hiddenCount() }}</div>
+      </div>
+      <div class="kpi-meta">Reviews withheld from public display</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget red">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          </svg>
+        </div>
+        <span class="badge badge-danger">1-Star Alerts</span>
+      </div>
+      <div>
+        <div class="kpi-label">CRITICAL 1-STAR REVIEWS</div>
+        <div class="kpi-value">{{ oneStarCount() }}</div>
+      </div>
+      <div class="kpi-meta">Potential client dissatisfaction flags</div>
+    </div>
+  </div>
+
+  <!-- STAR RATING FILTER PILLS -->
+  <div class="card filter-panel">
+    <div class="tab-pill-bar">
+      <button class="tab-pill" [class.active]="selectedRating() === 0" (click)="setRatingFilter(0)">All Ratings</button>
+      <button class="tab-pill" [class.active]="selectedRating() === 5" (click)="setRatingFilter(5)">
+        <span class="star-pills">5</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Stars
+      </button>
+      <button class="tab-pill" [class.active]="selectedRating() === 4" (click)="setRatingFilter(4)">
+        <span class="star-pills">4</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Stars
+      </button>
+      <button class="tab-pill" [class.active]="selectedRating() === 3" (click)="setRatingFilter(3)">
+        <span class="star-pills">3</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Stars
+      </button>
+      <button class="tab-pill" [class.active]="selectedRating() === 2" (click)="setRatingFilter(2)">
+        <span class="star-pills">2</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Stars
+      </button>
+      <button class="tab-pill tab-danger" [class.active]="selectedRating() === 1" (click)="setRatingFilter(1)">
+        <span class="star-pills">1</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Star
+      </button>
+    </div>
+  </div>
+
+  <!-- REVIEWS FEED / DATA TABLE -->
+  <div class="card table-card mt-4">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Rating &amp; Visibility</th>
+            <th>Reviewer</th>
+            <th>Target Provider</th>
+            <th>Review Comment</th>
+            <th>Submitted Date</th>
+            <th>Moderation Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (isLoading()) {
+            <tr>
+              <td colspan="6" class="text-center py-5">
+                <div class="spinner"></div>
+                <p class="mt-2 text-muted">Loading reviews moderation queue...</p>
+              </td>
+            </tr>
+          } @else if (reviews().length === 0) {
+            <tr>
+              <td colspan="6" class="text-center py-5">
+                <div class="empty-state">
+                  <h4>No Reviews in Queue</h4>
+                  <p class="subtitle">There are no customer review submissions matching your active filters.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (r of reviews(); track r.id) {
+              <tr [class.row-hidden]="r.is_hidden">
+                <td>
+                  <div class="rating-badge-box">
+                    <span class="stars-visual">
+                      @for (s of [1,2,3,4,5]; track s) {
+                        <svg width="13" height="13" viewBox="0 0 24 24" stroke-width="1.5"
+                          [attr.fill]="s <= r.rating ? '#f59e0b' : 'none'"
+                          [attr.stroke]="s <= r.rating ? '#f59e0b' : '#d1d5db'"
+                          viewBox="0 0 24 24">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                      }
+                    </span>
+                    <span class="badge" [ngClass]="r.is_hidden ? 'badge-danger' : 'badge-success'">
+                      {{ r.is_hidden ? 'HIDDEN' : 'PUBLIC' }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="user-meta-cell">
+                    <span class="user-name">{{ r.reviewer_details?.firstName || 'Customer' }} {{ r.reviewer_details?.lastName || '' }}</span>
+                    <span class="user-email text-muted">{{ r.reviewer_details?.email || r.reviewer }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="user-meta-cell">
+                    <span class="user-name">{{ r.provider_details?.firstName || 'Provider' }} {{ r.provider_details?.lastName || '' }}</span>
+                    <span class="user-email text-muted">{{ r.provider_details?.email || r.provider }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="review-comment-box">
+                    <p class="review-text">{{ r.comment || '(No written comment)' }}</p>
+                  </div>
+                </td>
+                <td>
+                  <span class="text-dim font-mono">{{ r.created_at | date:'mediumDate' }}</span>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="btn btn-sm" [ngClass]="r.is_hidden ? 'btn-success' : 'btn-warning'" (click)="toggleHide(r)" [disabled]="isActioning()">
+                      {{ r.is_hidden ? 'Restore' : 'Hide' }}
+                    </button>
+                    <button class="btn btn-sm btn-soft-danger" (click)="deleteReview(r)" [disabled]="isActioning()" title="Delete Spam">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TABLE FOOTER -->
+    <div class="table-footer">
+      <span class="footer-stats">Showing {{ reviews().length }} of {{ totalCount() }} reviews</span>
+      <div class="pagination-buttons">
+        <button class="btn btn-sm btn-secondary" [disabled]="currentPage() <= 1" (click)="changePage(currentPage() - 1)">Previous</button>
+        <span class="page-indicator">Page {{ currentPage() }} of {{ totalPages() }}</span>
+        <button class="btn btn-sm btn-secondary" [disabled]="currentPage() >= totalPages()" (click)="changePage(currentPage() + 1)">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE REVIEW MODAL -->
+  @if (showCreateModal()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-dialog" style="max-width: 580px;" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="kpi-circle-widget amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div>
+              <h3>Add Verified Customer Review</h3>
+              <p class="subtitle">Record an authenticated rating &amp; testimonial for a service provider</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeCreateModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Service Provider User ID (UUID) *</label>
+            <input type="text" [(ngModel)]="newReview.provider" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" class="form-control font-mono" required />
+            <span class="text-dim" style="font-size: 11px;">The provider receiving this rating.</span>
+          </div>
+
+          <div class="form-group mt-3">
+            <label class="form-label">Reviewer / Client User ID (UUID) *</label>
+            <input type="text" [(ngModel)]="newReview.reviewer" placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000" class="form-control font-mono" required />
+            <span class="text-dim" style="font-size: 11px;">The client or seeker authoring the review.</span>
+          </div>
+
+          <div class="form-group mt-3">
+            <label class="form-label">Star Rating (1 - 5 Stars) *</label>
+            <select [(ngModel)]="newReview.rating" class="form-control select-control">
+              <option [value]="5">⭐⭐⭐⭐⭐ 5 Stars (Exceptional)</option>
+              <option [value]="4">⭐⭐⭐⭐ 4 Stars (Good Quality)</option>
+              <option [value]="3">⭐⭐⭐ 3 Stars (Average)</option>
+              <option [value]="2">⭐⭐ 2 Stars (Needs Improvement)</option>
+              <option [value]="1">⭐ 1 Star (Unsatisfactory / Issue)</option>
+            </select>
+          </div>
+
+          <div class="form-group mt-3">
+            <label class="form-label">Written Review &amp; Feedback *</label>
+            <textarea [(ngModel)]="newReview.comment" rows="4" placeholder="Detail the quality of craftsmanship, punctuality, and overall customer satisfaction..." class="form-control" required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeCreateModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitReview()" [disabled]="isActioning() || !newReview.provider || !newReview.reviewer || !newReview.comment">
+            {{ isActioning() ? 'Submitting...' : 'Submit Verified Review' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

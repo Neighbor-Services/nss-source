@@ -1,0 +1,478 @@
+<!-- Hope UI Hero Header Banner -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">RBAC Roles &amp; Team Permissions</h1>
+        <span class="live-pill"><span class="live-dot"></span> Policy Guard Active</span>
+      </div>
+      <p class="hero-subtitle">Granular role-based access control policies across all 9 platform operational domains</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-soft-light" (click)="openCreateModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Create Security Role</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="mainSection.set('ROLES_GRID')" [class.kpi-active]="mainSection() === 'ROLES_GRID'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">RBAC Groups</span>
+      </div>
+      <div>
+        <div class="kpi-label">DEFINED SECURITY ROLES</div>
+        <div class="kpi-value">{{ totalRoles() }}</div>
+        <div class="kpi-meta">Active custom role definitions</div>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('ROLES_GRID')" [class.kpi-active]="mainSection() === 'ROLES_GRID'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Root Roles</span>
+      </div>
+      <div>
+        <div class="kpi-label">SUPERUSER ROLES</div>
+        <div class="kpi-value">{{ superAdminRoles() }}</div>
+        <div class="kpi-meta">Unrestricted root portal permissions</div>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('PERMISSION_SCOPES')" [class.kpi-active]="mainSection() === 'PERMISSION_SCOPES'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Scopes</span>
+      </div>
+      <div>
+        <div class="kpi-label">PERMISSION SCOPES</div>
+        <div class="kpi-value">{{ totalPermissionsDefined() }}</div>
+        <div class="kpi-meta">Atomic authorization scopes</div>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('PERMISSION_SCOPES')" [class.kpi-active]="mainSection() === 'PERMISSION_SCOPES'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Domains</span>
+      </div>
+      <div>
+        <div class="kpi-label">OPERATIONAL DOMAINS</div>
+        <div class="kpi-value">{{ totalCategories() }} Modules</div>
+        <div class="kpi-meta">Comprehensive platform coverage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN TABBED NAVIGATION BAR -->
+  <div class="card tab-bar-card">
+    <div class="tab-pill-bar">
+      <button class="tab-pill" [class.active]="mainSection() === 'ROLES_GRID'" (click)="mainSection.set('ROLES_GRID')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m21 2-2 2m-1.5 1.5L14 9a5 5 0 1 0-4 4l3.5-3.5"/><circle cx="7.5" cy="16.5" r="2.5"/>
+        </svg>
+        <span>Security Roles Directory</span>
+        <span class="pill-count">{{ totalRoles() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="mainSection() === 'PERMISSION_SCOPES'" (click)="mainSection.set('PERMISSION_SCOPES')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/>
+        </svg>
+        <span>Permission Scopes &amp; Policies</span>
+        <span class="pill-count">{{ totalPermissionsDefined() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="mainSection() === 'SESSION_SECURITY'" (click)="mainSection.set('SESSION_SECURITY')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span>Session &amp; Token Invalidation</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: ROLES DIRECTORY -->
+  @if (mainSection() === 'ROLES_GRID') {
+    @if (loading()) {
+      <div class="card loading-card">
+        <div class="spinner"></div>
+        <p>Loading security roles, scope definitions, and policy maps...</p>
+      </div>
+    } @else {
+      <div class="roles-grid">
+        @for (role of roles(); track role.id) {
+          <div class="card role-card">
+            <div class="role-card-header">
+              <div class="role-title-group">
+                <div class="role-shield-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="role-name">{{ role.name }}</h3>
+                  <span class="role-slug font-mono">{{ role.slug }}</span>
+                </div>
+              </div>
+              <div class="role-actions-top">
+                <span class="badge badge-purple">{{ role.permissions.length }} Scopes</span>
+              </div>
+            </div>
+
+            <p class="role-desc">{{ role.description || 'Custom administrative role with scoped API access.' }}</p>
+
+            <div class="permissions-list">
+              <div class="perm-header-row">
+                <label class="form-label">Granted Permissions</label>
+                <span class="perm-count-badge">{{ role.permissions.length }} active</span>
+              </div>
+              <div class="perm-tags">
+                @for (p of role.permissions; track p) {
+                  <span class="perm-tag font-mono">{{ p }}</span>
+                }
+                @if (role.permissions.length === 0) {
+                  <span class="text-dim text-xs">No permissions assigned</span>
+                }
+              </div>
+            </div>
+
+            <div class="role-card-footer">
+              <button class="btn btn-sm btn-secondary" (click)="openEditModal(role)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                </svg>
+                <span>Edit Role</span>
+              </button>
+              <button class="btn btn-sm btn-danger-outline" (click)="confirmDeleteRole(role)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="card empty-state-card">
+            <div class="empty-state">
+              <div class="empty-icon-wrap purple">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <h4 class="empty-title">No Security Roles Defined</h4>
+              <p class="empty-sub">Create your first custom RBAC role with granular permissions across platform modules.</p>
+              <button class="btn btn-primary mt-3" (click)="openCreateModal()">
+                + Create Security Role
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- TAB 2: PERMISSION SCOPES SPECIFICATION -->
+  @if (mainSection() === 'PERMISSION_SCOPES') {
+    <div class="card table-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Granular Permission Scopes Registry</h3>
+            <p class="card-subtitle">{{ totalPermissionsDefined() }} Total Scopes across {{ totalCategories() }} Platform Domains</p>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" [ngModel]="permissionSearchQuery()" (ngModelChange)="permissionSearchQuery.set($event)" placeholder="Search scopes..." class="form-control form-control-sm" />
+          </div>
+          <select class="form-control form-control-sm cat-filter-select" [ngModel]="selectedCategoryFilter()" (ngModelChange)="selectedCategoryFilter.set($event)">
+            <option value="ALL">All Operational Domains</option>
+            @for (cat of permissionCategories; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Operational Domain</th>
+              <th>Scope Key</th>
+              <th>Scope Capability Name</th>
+              <th>Detailed Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (perm of filteredPermissions(); track perm.key) {
+              <tr>
+                <td>
+                  <span class="badge badge-secondary">{{ perm.category }}</span>
+                </td>
+                <td>
+                  <code class="mono-badge">{{ perm.key }}</code>
+                </td>
+                <td>
+                  <b>{{ perm.label }}</b>
+                </td>
+                <td>
+                  <span class="text-dim">{{ perm.desc }}</span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="text-center text-dim py-4">
+                  No permission scopes matched your search query.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: SESSION SECURITY & TOKEN INVALIDATION -->
+  @if (mainSection() === 'SESSION_SECURITY') {
+    <div class="deck-grid">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="deck-title">Least-Privilege Role Assignment Policy</h4>
+            <p class="deck-sub">Prevent administrative credential escalation and reduce attack surface</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Access Model</span>
+              <span class="metric-val text-emerald">RBAC + Contextual Claims</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Audit Logging</span>
+              <span class="metric-val">All Role Changes Recorded</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Support personnel should be assigned only the minimum necessary roles (e.g. <code>moderation:read</code> or <code>users:read</code>) rather than full administrative root superuser permissions.
+          </p>
+        </div>
+      </div>
+
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="deck-title">JWT Token Revocation &amp; Session Invalidation</h4>
+            <p class="deck-sub">Instantaneous session revocation upon role de-escalation</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Token Expiration</span>
+              <span class="metric-val">24 Hours (Sliding Window)</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Revocation Hook</span>
+              <span class="metric-val">Denylist Enabled</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            When an operator's role is modified or revoked in User Management, active JWT tokens reflect the new permission claims immediately upon subsequent API verification calls.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Create / Edit Role Modal -->
+  @if (showRoleModal()) {
+    <div class="modal-overlay" (click)="closeRoleModal()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title">{{ isEditMode() ? 'Edit Security Role' : 'Create New RBAC Security Role' }}</h3>
+              <p class="modal-subtitle">Define role details and toggle granular module capabilities</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeRoleModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Role Display Name *</label>
+              <input type="text" [(ngModel)]="currentRoleForm.name" (input)="onNameChange()" class="form-control" placeholder="e.g. Compliance Moderator" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Role Slug Identifier *</label>
+              <input type="text" [(ngModel)]="currentRoleForm.slug" [disabled]="isEditMode()" class="form-control font-mono" placeholder="e.g. compliance-moderator" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description / Scope Rationale</label>
+            <textarea [(ngModel)]="currentRoleForm.description" rows="2" class="form-control" placeholder="Describe the responsibilities and permissions of this role..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <div class="perm-selector-head">
+              <div>
+                <label class="form-label mb-0">Select Granted Permissions ({{ currentRoleForm.permissions.length }} Selected)</label>
+                <span class="text-dim text-xs">Categorized by platform operational domain</span>
+              </div>
+            </div>
+
+            <div class="categories-accordion">
+              @for (cat of permissionCategories; track cat) {
+                <div class="category-block">
+                  <div class="category-header">
+                    <div class="cat-title">
+                      <span class="cat-dot"></span>
+                      <b>{{ cat }}</b>
+                      <span class="cat-count">({{ getPermissionsForCategory(cat).length }} scopes)</span>
+                    </div>
+                    <div class="cat-actions">
+                      <button type="button" class="btn-text-xs" (click)="toggleCategory(cat, true)">Select All</button>
+                      <span class="divider-dot">·</span>
+                      <button type="button" class="btn-text-xs text-muted" (click)="toggleCategory(cat, false)">Clear</button>
+                    </div>
+                  </div>
+
+                  <div class="perm-picker-grid">
+                    @for (p of getPermissionsForCategory(cat); track p.key) {
+                      <label class="perm-picker-item" [class.selected]="isPermissionSelected(p.key)">
+                        <input type="checkbox" [checked]="isPermissionSelected(p.key)" (change)="togglePermission(p.key)" class="custom-chk" />
+                        <div class="perm-info">
+                          <div class="perm-key-row">
+                            <span class="perm-label">{{ p.label }}</span>
+                            <code class="perm-code">{{ p.key }}</code>
+                          </div>
+                          <span class="perm-desc">{{ p.desc }}</span>
+                        </div>
+                      </label>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRoleModal()" [disabled]="savingRole()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitRoleForm()" [disabled]="savingRole()">
+            <svg *ngIf="savingRole()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>{{ savingRole() ? 'Saving Role...' : (isEditMode() ? 'Update Role' : 'Create & Activate Role') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Role Confirmation Modal -->
+  @if (showDeleteModal()) {
+    <div class="modal-overlay" (click)="closeDeleteModal()">
+      <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge red">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title">Delete Security Role</h3>
+              <p class="modal-subtitle">Permanent removal confirmation</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeDeleteModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <p>Are you sure you want to delete the security role <strong>"{{ roleToDelete()?.name }}"</strong> (<code>{{ roleToDelete()?.slug }}</code>)?</p>
+          <p class="text-dim text-sm">Any users currently assigned to this role will have their role association unlinked.</p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="deletingRoleId() !== null">Cancel</button>
+          <button class="btn btn-danger" (click)="executeDeleteRole()" [disabled]="deletingRoleId() !== null">
+            {{ deletingRoleId() !== null ? 'Deleting...' : 'Confirm Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

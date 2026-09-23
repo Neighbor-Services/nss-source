@@ -1,0 +1,382 @@
+<!-- Hope UI Hero Header Banner -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div>
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">Checkr Background Screening Monitor</h1>
+        <span class="live-pill"><span class="live-dot"></span> Webhook Sync Active</span>
+      </div>
+      <p class="hope-hero-subtitle">Real-time provider criminal records, SSN trace turnarounds, and supervisor compliance overrides.</p>
+    </div>
+    <div class="action-row">
+      <button class="btn-soft-light" (click)="exportCSV()" [disabled]="checks().length === 0" title="Export CSV file of background checks">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="loadChecks()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh Queue' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="activeTab.set('CLEAR'); mainSection.set('SCREENINGS')" [class.kpi-active]="activeTab() === 'CLEAR' && mainSection() === 'SCREENINGS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Passed / Clear</span>
+      </div>
+      <div>
+        <div class="kpi-label">CLEAR SCREENINGS</div>
+        <div class="kpi-value">{{ clearCount() }}</div>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Fully certified for booking</span></div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('PENDING'); mainSection.set('SCREENINGS')" [class.kpi-active]="activeTab() === 'PENDING' && mainSection() === 'SCREENINGS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Checkr Processing</span>
+      </div>
+      <div>
+        <div class="kpi-label">IN-FLIGHT SCREENINGS</div>
+        <div class="kpi-value">{{ pendingCount() }}</div>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Avg Turnaround: 1.8 days</span></div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('CONSIDER'); mainSection.set('SCREENINGS')" [class.kpi-active]="activeTab() === 'CONSIDER' && mainSection() === 'SCREENINGS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget red">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+        </div>
+        <span class="badge badge-danger">Review Flag</span>
+      </div>
+      <div>
+        <div class="kpi-label">FLAGGED / CONSIDER</div>
+        <div class="kpi-value">{{ considerCount() }}</div>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Requires supervisor review</span></div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('ALL'); mainSection.set('SCREENINGS')" [class.kpi-active]="activeTab() === 'ALL' && mainSection() === 'SCREENINGS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Total Pool</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL SUBMISSIONS</div>
+        <div class="kpi-value">{{ totalCount() }}</div>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">All provider screenings</span></div>
+    </div>
+  </div>
+
+  <!-- MAIN TABBED NAVIGATION BAR -->
+  <div class="card tab-bar-card">
+    <div class="tab-pill-bar">
+      <button class="tab-pill" [class.active]="mainSection() === 'SCREENINGS'" (click)="mainSection.set('SCREENINGS')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+        <span>Candidate Screening Reports</span>
+        <span class="pill-count">{{ totalCount() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="mainSection() === 'WEBHOOKS'" (click)="mainSection.set('WEBHOOKS')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <span>Integration &amp; Webhook Health</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="mainSection() === 'FCRA_PROTOCOLS'" (click)="mainSection.set('FCRA_PROTOCOLS')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>Compliance &amp; Pre-Adverse Protocols</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: SCREENING REPORTS -->
+  @if (mainSection() === 'SCREENINGS') {
+    <!-- FILTER TABS & SEARCH -->
+    <div class="card filter-card">
+      <div class="tab-pill-bar">
+        <button class="tab-pill" [class.active]="activeTab() === 'ALL'" (click)="activeTab.set('ALL')">
+          All Screenings <span class="pill-count">{{ totalCount() }}</span>
+        </button>
+        <button class="tab-pill" [class.active]="activeTab() === 'CLEAR'" (click)="activeTab.set('CLEAR')">
+          Clear <span class="pill-count">{{ clearCount() }}</span>
+        </button>
+        <button class="tab-pill" [class.active]="activeTab() === 'PENDING'" (click)="activeTab.set('PENDING')">
+          In Progress <span class="pill-count">{{ pendingCount() }}</span>
+        </button>
+        <button class="tab-pill" [class.active]="activeTab() === 'CONSIDER'" (click)="activeTab.set('CONSIDER')">
+          Adverse Flags <span class="pill-count">{{ considerCount() }}</span>
+        </button>
+        <button class="tab-pill" [class.active]="activeTab() === 'OVERRIDDEN'" (click)="activeTab.set('OVERRIDDEN')">
+          Manual Overrides <span class="pill-count">{{ overrideCount() }}</span>
+        </button>
+      </div>
+
+      <div class="search-input-wrapper">
+        <svg class="search-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          [(ngModel)]="searchFilter"
+          placeholder="Filter candidate name, email, Checkr candidate ID, or report ID..."
+          class="form-control search-input"
+        />
+        @if (searchFilter) {
+          <button class="clear-btn" (click)="searchFilter = ''"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        }
+      </div>
+    </div>
+
+    <!-- SCREENING TABLE CARD -->
+    <div class="card table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <div class="table-icon-dot"></div>
+          <h3>Candidate Screening Reports</h3>
+          <span class="badge badge-info">{{ filteredChecks().length }} Candidates</span>
+        </div>
+      </div>
+
+      @if (filteredChecks().length === 0 && !isLoading()) {
+        <div class="empty-state">
+          <div class="empty-icon-box">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <polyline points="9 12 11 14 15 10"/>
+            </svg>
+          </div>
+          <h4>No Screening Records Found</h4>
+          <p class="subtitle">There are no background checks matching your current filter: "{{ searchFilter || activeTab() }}".</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Provider Candidate</th>
+                <th>Checkr Candidate / Report ID</th>
+                <th>Screening Package</th>
+                <th>Status</th>
+                <th>Turnaround SLA</th>
+                <th>Completed At</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (b of filteredChecks(); track b.id) {
+                <tr class="table-row">
+                  <td>
+                    <div class="user-cell">
+                      <div class="user-avatar-ring">
+                        {{ (b.userName || 'P').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <b>{{ b.userName }}</b>
+                        <span class="user-sub">{{ b.userEmail }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="mono-badge"><code>cand: {{ b.checkrCandidateId }}</code></div>
+                    <div class="mono-badge mt-4"><code>rep: {{ b.checkrReportId }}</code></div>
+                  </td>
+                  <td>
+                    <span class="package-name">{{ b.package }}</span>
+                    @if (b.manualOverride) {
+                      <span class="badge badge-purple mt-4">Manual Override</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="b.status === 'clear' ? 'badge-success' : (b.status === 'pending' ? 'badge-warning' : 'badge-danger')">
+                      <span class="dot-indicator"></span>
+                      {{ b.status | uppercase }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-dim">{{ b.turnaroundTime || '2-3 business days' }}</span>
+                  </td>
+                  <td>
+                    <span class="text-dim">{{ (b.completedAt | date:'mediumDate') || 'In Progress' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <button class="btn btn-sm btn-secondary" (click)="openOverride(b)" title="Supervisor Compliance Override">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                      </svg>
+                      <span>Override</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 2: CHECKR API & WEBHOOKS -->
+  @if (mainSection() === 'WEBHOOKS') {
+    <div class="deck-grid">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-emerald">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Checkr API Integration &amp; Webhooks</h4>
+            <p class="deck-sub">Continuous criminal monitoring and FCRA compliance audit trail</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Webhook Health</span>
+              <span class="metric-val text-emerald">Active (200 OK)</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Screening Standard</span>
+              <span class="metric-val">FCRA Certified (Tier 1)</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            National criminal records, sex offender registry, and county court searches run automatically upon provider registration. Webhook events update status in real-time.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: COMPLIANCE OVERRIDE & PROTOCOLS -->
+  @if (mainSection() === 'FCRA_PROTOCOLS') {
+    <div class="deck-grid">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Compliance Override Governance</h4>
+            <p class="deck-sub">Supervisor authorizations and pre-adverse notice protocols</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Supervisor Auth</span>
+              <span class="metric-val">Mandatory Audit Note</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Pre-Adverse Notice</span>
+              <span class="metric-val">7-Day Waiting Window</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Any manual override requires a full compliance rationale recorded in the immutable audit log before provider onboarding can proceed.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- OVERRIDE MODAL -->
+  @if (showOverrideModal() && selectedCheck()) {
+    <div class="modal-overlay" (click)="closeOverride()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Supervisor Compliance Override</h3>
+          <button class="btn-icon-close" (click)="closeOverride()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-sub">
+            Modifying screening outcome for: <b>{{ selectedCheck()?.userName }}</b> (<code>{{ selectedCheck()?.userEmail }}</code>)
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Desired Adjudication Status</label>
+            <select [(ngModel)]="overrideStatusVal" class="form-control select-control">
+              <option value="clear">CLEAR (Approve Provider For Platform)</option>
+              <option value="consider">CONSIDER / ADVERSE (Require Manual Investigation)</option>
+              <option value="suspended">SUSPENDED (Block Account Immediately)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Compliance Rationale / Justification Note *</label>
+            <textarea
+              [(ngModel)]="overrideReason"
+              rows="3"
+              class="form-control"
+              placeholder="e.g. Identity documents match verified court dismissal record..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeOverride()" [disabled]="isSubmitting()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitOverride()" [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Submitting Override...' : 'Apply Supervisor Override' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

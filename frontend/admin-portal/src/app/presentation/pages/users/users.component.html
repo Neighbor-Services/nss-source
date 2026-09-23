@@ -1,0 +1,1193 @@
+<!-- Hope UI Hero Header Banner -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">User Management</h1>
+        <span class="live-pill"><span class="live-dot"></span> Active Directory</span>
+      </div>
+      <p class="hope-hero-subtitle">Platform user directory, RBAC governance, supply verification gates &amp; compliance tooling.</p>
+    </div>
+    
+    <div class="hero-actions">
+      <button class="btn btn-primary" (click)="openCreateModal()" title="Create a new user or administrative staff member">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>+ Add User / Staff</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="exportAllUsersCSV()" [disabled]="users().length === 0" title="Export CSV file of current users">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+
+      <button class="btn-soft-light" [disabled]="isLoading()" (click)="loadUsers()" title="Sync and refresh directory from database">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hope-content-body">
+  @if (actionMessage()) {
+    <div class="alert" [ngClass]="isSuccess() ? 'alert-success' : 'alert-danger'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        @if (isSuccess()) {
+          <path d="M20 6L9 17l-5-5"/>
+        } @else {
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"/>
+        }
+      </svg>
+      <span>{{ actionMessage() }}</span>
+      <button class="alert-close" (click)="actionMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <!-- Total Users -->
+    <div class="kpi-card" (click)="setTab('ALL')" [class.kpi-active]="activeTab() === 'ALL'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">
+          <span class="live-dot"></span> {{ totalUsers() - suspendedCount() }} Active
+        </span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL REGISTERED USERS</div>
+        <div class="kpi-value">{{ totalUsers() }}</div>
+      </div>
+      <div class="kpi-meta">Platform-wide registered accounts</div>
+    </div>
+
+    <!-- Homeowners / Seekers -->
+    <div class="kpi-card" (click)="setTab('SEEKER')" [class.kpi-active]="activeTab() === 'SEEKER'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <span class="badge badge-info">Seekers</span>
+      </div>
+      <div>
+        <div class="kpi-label">HOMEOWNERS (SEEKERS)</div>
+        <div class="kpi-value">{{ seekersCount() }}</div>
+      </div>
+      <div class="kpi-meta">Demand &amp; booking clients</div>
+    </div>
+
+    <!-- Service Providers -->
+    <div class="kpi-card" (click)="setTab('PROVIDER')" [class.kpi-active]="activeTab() === 'PROVIDER'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">{{ verifiedCount() }} ID Verified</span>
+      </div>
+      <div>
+        <div class="kpi-label">SERVICE PROVIDERS</div>
+        <div class="kpi-value">{{ providersCount() }}</div>
+      </div>
+      <div class="kpi-meta">Contractors &amp; specialists</div>
+    </div>
+
+    <!-- RBAC Staff & Admins -->
+    <div class="kpi-card" (click)="setTab('STAFF')" [class.kpi-active]="activeTab() === 'STAFF'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Admin RBAC</span>
+      </div>
+      <div>
+        <div class="kpi-label">STAFF &amp; GOVERNANCE</div>
+        <div class="kpi-value">{{ staffCount() }}</div>
+      </div>
+      <div class="kpi-meta">Privileged portal accounts</div>
+    </div>
+  </div>
+
+  <!-- PROVIDER ONBOARDING FUNNEL TELEMETRY -->
+  @if (funnel()) {
+    <div class="card funnel-card">
+      <div class="funnel-header">
+        <div class="funnel-title-group">
+          <div class="funnel-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="funnel-title">Provider Onboarding Funnel Telemetry</h3>
+            <span class="funnel-sub">End-to-end supply-side conversion across verification gates and monetization</span>
+          </div>
+        </div>
+        <div class="funnel-rate-badge">
+          <span class="rate-label">Overall Conversion</span>
+          <span class="rate-val">{{ funnel()!.conversion_rate_pct | number:'1.1-1' }}%</span>
+        </div>
+      </div>
+
+      <div class="funnel-steps-grid">
+        <!-- Stage 1: Registered -->
+        <div class="funnel-step">
+          <div class="step-num">1</div>
+          <div class="step-info">
+            <div class="step-title">Signed Up</div>
+            <div class="step-count">{{ funnel()!.total_signed_up }}</div>
+            <div class="step-drop text-success">100% of signups</div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+        <!-- Stage 2: ID Uploaded -->
+        <div class="funnel-step">
+          <div class="step-num">2</div>
+          <div class="step-info">
+            <div class="step-title">ID Verified</div>
+            <div class="step-count">{{ funnel()!.id_uploaded }}</div>
+            <div class="step-drop">
+              {{ (funnel()!.total_signed_up ? (funnel()!.id_uploaded / funnel()!.total_signed_up * 100) : 0) | number:'1.0-0' }}% pass
+            </div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+        <!-- Stage 3: Checkr Completed -->
+        <div class="funnel-step">
+          <div class="step-num">3</div>
+          <div class="step-info">
+            <div class="step-title">Checkr Cleared</div>
+            <div class="step-count">{{ funnel()!.checkr_completed }}</div>
+            <div class="step-drop">
+              {{ (funnel()!.id_uploaded ? (funnel()!.checkr_completed / funnel()!.id_uploaded * 100) : 0) | number:'1.0-0' }}% pass
+            </div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+        <!-- Stage 4: Stripe Connected -->
+        <div class="funnel-step">
+          <div class="step-num">4</div>
+          <div class="step-info">
+            <div class="step-title">Stripe Connected</div>
+            <div class="step-count">{{ funnel()!.stripe_connected }}</div>
+            <div class="step-drop">
+              {{ (funnel()!.checkr_completed ? (funnel()!.stripe_connected / funnel()!.checkr_completed * 100) : 0) | number:'1.0-0' }}% pass
+            </div>
+          </div>
+        </div>
+
+        <div class="funnel-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+        <!-- Stage 5: First Booking Done -->
+        <div class="funnel-step highlight-step">
+          <div class="step-num">5</div>
+          <div class="step-info">
+            <div class="step-title">1st Job Completed</div>
+            <div class="step-count text-primary">{{ funnel()!.first_booking_done }}</div>
+            <div class="step-drop text-success">
+              {{ funnel()!.conversion_rate_pct | number:'1.1-1' }}% overall
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- FILTER & SEARCH BAR -->
+  <div class="card filter-panel">
+    <!-- Filter Tabs -->
+    <div class="tab-pill-bar">
+      <button class="tab-pill" [class.active]="activeTab() === 'ALL'" (click)="setTab('ALL')">
+        All Accounts <span class="pill-count">{{ totalUsers() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="activeTab() === 'SEEKER'" (click)="setTab('SEEKER')">
+        Seekers <span class="pill-count">{{ seekersCount() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="activeTab() === 'PROVIDER'" (click)="setTab('PROVIDER')">
+        Providers <span class="pill-count">{{ providersCount() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="activeTab() === 'STAFF'" (click)="setTab('STAFF')">
+        Staff &amp; Roles <span class="pill-count">{{ staffCount() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="activeTab() === 'VERIFIED'" (click)="setTab('VERIFIED')">
+        Verified IDs <span class="pill-count">{{ verifiedCount() }}</span>
+      </button>
+
+      @if (suspendedCount() > 0) {
+        <button class="tab-pill tab-danger" [class.active]="activeTab() === 'SUSPENDED'" (click)="setTab('SUSPENDED')">
+          Suspended <span class="pill-count">{{ suspendedCount() }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Search input and filters -->
+    <div class="filter-controls-row">
+      <div class="search-input-box">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="loadUsers()"
+          placeholder="Search by full name, email address, UUID, or phone number..."
+          class="form-control filter-input"
+        />
+        @if (searchQuery) {
+          <button class="clear-btn" (click)="searchQuery = ''; loadUsers()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        }
+      </div>
+
+      <div class="select-box">
+        <select [(ngModel)]="selectedUserType" (change)="loadUsers()" class="form-control select-control">
+          <option value="">All Account Types</option>
+          <option value="seeker">Seekers (Homeowners)</option>
+          <option value="provider">Service Providers</option>
+        </select>
+      </div>
+
+      <div class="filter-btns">
+        <button class="btn btn-primary" (click)="loadUsers()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Filter</span>
+        </button>
+        <button class="btn btn-secondary" (click)="resetFilters()" title="Reset search and filters">
+          <span>Reset</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- USERS DATA TABLE -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="title-with-pill">
+        <div class="kpi-icon-badge blue" style="width: 28px; height: 28px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          </svg>
+        </div>
+        <h3 class="font-bold">Platform User Directory</h3>
+        <span class="badge badge-info">{{ filteredUsers().length }} of {{ totalCount() }} Accounts</span>
+      </div>
+
+      <div class="header-right-actions">
+        @if (selectedCount() > 0) {
+          <div class="batch-action-pill-bar">
+            <span class="batch-count">{{ selectedCount() }} Selected</span>
+            <button class="btn btn-xs btn-danger" (click)="bulkSuspend()" [disabled]="isActioning()">Bulk Suspend</button>
+            <button class="btn btn-xs btn-success" (click)="bulkActivate()" [disabled]="isActioning()">Bulk Activate</button>
+            <button class="btn btn-xs btn-secondary" (click)="exportSelectedCSV()">Export Selected</button>
+            <button class="btn btn-xs btn-link" (click)="clearSelection()">Clear</button>
+          </div>
+        }
+        <button class="btn btn-sm btn-secondary" (click)="exportAllCSV()" title="Export current list to CSV" style="display: flex; align-items: center; gap: 5px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Export CSV</span>
+        </button>
+        <span class="text-dim font-mono">Page {{ currentPage() }} of {{ totalPages() }}</span>
+      </div>
+    </div>
+
+    @if (filteredUsers().length === 0 && !isLoading()) {
+      <div class="empty-state">
+        <div class="empty-icon-box">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="8"/>
+          </svg>
+        </div>
+        <h4>No matching users found</h4>
+        <p class="subtitle">There are no user records matching the filter criteria: "{{ searchQuery || activeTab() }}".</p>
+        <button class="btn btn-secondary mt-3" (click)="resetFilters()">Clear Filters</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 44px;" class="text-center">
+                <input 
+                  type="checkbox" 
+                  [checked]="isAllSelected()" 
+                  (change)="toggleSelectAll($any($event.target).checked)" 
+                  class="custom-chk"
+                  title="Select / Deselect all"
+                />
+              </th>
+              <th>Member Details</th>
+              <th>Account Type</th>
+              <th>Status</th>
+              <th>ID &amp; Screening</th>
+              <th>Subscription</th>
+              <th>RBAC Role</th>
+              <th>Registered</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of filteredUsers(); track user.id) {
+              <tr class="table-row" [class.selected-row]="isUserSelected(user.id)">
+                <td class="text-center">
+                  <input 
+                    type="checkbox" 
+                    [checked]="isUserSelected(user.id)" 
+                    (change)="toggleSelectUser(user.id)" 
+                    class="custom-chk"
+                  />
+                </td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-badge" [class.provider]="user.userType === 'provider'" [class.staff-avatar]="user.isStaff">
+                      {{ (user.firstName || 'U').charAt(0).toUpperCase() }}{{ (user.lastName || '').charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-meta-info">
+                      <div class="user-name-row">
+                        <b class="user-fullname">{{ user.firstName || 'User' }} {{ user.lastName || '' }}</b>
+                        @if (user.isStaff) {
+                          <span class="badge badge-warning badge-xs">Admin Staff</span>
+                        }
+                      </div>
+                      <span class="user-sub">{{ user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="user.userType === 'provider' ? 'badge-purple' : 'badge-info'">
+                    {{ user.userType === 'provider' ? 'Service Provider' : 'Seeker' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="user.isActive ? 'badge-success' : 'badge-danger'">
+                    <span class="live-dot" [style.background]="user.isActive ? 'var(--success)' : 'var(--danger)'"></span>
+                    {{ user.isActive ? 'Active' : 'Suspended' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="id-screening-cell">
+                    @if (user.isIdentityVerified) {
+                      <span class="badge badge-success badge-sm" title="Government ID Confirmed">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        ID Verified
+                      </span>
+                    } @else {
+                      <span class="badge badge-secondary badge-sm">Unverified</span>
+                    }
+
+                    @if (user.userType === 'provider') {
+                      <span class="badge badge-sm" [ngClass]="user.checkrStatus === 'clear' ? 'badge-success' : 'badge-warning'">
+                        Checkr: {{ user.checkrStatus }}
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-secondary font-mono">{{ user.subscriptionTier || 'Free' }}</span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="user.isStaff ? 'badge-warning' : 'badge-info'">
+                    {{ user.roleName || (user.isStaff ? 'Admin Staff' : 'Member') }}
+                  </span>
+                </td>
+                <td>
+                  <span class="text-dim font-mono text-xs">{{ user.createdAt | date:'mediumDate' }}</span>
+                </td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <button class="btn btn-sm btn-outline-primary" (click)="openEditModal(user)" title="Edit User Details">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+
+                    <a [routerLink]="['/admin/users', user.id]" class="btn btn-sm btn-primary" title="View Full User Dossier">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      <span>Dossier</span>
+                    </a>
+
+                    <button class="btn btn-sm btn-ghost" (click)="impersonate(user)" title="Impersonate User Session">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                      </svg>
+                      <span>Impersonate</span>
+                    </button>
+
+                    @if (user.isActive) {
+                      <button class="btn btn-sm btn-danger" (click)="toggleActive(user, false)" title="Suspend Account">
+                        Suspend
+                      </button>
+                    } @else {
+                      <button class="btn btn-sm btn-success" (click)="toggleActive(user, true)" title="Restore Account">
+                        Restore
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TABLE FOOTER & PAGINATION -->
+      <div class="table-footer">
+        <div class="footer-stats">
+          <span>Showing <b>1</b> to <b>{{ filteredUsers().length }}</b> of <b>{{ totalCount() }}</b> registered users</span>
+          
+          <div class="page-size-selector">
+            <span class="text-dim">Rows per page:</span>
+            <select [ngModel]="pageSize()" (ngModelChange)="changePageSize($event)" class="form-control select-xs">
+              <option [value]="10">10</option>
+              <option [value]="25">25</option>
+              <option [value]="50">50</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pagination-buttons">
+          <button class="btn btn-sm btn-secondary" [disabled]="currentPage() === 1" (click)="changePage(currentPage() - 1)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Previous</span>
+          </button>
+          
+          <span class="page-badge">{{ currentPage() }} / {{ totalPages() }}</span>
+
+          <button class="btn btn-sm btn-secondary" [disabled]="currentPage() >= totalPages()" (click)="changePage(currentPage() + 1)">
+            <span>Next</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- BOTTOM COMPLIANCE & SECURITY CONTROL DECK -->
+  <div class="deck-grid">
+    <!-- GDPR & Data Portability Hub -->
+    <div class="card deck-card">
+      <div class="deck-header">
+        <div class="deck-icon blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div>
+          <h4>GDPR &amp; Data Subject Rights</h4>
+          <p class="subtitle">User data portability, right to erasure, and audit-ready JSON archives</p>
+        </div>
+      </div>
+      <div class="deck-body">
+        <div class="deck-metric-row">
+          <div class="metric-item">
+            <span class="metric-label">Data Portability Readiness</span>
+            <b class="text-emerald">100% Compliant</b>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">GDPR Encryption</span>
+            <b>AES-256 (At-Rest)</b>
+          </div>
+        </div>
+        <p class="deck-description">
+          All user personal data is mapped to GDPR Article 15/20 specifications. You can export complete user archives directly from the user management drawer with 1-click generation.
+        </p>
+      </div>
+    </div>
+
+    <!-- Access Governance & Security Matrix -->
+    <div class="card deck-card">
+      <div class="deck-header">
+        <div class="deck-icon purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <div>
+          <h4>Access Governance &amp; RBAC</h4>
+          <p class="subtitle">Staff impersonation security, JWT token lifetimes &amp; role delegations</p>
+        </div>
+      </div>
+      <div class="deck-body">
+        <div class="deck-metric-row">
+          <div class="metric-item">
+            <span class="metric-label">Staff Privileges</span>
+            <b class="text-amber">{{ staffCount() }} Active Operators</b>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Impersonation TTL</span>
+            <b>3,600s (Auto-revoked)</b>
+          </div>
+        </div>
+        <p class="deck-description">
+          Staff impersonation logs every session directly into the audit stream. No plain password exposure occurs, and bearer tokens expire automatically after 1 hour.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER DETAIL, RBAC & IMPERSONATION MODAL -->
+  @if (selectedUser()) {
+    <div class="modal-overlay" (click)="closeDetail()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="user-avatar-badge modal-avatar" [class.provider]="selectedUser()?.userType === 'provider'">
+              {{ (selectedUser()?.firstName || 'U').charAt(0).toUpperCase() }}{{ (selectedUser()?.lastName || '').charAt(0).toUpperCase() }}
+            </div>
+            <div>
+              <h3>{{ selectedUser()?.firstName }} {{ selectedUser()?.lastName }}</h3>
+              <p class="subtitle">
+                <span>{{ selectedUser()?.email }}</span> &bull; ID: <code class="font-mono text-indigo">{{ selectedUser()?.id }}</code>
+              </p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeDetail()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <!-- Modal Internal Tabs -->
+        <div class="modal-tabs">
+          <button class="modal-tab" [class.active]="activeModalTab() === 'profile'" (click)="activeModalTab.set('profile')">
+            Profile Overview
+          </button>
+          <button class="modal-tab" [class.active]="activeModalTab() === 'rbac'" (click)="activeModalTab.set('rbac')">
+            RBAC &amp; Roles
+          </button>
+          <button class="modal-tab" [class.active]="activeModalTab() === 'impersonation'" (click)="activeModalTab.set('impersonation')">
+            Impersonation Session
+          </button>
+        </div>
+
+        <div class="modal-body">
+          @if (activeModalTab() === 'profile') {
+            <div class="detail-grid">
+              <div class="detail-field">
+                <span class="form-label">Full Name</span>
+                <b>{{ selectedUser()?.firstName }} {{ selectedUser()?.lastName }}</b>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Email Address</span>
+                <b>{{ selectedUser()?.email }}</b>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Phone Number</span>
+                <b>{{ selectedUser()?.phone || 'Not provided' }}</b>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Account Category</span>
+                <span class="badge" [ngClass]="selectedUser()?.userType === 'provider' ? 'badge-purple' : 'badge-info'">
+                  {{ selectedUser()?.userType | uppercase }}
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Escrow / Wallet Balance</span>
+                <b class="text-emerald">${{ (selectedUser()?.walletBalance || 0) | number:'1.2-2' }}</b>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Identity Verification</span>
+                <span class="badge" [ngClass]="selectedUser()?.isIdentityVerified ? 'badge-success' : 'badge-warning'">
+                  {{ selectedUser()?.isIdentityVerified ? 'Verified Government ID' : 'Unverified' }}
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Checkr Background Status</span>
+                <span class="badge badge-info">{{ selectedUser()?.checkrStatus || 'Pending' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Subscription Tier</span>
+                <span class="badge badge-secondary font-mono">{{ selectedUser()?.subscriptionTier || 'Free' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Account Registration Date</span>
+                <b class="font-mono">{{ selectedUser()?.createdAt | date:'medium' }}</b>
+              </div>
+              <div class="detail-field">
+                <span class="form-label">Account Status</span>
+                <span class="badge" [ngClass]="selectedUser()?.isActive ? 'badge-success' : 'badge-danger'">
+                  {{ selectedUser()?.isActive ? 'Active Account' : 'Suspended' }}
+                </span>
+              </div>
+            </div>
+          }
+
+          @if (activeModalTab() === 'rbac') {
+            <div class="section-box">
+              <label class="form-label">Assign RBAC Security Role</label>
+              <p class="subtitle" style="margin-bottom: 12px;">Elevate or change permission group for administrative operations in this portal.</p>
+              <div class="role-assign-form">
+                <select [(ngModel)]="selectedRoleId" class="form-control select-control">
+                  <option value="">Standard Member (No Admin Privileges)</option>
+                  @for (r of roles(); track r.id) {
+                    <option [value]="r.id">{{ r.name }} ({{ r.slug }})</option>
+                  }
+                </select>
+                <button class="btn btn-primary" (click)="assignRole()" [disabled]="isActioning()">
+                  Update Role
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (activeModalTab() === 'impersonation') {
+            <div class="section-box">
+              <label class="form-label">Staff Impersonation Token Generator</label>
+              <p class="subtitle" style="margin-bottom: 12px;">Create a temporary, securely signed session token to diagnose user view and actions.</p>
+              
+              <button class="btn btn-primary" (click)="impersonate(selectedUser()!)" [disabled]="isActioning()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                <span>Generate New Impersonation Session</span>
+              </button>
+
+              @if (impersonationData()) {
+                <div class="impersonation-box">
+                  <div class="imp-head">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <h4>Active Impersonation Session</h4>
+                  </div>
+                  <p class="text-muted" style="font-size: 11.5px;">Temporary bearer token generated (valid for {{ impersonationData()!.expiresIn }}s):</p>
+                  <textarea readonly class="form-control font-mono token-box" rows="3">{{ impersonationData()!.accessToken }}</textarea>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Quick Action Buttons Inside Modal -->
+          <div class="quick-actions-bar">
+            <button class="btn btn-secondary" (click)="downloadGDPR(selectedUser()!)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Export GDPR Archive</span>
+            </button>
+
+            @if (selectedUser()?.isActive) {
+              <button class="btn btn-danger" (click)="toggleActive(selectedUser()!, false)">
+                Suspend Account
+              </button>
+            } @else {
+              <button class="btn btn-success" (click)="toggleActive(selectedUser()!, true)">
+                Restore Account
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeDetail()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- CREATE USER / STAFF MODAL -->
+  @if (showCreateModal()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-dialog modal-large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="kpi-circle-widget blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+            </div>
+            <div>
+              <h3>Add New User / Staff Account</h3>
+              <p class="subtitle">Create a client, service provider, or elevated staff administrator profile</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeCreateModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- SECTION 1: PERSONAL IDENTITY & DEMOGRAPHICS -->
+          <div class="modal-section-box">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Personal Identity &amp; Demographics</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">First Name</label>
+                <input type="text" [(ngModel)]="createUserForm.firstName" placeholder="e.g. Alexander" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Last Name</label>
+                <input type="text" [(ngModel)]="createUserForm.lastName" placeholder="e.g. Hamilton" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" [(ngModel)]="createUserForm.email" placeholder="user@domain.com" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Initial Password *</label>
+                <input type="password" [(ngModel)]="createUserForm.password" placeholder="Temporary or secure password" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" [(ngModel)]="createUserForm.phone" placeholder="+1 (555) 000-0000" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Gender Identity</label>
+                <select [(ngModel)]="createUserForm.gender" class="form-control select-control">
+                  <option value="">Not Specified</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-Binary">Non-Binary</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Primary Trade / Service Specialty</label>
+                <input type="text" [(ngModel)]="createUserForm.service" placeholder="e.g. Electrician, Plumbing, Deep Cleaning" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label class="form-label">Professional Bio / About</label>
+              <textarea [(ngModel)]="createUserForm.bio" rows="2" placeholder="Short introduction..." class="form-control"></textarea>
+            </div>
+          </div>
+
+          <!-- SECTION 2: LOCATION & ADDRESS -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>Address &amp; Location Coverage</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Street Address</label>
+                <input type="text" [(ngModel)]="createUserForm.address" placeholder="e.g. 100 Main Street" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">City</label>
+                <input type="text" [(ngModel)]="createUserForm.city" placeholder="e.g. Austin" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">State / Province</label>
+                <input type="text" [(ngModel)]="createUserForm.state" placeholder="e.g. TX" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Postal / Zip Code</label>
+                <input type="text" [(ngModel)]="createUserForm.zipCode" placeholder="e.g. 78701" class="form-control font-mono" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Country</label>
+                <input type="text" [(ngModel)]="createUserForm.country" placeholder="e.g. United States" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: SUBSCRIPTION & RBAC -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              <span>Account Type, Subscription &amp; Governance</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Account Category</label>
+                <select [(ngModel)]="createUserForm.userType" class="form-control select-control">
+                  <option value="seeker">Seeker (Homeowner / Client)</option>
+                  <option value="provider">Provider (Contractor / Specialist)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Subscription Tier</label>
+                <select [(ngModel)]="createUserForm.subscriptionTier" class="form-control select-control">
+                  @for (plan of getPlansForInterval(createUserForm.subscriptionInterval); track plan.id || plan.name) {
+                    <option [value]="plan.tier">
+                      {{ plan.name }} ({{ plan.tier }} - {{ plan.currency === 'USD' ? '$' : plan.currency }}{{ plan.price }}/{{ plan.interval }})
+                    </option>
+                  }
+                  @if (getPlansForInterval(createUserForm.subscriptionInterval).length === 0) {
+                    @for (plan of subscriptionPlans(); track plan.id || plan.name) {
+                      <option [value]="plan.tier">
+                        {{ plan.name }} ({{ plan.tier }} - {{ plan.currency === 'USD' ? '$' : plan.currency }}{{ plan.price }}/{{ plan.interval }})
+                      </option>
+                    }
+                  }
+                  @if (subscriptionPlans().length === 0) {
+                    <option value="SILVER">SILVER</option>
+                    <option value="GOLD">GOLD</option>
+                    <option value="PLATINUM">PLATINUM</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Billing Interval</label>
+                <select [(ngModel)]="createUserForm.subscriptionInterval" class="form-control select-control">
+                  <option value="month">Monthly (/month)</option>
+                  <option value="year">Yearly (/year)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Preferred Payment Mode</label>
+                <select [(ngModel)]="createUserForm.preferredPaymentMode" class="form-control select-control">
+                  <option value="IN_APP">In-App Checkout (Stripe &amp; Escrow)</option>
+                  <option value="ON_SITE">On-Site Direct Settlement</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">RBAC Security Role</label>
+                <select [(ngModel)]="createUserForm.roleId" class="form-control select-control">
+                  <option value="">Standard Member (No Role)</option>
+                  @for (r of roles(); track r.id) {
+                    <option [value]="r.id">{{ r.name }} ({{ r.slug }})</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: PRIVILEGES & VERIFICATIONS -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>Account Privileges &amp; Verification Flags</span>
+            </div>
+
+            <div class="toggle-row-grid">
+              <label class="checkbox-card" [class.checked]="createUserForm.isStaff">
+                <input type="checkbox" [(ngModel)]="createUserForm.isStaff" />
+                <div class="chk-label">
+                  <b>Staff Access</b>
+                  <span>Grant backend portal operator privileges</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="createUserForm.isVerified">
+                <input type="checkbox" [(ngModel)]="createUserForm.isVerified" />
+                <div class="chk-label">
+                  <b>Email Verified</b>
+                  <span>Mark email as pre-verified</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="createUserForm.isIdentityVerified">
+                <input type="checkbox" [(ngModel)]="createUserForm.isIdentityVerified" />
+                <div class="chk-label">
+                  <b>Identity Verified</b>
+                  <span>Mark government ID as confirmed</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="createUserForm.isActive">
+                <input type="checkbox" [(ngModel)]="createUserForm.isActive" />
+                <div class="chk-label">
+                  <b>Active Status</b>
+                  <span>Account can login immediately</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeCreateModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitCreateUser()" [disabled]="isActioning() || !createUserForm.email || !createUserForm.password">
+            {{ isActioning() ? 'Creating Account...' : 'Create Account' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- EDIT USER MODAL -->
+  @if (showEditModal()) {
+    <div class="modal-overlay" (click)="closeEditModal()">
+      <div class="modal-dialog modal-large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="kpi-circle-widget purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </div>
+            <div>
+              <h3>Edit User Account Details</h3>
+              <p class="subtitle">Modify credentials, demographics, location, subscription tier, and flags</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeEditModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- SECTION 1: PERSONAL IDENTITY & DEMOGRAPHICS -->
+          <div class="modal-section-box">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Personal Identity &amp; Demographics</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">First Name</label>
+                <input type="text" [(ngModel)]="editUserForm.firstName" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Last Name</label>
+                <input type="text" [(ngModel)]="editUserForm.lastName" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" [(ngModel)]="editUserForm.email" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" [(ngModel)]="editUserForm.phone" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Gender Identity</label>
+                <select [(ngModel)]="editUserForm.gender" class="form-control select-control">
+                  <option value="">Not Specified</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-Binary">Non-Binary</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Primary Trade / Specialty</label>
+                <input type="text" [(ngModel)]="editUserForm.service" placeholder="e.g. Electrician" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label class="form-label">Professional Bio / About</label>
+              <textarea [(ngModel)]="editUserForm.bio" rows="2" placeholder="Short introduction..." class="form-control"></textarea>
+            </div>
+          </div>
+
+          <!-- SECTION 2: LOCATION & ADDRESS -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>Address &amp; Location Coverage</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Street Address</label>
+                <input type="text" [(ngModel)]="editUserForm.address" placeholder="e.g. 100 Main Street" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">City</label>
+                <input type="text" [(ngModel)]="editUserForm.city" placeholder="e.g. Austin" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">State / Province</label>
+                <input type="text" [(ngModel)]="editUserForm.state" placeholder="e.g. TX" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Postal / Zip Code</label>
+                <input type="text" [(ngModel)]="editUserForm.zipCode" placeholder="e.g. 78701" class="form-control font-mono" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Country</label>
+                <input type="text" [(ngModel)]="editUserForm.country" placeholder="e.g. United States" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: SUBSCRIPTION, BILLING & RBAC -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              <span>Account Type, Subscription &amp; Governance</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Account Category</label>
+                <select [(ngModel)]="editUserForm.userType" class="form-control select-control">
+                  <option value="seeker">Seeker (Homeowner / Client)</option>
+                  <option value="provider">Provider (Contractor / Specialist)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Subscription Tier</label>
+                <select [(ngModel)]="editUserForm.subscriptionTier" class="form-control select-control">
+                  @for (plan of getPlansForInterval(editUserForm.subscriptionInterval); track plan.id || plan.name) {
+                    <option [value]="plan.tier">
+                      {{ plan.name }} ({{ plan.tier }} - {{ plan.currency === 'USD' ? '$' : plan.currency }}{{ plan.price }}/{{ plan.interval }})
+                    </option>
+                  }
+                  @if (getPlansForInterval(editUserForm.subscriptionInterval).length === 0) {
+                    @for (plan of subscriptionPlans(); track plan.id || plan.name) {
+                      <option [value]="plan.tier">
+                        {{ plan.name }} ({{ plan.tier }} - {{ plan.currency === 'USD' ? '$' : plan.currency }}{{ plan.price }}/{{ plan.interval }})
+                      </option>
+                    }
+                  }
+                  @if (subscriptionPlans().length === 0) {
+                    <option value="SILVER">SILVER</option>
+                    <option value="GOLD">GOLD</option>
+                    <option value="PLATINUM">PLATINUM</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Billing Interval</label>
+                <select [(ngModel)]="editUserForm.subscriptionInterval" class="form-control select-control">
+                  <option value="month">Monthly (/month)</option>
+                  <option value="year">Yearly (/year)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Preferred Payment Mode</label>
+                <select [(ngModel)]="editUserForm.preferredPaymentMode" class="form-control select-control">
+                  <option value="IN_APP">In-App Checkout (Stripe &amp; Escrow)</option>
+                  <option value="ON_SITE">On-Site Direct Settlement</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">RBAC Security Role</label>
+                <select [(ngModel)]="editUserForm.roleId" class="form-control select-control">
+                  <option value="">Standard Member (No Role)</option>
+                  @for (r of roles(); track r.id) {
+                    <option [value]="r.id">{{ r.name }} ({{ r.slug }})</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Reset Password (Optional)</label>
+                <input type="password" [(ngModel)]="editUserForm.password" placeholder="Leave blank to keep unchanged" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: PRIVILEGES & VERIFICATIONS -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>Account Privileges &amp; Verification Flags</span>
+            </div>
+
+            <div class="toggle-row-grid">
+              <label class="checkbox-card" [class.checked]="editUserForm.isStaff">
+                <input type="checkbox" [(ngModel)]="editUserForm.isStaff" />
+                <div class="chk-label">
+                  <b>Staff Access</b>
+                  <span>Operator permissions</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="editUserForm.isVerified">
+                <input type="checkbox" [(ngModel)]="editUserForm.isVerified" />
+                <div class="chk-label">
+                  <b>Email Verified</b>
+                  <span>Email confirmation</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="editUserForm.isIdentityVerified">
+                <input type="checkbox" [(ngModel)]="editUserForm.isIdentityVerified" />
+                <div class="chk-label">
+                  <b>Identity Verified</b>
+                  <span>Government ID check</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="editUserForm.isActive">
+                <input type="checkbox" [(ngModel)]="editUserForm.isActive" />
+                <div class="chk-label">
+                  <b>Active Status</b>
+                  <span>Can login &amp; transact</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeEditModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitEditUser()" [disabled]="isActioning() || !editUserForm.email">
+            {{ isActioning() ? 'Saving Changes...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

@@ -1,0 +1,379 @@
+<!-- Hope UI Hero Header Banner -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div>
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">Dispute Resolution Console</h1>
+        <span class="live-pill"><span class="live-dot"></span> Arbitration Active</span>
+      </div>
+      <p class="hope-hero-subtitle">Mediate complaints between seekers &amp; providers, review evidence streams, and execute escrow settlements.</p>
+    </div>
+    <div class="action-row">
+      <button class="btn-soft-light" (click)="exportCSV()" [disabled]="disputes().length === 0" title="Export CSV file of disputes">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="loadDisputes()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh Console' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="activeTab.set('OPEN'); mainSection.set('CASES')" [class.kpi-active]="activeTab() === 'OPEN' && mainSection() === 'CASES'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Under Mediation</span>
+      </div>
+      <div>
+        <div class="kpi-label">ACTIVE DISPUTE CASES</div>
+        <div class="kpi-value">{{ openCount() }}</div>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Requires arbitrator review</span></div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('RESOLVED'); mainSection.set('CASES')" [class.kpi-active]="activeTab() === 'RESOLVED' && mainSection() === 'CASES'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Closed / Settled</span>
+      </div>
+      <div>
+        <div class="kpi-label">RESOLVED DISPUTES</div>
+        <div class="kpi-value">{{ resolvedCount() }}</div>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Mutually closed or refunded</span></div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('ALL'); mainSection.set('CASES')" [class.kpi-active]="activeTab() === 'ALL' && mainSection() === 'CASES'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Total History</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL PLATFORM DISPUTES</div>
+        <div class="kpi-value">{{ totalCount() }}</div>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Historical dispute ledger</span></div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('ARBITRATION_RULES')" [class.kpi-active]="mainSection() === 'ARBITRATION_RULES'">
+      <div class="kpi-header">
+        <span class="kpi-label">Escrow Volume In Dispute</span>
+        <div class="kpi-icon-box icon-purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value">${{ totalDisputedAmount() | number:'1.2-2' }}</span>
+        <span class="badge badge-purple">Held In Escrow</span>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Safeguarded platform funds</span></div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('ALL'); mainSection.set('CASES')" [class.kpi-active]="activeTab() === 'ALL' && mainSection() === 'CASES'">
+      <div class="kpi-header">
+        <span class="kpi-label">Total Platform Cases</span>
+        <div class="kpi-icon-box icon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-value">{{ totalCount() }}</span>
+        <span class="badge badge-info">&lt; 24h SLA</span>
+      </div>
+      <div class="kpi-sub"><span class="text-dim">Historical mediation log</span></div>
+    </div>
+  </div>
+
+  <!-- MAIN TABBED NAVIGATION BAR -->
+  <div class="card tab-bar-card">
+    <div class="tab-pill-bar">
+      <button class="tab-pill" [class.active]="mainSection() === 'CASES'" (click)="mainSection.set('CASES')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>Active &amp; Settled Cases</span>
+        <span class="pill-count">{{ totalCount() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="mainSection() === 'ARBITRATION_RULES'" (click)="mainSection.set('ARBITRATION_RULES')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>Arbitration Protocols &amp; Settlement Rails</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: DISPUTES CASES TABLE -->
+  @if (mainSection() === 'CASES') {
+    <div class="card table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <div class="table-icon-dot"></div>
+          <h3>Escrow Dispute Cases</h3>
+          <span class="badge badge-info">{{ filteredDisputes().length }} Cases</span>
+        </div>
+
+        <!-- Filter Sub-Tabs inside Cases -->
+        <div class="tab-pill-bar">
+          <button class="tab-pill" [class.active]="activeTab() === 'ALL'" (click)="activeTab.set('ALL')">
+            All <span class="pill-count">{{ totalCount() }}</span>
+          </button>
+          <button class="tab-pill" [class.active]="activeTab() === 'OPEN'" (click)="activeTab.set('OPEN')">
+            Open <span class="pill-count">{{ openCount() }}</span>
+          </button>
+          <button class="tab-pill" [class.active]="activeTab() === 'RESOLVED'" (click)="activeTab.set('RESOLVED')">
+            Resolved <span class="pill-count">{{ resolvedCount() }}</span>
+          </button>
+          <button class="tab-pill" [class.active]="activeTab() === 'REJECTED'" (click)="activeTab.set('REJECTED')">
+            Dismissed <span class="pill-count">{{ rejectedCount() }}</span>
+          </button>
+        </div>
+      </div>
+
+      @if (filteredDisputes().length === 0 && !isLoading()) {
+        <div class="empty-state">
+          <div class="empty-icon-box">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <h4>No Disputes In This Queue</h4>
+          <p class="subtitle">Platform escrow transactions are currently smooth with zero open arbitration tickets in this category.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Case ID / Appointment</th>
+                <th>Raised By</th>
+                <th>Disputed Amount</th>
+                <th>Reason &amp; Description</th>
+                <th>Status</th>
+                <th>Date Filed</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of filteredDisputes(); track d.id) {
+                <tr class="table-row">
+                  <td>
+                    <span class="case-id">#{{ d.appointmentId || d.id }}</span>
+                  </td>
+                  <td>
+                    <div class="user-meta">
+                      <b>{{ d.seekerName || 'Seeker Client' }}</b>
+                      <span class="text-dim">vs. {{ d.providerName || 'Provider' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <b class="text-emerald amount-tag">${{ d.amount | number:'1.2-2' }}</b>
+                  </td>
+                  <td>
+                    <div class="reason-preview">
+                      <b>{{ d.reason }}</b>
+                      <p class="desc-text">{{ d.description }}</p>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="d.status === 'open' ? 'badge-warning' : (d.status === 'resolved' ? 'badge-success' : 'badge-danger')">
+                      <span class="dot-indicator"></span>
+                      {{ d.status | uppercase }}
+                    </span>
+                    @if (d.status === 'open') {
+                      <div class="evidence-timer-pill" [class.expired]="getEvidenceTimeRemaining(d.createdAt).isExpired">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                        <span>{{ getEvidenceTimeRemaining(d.createdAt).text }}</span>
+                      </div>
+                    }
+                  </td>
+                  <td>
+                    <span class="text-dim">{{ d.createdAt | date:'mediumDate' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="table-actions">
+                      @if (d.status === 'open') {
+                        <button class="btn btn-sm btn-success" (click)="openResolve(d)" title="Award Escrow Refund">
+                          Resolve &amp; Refund
+                        </button>
+                        <button class="btn btn-sm btn-danger" (click)="openReject(d)" title="Dismiss Dispute Claim">
+                          Dismiss
+                        </button>
+                      } @else {
+                        <span class="text-dim text-xs">Adjudicated</span>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 2: ARBITRATION PROTOCOLS & POLICIES -->
+  @if (mainSection() === 'ARBITRATION_RULES') {
+    <div class="deck-grid">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Escrow Arbitration Protocols</h4>
+            <p class="deck-sub">Neutral platform adjudication policies and evidence validation</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Resolution Window</span>
+              <span class="metric-val text-emerald">24h SLA Target</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Escrow Lock</span>
+              <span class="metric-val">100% Held Securely</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            When a dispute is initiated, booking escrow funds are frozen. Administrators review photos, chat transcripts, and GPS check-in timestamps before awarding partial or full refunds.
+          </p>
+        </div>
+      </div>
+
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Automatic Settlement Rails</h4>
+            <p class="deck-sub">Instant Stripe card refunds and wallet credit adjustments</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Refund Method</span>
+              <span class="metric-val">Original Payment Card</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Audit Record</span>
+              <span class="metric-val">Signed &amp; Logged</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Resolutions automatically execute ledger debits and card refunds via Stripe. Both homeowner and service provider receive email summaries with arbitration details.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Resolve Modal -->
+  @if (showResolveModal() && selectedDispute()) {
+    <div class="modal-overlay" (click)="closeResolve()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Resolve Escrow Dispute #{{ selectedDispute()!.appointmentId || selectedDispute()!.id }}</h3>
+          <button class="btn-icon-close" (click)="closeResolve()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Approved Refund Amount ($ USD)</label>
+            <input type="number" step="0.01" [max]="selectedDispute()!.amount" [(ngModel)]="refundAmount" class="form-control" />
+            <span class="form-help">Maximum refundable escrow: ${{ selectedDispute()!.amount | number:'1.2-2' }}</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Arbitration Settlement Rationale *</label>
+            <textarea [(ngModel)]="resolutionNotes" rows="3" class="form-control" placeholder="Explain the resolution decision..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeResolve()" [disabled]="isResolving()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitResolve()" [disabled]="isResolving()">
+            {{ isResolving() ? 'Executing Settlement...' : 'Execute Settlement & Refund' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Dismiss Modal -->
+  @if (showRejectModal() && selectedDispute()) {
+    <div class="modal-overlay" (click)="closeReject()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Dismiss Dispute Claim</h3>
+          <button class="btn-icon-close" (click)="closeReject()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Dismissal Justification Note *</label>
+            <textarea [(ngModel)]="rejectReason" rows="3" class="form-control" placeholder="Explain why the claim is dismissed..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeReject()" [disabled]="isResolving()">Cancel</button>
+          <button class="btn btn-danger" (click)="submitReject()" [disabled]="isResolving()">
+            {{ isResolving() ? 'Closing Dispute...' : 'Dismiss Claim & Release Escrow' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

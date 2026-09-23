@@ -1,0 +1,145 @@
+.page-hero {
+  background: var(--paper);
+  padding: 160px 0 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-hero::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 180%;
+  background:
+    radial-gradient(600px 400px at 20% 10%, rgba(91,22,238,.06), transparent 65%),
+    radial-gradient(500px 350px at 80% 5%, rgba(102,120,108,.1), transparent 65%);
+  pointer-events: none;
+}
+
+.page-hero h1 {
+  margin: 16px 0 14px;
+  position: relative;
+}
+
+/* ===================== CONTACT SPLIT ===================== */
+.contact-split {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 70px;
+  align-items: start;
+  padding-bottom: 100px;
+}
+
+.contact-info h2 {
+  margin-bottom: 40px;
+}
+
+.item {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 28px;
+  align-items: flex-start;
+}
+
+.item .ic {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--lavender);
+  color: var(--violet);
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-size: 22px;
+}
+
+.item h4 {
+  font-family: var(--syne);
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.item p {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.response-box {
+  background: var(--lavender);
+  padding: 30px;
+  border-radius: 16px;
+  margin-top: 50px;
+}
+
+.response-box h4 {
+  font-family: var(--syne);
+  font-size: 18px;
+  color: var(--violet-deep);
+  margin-bottom: 10px;
+}
+
+.response-box p {
+  font-size: 14.5px;
+  margin-bottom: 15px;
+  color: var(--ink-soft);
+}
+
+.response-avg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--violet);
+  font-family: var(--futura);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* ===================== FORM ===================== */
+.contact-form {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 44px 38px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===================== BOTTOM CTA ===================== */
+.bottom-cta {
+  background: var(--ink);
+  color: #fff;
+  text-align: center;
+  padding: 100px 0;
+}
+
+.bottom-cta h3 {
+  color: #fff;
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+.bottom-cta p {
+  color: #AEB5C6;
+  margin-bottom: 40px;
+  font-size: 16.5px;
+}
+
+/* scroll reveal */
+.rv {
+  opacity: 1;
+  transform: none;
+}
+
+
+@media (max-width: 900px) {
+  .contact-split {
+    grid-template-columns: 1fr;
+    gap: 50px;
+  }
+}
+
+@media (max-width: 560px) {
+  .contact-form { padding: 28px 20px; }
+}

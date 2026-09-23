@@ -1,0 +1,1399 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <a routerLink="/admin/users" class="hero-back-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        <span>Back to User Directory</span>
+      </a>
+      <div class="title-with-pill mt-1">
+        <h1 class="hero-title">User Account Dossier</h1>
+        <span class="live-pill" [class.suspended]="!user()?.isActive">
+          <span class="live-dot" [style.background]="user()?.isActive ? 'var(--success)' : 'var(--danger)'"></span>
+          {{ user()?.isActive ? 'Active Account' : 'Suspended' }}
+        </span>
+      </div>
+      <p class="hero-subtitle">Comprehensive profile attributes, compliance screenings, booking ledger, wallet transactions &amp; immutable audit stream.</p>
+    </div>
+
+    <div class="hero-actions">
+      <button class="btn btn-primary" (click)="openEditModal()" title="Edit Account Profile Details">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span>Edit Profile</span>
+      </button>
+
+      <button class="btn btn-soft-light" (click)="exportGDPRArchive()" title="Download Full GDPR JSON Archive">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export GDPR JSON</span>
+      </button>
+
+      <button class="btn btn-soft-light" (click)="openRoleModal()" title="Assign RBAC Role">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>Assign Role</span>
+      </button>
+
+      <button class="btn btn-soft-light" (click)="impersonate()" [disabled]="isActioning()" title="Impersonate User Session">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        <span>{{ isActioning() ? 'Generating...' : 'Impersonate User' }}</span>
+      </button>
+
+      <button class="btn btn-soft-light" (click)="sendDirectMessage()" [disabled]="isActioning()" title="Send Push Notification & Feed Message">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>Send Message</span>
+      </button>
+
+      <button class="btn btn-soft-light" (click)="evaluateRisk()" [disabled]="isActioning()" title="Evaluate Fraud & Abuse Risk Score">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/><path d="M12 16h.01"/>
+        </svg>
+        <span>Evaluate Risk</span>
+      </button>
+
+      @if (user()?.isActive) {
+        <button class="btn btn-danger" (click)="toggleAccountStatus()" [disabled]="isActioning()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+          <span>Suspend Account</span>
+        </button>
+      } @else {
+        <button class="btn btn-success" (click)="toggleAccountStatus()" [disabled]="isActioning()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          <span>Restore Account</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (impersonationData()) {
+    <div class="card impersonation-banner">
+      <div class="imp-head">
+        <div class="imp-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <div>
+          <h4>Active Staff Impersonation Bearer Session</h4>
+          <p class="sub-text">Generated temporary token valid for {{ impersonationData()!.expiresIn }} seconds</p>
+        </div>
+      </div>
+      <textarea readonly class="form-control font-mono token-box" rows="2">{{ impersonationData()!.accessToken }}</textarea>
+    </div>
+  }
+
+  <!-- USER HERO PROFILE CARD -->
+  @if (isLoading()) {
+    <div class="card loading-card">
+      <div class="spinner"></div>
+      <p>Loading full relational telemetry for user profile...</p>
+    </div>
+  } @else if (user()) {
+    <div class="card user-profile-deck">
+      <div class="profile-main-row">
+        <div class="profile-avatar-wrapper">
+          <div class="user-avatar-large" [class.avatar-provider]="isProvider()" [class.avatar-staff]="user()!.isStaff">
+            {{ (user()!.firstName || 'U').charAt(0).toUpperCase() }}{{ (user()!.lastName || '').charAt(0).toUpperCase() }}
+          </div>
+          <span class="avatar-online-dot" [class.dot-offline]="!user()!.isActive" [title]="user()!.isActive ? 'Online / Active' : 'Suspended'"></span>
+        </div>
+
+        <div class="profile-details-col">
+          <div class="profile-name-row">
+            <h2>{{ user()!.firstName || 'User' }} {{ user()!.lastName || '' }}</h2>
+            <div class="profile-badges-wrap">
+              <span class="badge" [ngClass]="userTypeBadge()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                {{ isProvider() ? 'Service Provider' : 'Homeowner (Seeker)' }}
+              </span>
+              @if (user()!.isStaff) {
+                <span class="badge badge-warning">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                  </svg>
+                  Admin Staff
+                </span>
+              }
+              <span class="badge badge-secondary">
+                {{ user()!.subscriptionTier && user()!.subscriptionTier !== 'NONE' ? user()!.subscriptionTier : 'Free Starter' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="profile-meta-grid">
+            <div class="meta-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              <span>{{ user()!.email }}</span>
+            </div>
+
+            <div class="meta-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              <span>{{ user()!.phone || 'No phone registered' }}</span>
+            </div>
+
+            <div class="meta-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+              </svg>
+              <span>Member Since {{ user()!.createdAt | date:'mediumDate' }}</span>
+            </div>
+
+            <div class="meta-pill font-mono">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+              </svg>
+              <span>UUID: {{ user()!.id | slice:0:8 }}…</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT SIDE METRIC HIGHLIGHT CHIPS -->
+        <div class="profile-kpi-chips">
+          <div class="kpi-metric-chip" (click)="activeTab.set('WALLET')">
+            <div class="kpi-circle-widget green">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+              </svg>
+            </div>
+            <div class="kpi-chip-text">
+              <span class="chip-label">ESCROW WALLET</span>
+              <span class="chip-value text-emerald">${{ (user()!.walletBalance || 0) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="kpi-metric-chip">
+            <div class="kpi-circle-widget" [ngClass]="user()!.isIdentityVerified ? 'green' : 'amber'">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+              </svg>
+            </div>
+            <div class="kpi-chip-text">
+              <span class="chip-label">IDENTITY STATUS</span>
+              <span class="badge" [ngClass]="user()!.isIdentityVerified ? 'badge-success' : 'badge-warning'">
+                {{ user()!.isIdentityVerified ? 'ID Verified' : 'Unverified' }}
+              </span>
+            </div>
+          </div>
+
+          @if (isProvider()) {
+            <div class="kpi-metric-chip">
+              <div class="kpi-circle-widget" [ngClass]="user()!.checkrStatus === 'clear' ? 'green' : (user()!.checkrStatus ? 'amber' : 'info')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
+              <div class="kpi-chip-text">
+                <span class="chip-label">CHECKR SCREENING</span>
+                <span class="badge" [ngClass]="user()!.checkrStatus === 'clear' ? 'badge-success' : (user()!.checkrStatus ? 'badge-warning' : 'badge-secondary')">
+                  {{ (user()!.checkrStatus || 'Not Initiated') | uppercase }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- DOSSIER NAVIGATION TAB PILL BAR -->
+    <div class="card dossier-nav-card">
+      <div class="tab-pill-bar">
+        <button class="tab-pill" [class.active]="activeTab() === 'PROFILE'" (click)="activeTab.set('PROFILE')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Account &amp; Verification</span>
+        </button>
+
+        @if (isProvider()) {
+          <button class="tab-pill" [class.active]="activeTab() === 'SERVICES'" (click)="activeTab.set('SERVICES')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+            <span>Services &amp; Packages</span>
+            @if (gdprData()?.services?.length) {
+              <span class="pill-count">{{ gdprData()?.services?.length }}</span>
+            }
+          </button>
+        }
+
+        <button class="tab-pill" [class.active]="activeTab() === 'APPOINTMENTS'" (click)="activeTab.set('APPOINTMENTS')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+          </svg>
+          <span>Appointments History</span>
+          @if (gdprData()?.appointments?.length) {
+            <span class="pill-count">{{ gdprData()?.appointments?.length }}</span>
+          }
+        </button>
+
+        <button class="tab-pill" [class.active]="activeTab() === 'WALLET'" (click)="activeTab.set('WALLET')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+          <span>Wallet &amp; Payouts</span>
+          @if (gdprData()?.transactions?.length) {
+            <span class="pill-count">{{ gdprData()?.transactions?.length }}</span>
+          }
+        </button>
+
+        <button class="tab-pill" [class.active]="activeTab() === 'DISPUTES'" (click)="activeTab.set('DISPUTES')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          <span>Disputes &amp; Reports</span>
+          @if (gdprData()?.disputes?.length || gdprData()?.reports?.length) {
+            <span class="pill-count">{{ (gdprData()?.disputes?.length || 0) + (gdprData()?.reports?.length || 0) }}</span>
+          }
+        </button>
+
+        <button class="tab-pill" [class.active]="activeTab() === 'LOGS'" (click)="activeTab.set('LOGS')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span>Activity &amp; Audit Logs</span>
+        </button>
+
+        <button class="tab-pill" [class.active]="activeTab() === 'NOTES'" (click)="activeTab.set('NOTES')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span>Staff Notes &amp; Timeline</span>
+          @if (staffNotes().length) {
+            <span class="pill-count">{{ staffNotes().length }}</span>
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: PROFILE & VERIFICATIONS -->
+    @if (activeTab() === 'PROFILE') {
+      <div class="tab-content-grid">
+        <!-- Account Details Card -->
+        <div class="card detail-panel-card">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-icon-badge blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div class="panel-title-block">
+                <h3>Account Profile Attributes</h3>
+                <span class="sub-text">General demographics and platform registry identity</span>
+              </div>
+            </div>
+            
+            <div class="panel-actions-toolbar">
+              <button class="btn btn-xs btn-outline-primary" (click)="toggleIdentityVerified()" [disabled]="isActioning()">
+                {{ user()!.isIdentityVerified ? 'Revoke ID' : 'Verify Identity' }}
+              </button>
+              <button class="btn btn-xs btn-outline-primary" (click)="toggleEmailVerified()" [disabled]="isActioning()">
+                {{ user()!.isVerified ? 'Mark Unverified' : 'Verify Email' }}
+              </button>
+              <button class="btn btn-xs btn-outline-primary" (click)="toggleStaff()" [disabled]="isActioning()">
+                {{ user()!.isStaff ? 'Revoke Staff' : 'Make Staff' }}
+              </button>
+              <button class="btn btn-xs btn-primary" (click)="openEditModal()">
+                Edit Profile
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="attr-grid">
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">FULL LEGAL NAME</span>
+                  <span class="attr-value">{{ user()!.firstName || '—' }} {{ user()!.lastName || '' }}</span>
+                </div>
+              </div>
+
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">EMAIL ADDRESS</span>
+                  <span class="attr-value font-mono">{{ user()!.email }}</span>
+                </div>
+              </div>
+
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">PHONE NUMBER</span>
+                  <span class="attr-value">{{ user()!.phone || 'Not provided' }}</span>
+                </div>
+              </div>
+
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">ACCOUNT CATEGORY</span>
+                  <div>
+                    <span class="badge" [ngClass]="userTypeBadge()">{{ user()!.userType | uppercase }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">ASSIGNED RBAC ROLE</span>
+                  <div>
+                    <span class="badge badge-info">{{ user()!.roleName || (user()!.isStaff ? 'Admin Staff' : 'Standard Member') }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">SUBSCRIPTION TIER</span>
+                  <div>
+                    <span class="badge badge-secondary">{{ user()!.subscriptionTier && user()!.subscriptionTier !== 'NONE' ? user()!.subscriptionTier : 'Free Starter' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">REGISTRATION TIMESTAMP</span>
+                  <span class="attr-value font-mono">{{ user()!.createdAt | date:'medium' }}</span>
+                </div>
+              </div>
+
+              <div class="attr-tile">
+                <div class="attr-tile-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                </div>
+                <div class="attr-tile-content">
+                  <span class="attr-label">DIRECTORY STATUS</span>
+                  <div>
+                    <span class="badge" [ngClass]="user()!.isActive ? 'badge-success' : 'badge-danger'">
+                      <span class="live-dot" [style.background]="user()!.isActive ? 'var(--success)' : 'var(--danger)'"></span>
+                      {{ user()!.isActive ? 'Active Member' : 'Suspended' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compliance & Identity Verification Card -->
+        <div class="card detail-panel-card">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-icon-badge purple">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <div class="panel-title-block">
+                <h3>Compliance &amp; Identity Verification</h3>
+                <span class="sub-text">Government ID credentials, Stripe underwriting and Checkr screening</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="compliance-cards-grid">
+              <!-- ID Card Status -->
+              <div class="comp-status-card" [class.verified]="user()!.isIdentityVerified">
+                <div class="comp-card-head">
+                  <div class="comp-icon-box" [ngClass]="user()!.isIdentityVerified ? 'icon-green' : 'icon-amber'">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4>Government Photo ID</h4>
+                    <span class="comp-sub">Passports, Driver's License &amp; National Cards</span>
+                  </div>
+                </div>
+                <div class="comp-card-footer">
+                  <span class="badge" [ngClass]="user()!.isIdentityVerified ? 'badge-success' : 'badge-warning'">
+                    {{ user()!.isIdentityVerified ? 'Approved &amp; Verified' : 'Unverified / In Review' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Checkr Background Status -->
+              <div class="comp-status-card" [class.verified]="user()!.checkrStatus === 'clear'">
+                <div class="comp-card-head">
+                  <div class="comp-icon-box" [ngClass]="user()!.checkrStatus === 'clear' ? 'icon-green' : (user()!.checkrStatus ? 'icon-amber' : 'icon-blue')">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4>Checkr Criminal Background</h4>
+                    <span class="comp-sub">Automated 50-State Records Check</span>
+                  </div>
+                </div>
+                <div class="comp-card-footer">
+                  <span class="badge" [ngClass]="user()!.checkrStatus === 'clear' ? 'badge-success' : (user()!.checkrStatus ? 'badge-warning' : 'badge-secondary')">
+                    Status: {{ (user()!.checkrStatus || 'Not Initiated') | uppercase }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="compliance-advisory-box mt-4">
+              <div class="advisory-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </div>
+              <div class="advisory-text">
+                <h5>Safety &amp; Compliance Standards</h5>
+                <p>
+                  Identity verification cross-references government-issued credentials with payout banking rails. All active service providers must maintain clear Checkr screening to receive automated marketplace dispatch assignments.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 2: SERVICES & PACKAGES (For Providers) -->
+    @if (activeTab() === 'SERVICES') {
+      <div class="tab-content-grid single-col mt-4">
+        <div class="card table-card">
+          <div class="table-header">
+            <div class="table-title-group">
+              <div class="table-icon-badge blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Provider Catalog Services &amp; Packages</h3>
+                <span class="sub-text">Active marketplace service listings, pricing tiers and experience levels</span>
+              </div>
+            </div>
+            <span class="badge badge-info">{{ gdprData()?.services?.length || 0 }} Active Listings</span>
+          </div>
+
+          @if (gdprData()?.services?.length) {
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Service Name</th>
+                    <th>Category</th>
+                    <th>Hourly Rate</th>
+                    <th>Experience</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (srv of gdprData()?.services; track srv.id) {
+                    <tr>
+                      <td><b>{{ srv.name || srv.title || srv.service_name || 'Service Listing' }}</b></td>
+                      <td><span class="badge badge-info">{{ srv.category_name || srv.categoryName || srv.category || 'General Service' }}</span></td>
+                      <td><b class="text-emerald font-heading">${{ (srv.hourly_rate ?? srv.hourlyRate ?? srv.price ?? 50) }}/hr</b></td>
+                      <td>{{ srv.years_of_experience ?? srv.yearsOfExperience ?? 3 }} Years Experience</td>
+                      <td><span class="badge badge-success">{{ (srv.is_active ?? true) ? 'Active' : 'Inactive' }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <div class="empty-icon-box">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+              </div>
+              <h4>No Provider Service Listings</h4>
+              <p class="subtitle">This provider has not configured any public catalog packages or hourly rates yet.</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- TAB 3: APPOINTMENTS HISTORY -->
+    @if (activeTab() === 'APPOINTMENTS') {
+      <div class="tab-content-grid single-col mt-4">
+        <div class="card table-card">
+          <div class="table-header">
+            <div class="table-title-group">
+              <div class="table-icon-badge green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Booking &amp; Appointment History</h3>
+                <span class="sub-text">All past, ongoing and upcoming marketplace customer orders</span>
+              </div>
+            </div>
+            <span class="badge badge-info">{{ gdprData()?.appointments?.length || 0 }} Total Bookings</span>
+          </div>
+
+          @if (gdprData()?.appointments?.length) {
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Order #</th>
+                    <th>Service Type</th>
+                    <th>Other Party</th>
+                    <th>Scheduled Date</th>
+                    <th>Escrow Total</th>
+                    <th>Arrival Code</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (apt of gdprData()?.appointments; track apt.id) {
+                    <tr>
+                      <td><code class="mono-badge">#{{ apt.id | slice:0:8 }}</code></td>
+                      <td><b>{{ apt.title || apt.serviceTitle || apt.serviceName || apt.service_request_details?.title || 'Service Booking' }}</b></td>
+                      <td>
+                        @if (isProvider()) {
+                          {{ apt.seeker_details?.profile?.first_name ? (apt.seeker_details.profile.first_name + ' ' + (apt.seeker_details.profile.last_name || '')) : (apt.seekerName || apt.seeker_details?.email || 'Customer Client') }}
+                        } @else {
+                          {{ apt.provider_details?.profile?.first_name ? (apt.provider_details.profile.first_name + ' ' + (apt.provider_details.profile.last_name || '')) : (apt.providerName || apt.provider_details?.email || 'Service Provider') }}
+                        }
+                      </td>
+                      <td><span class="text-dim">{{ (apt.appointment_date || apt.appointmentDate || apt.created_at || apt.createdAt) | date:'medium' }}</span></td>
+                      <td><b class="text-emerald">${{ (apt.total_price ?? apt.totalPrice ?? apt.totalAmount ?? apt.amount ?? 0) | number:'1.2-2' }}</b></td>
+                      <td><code class="mono-badge text-primary">{{ apt.secret_code || apt.secretCode || apt.verificationCode || '••••' }}</code></td>
+                      <td>
+                        <span class="badge" [ngClass]="(apt.status | lowercase) === 'completed' ? 'badge-success' : ((apt.status | lowercase) === 'cancelled' ? 'badge-danger' : 'badge-warning')">
+                          {{ (apt.status || 'CONFIRMED') | uppercase }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <div class="empty-icon-box">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/>
+                </svg>
+              </div>
+              <h4>No Appointment History Yet</h4>
+              <p class="subtitle">This user has not placed or accepted any service bookings on the marketplace.</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- TAB 4: WALLET & PAYOUTS -->
+    @if (activeTab() === 'WALLET') {
+      <div class="tab-content-grid mt-4">
+        <!-- Balance Overview -->
+        <div class="card detail-panel-card">
+          <div class="panel-header">
+            <div class="panel-icon-badge purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+              </svg>
+            </div>
+            <div class="panel-title-block">
+              <h3>Wallet &amp; Escrow Ledger</h3>
+              <span class="sub-text">Current funds, pending holds &amp; Stripe payout rails</span>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="wallet-balance-hero">
+              <span class="w-label">CURRENT AVAILABLE BALANCE</span>
+              <h2 class="w-value text-emerald">${{ (user()!.walletBalance || 0) | number:'1.2-2' }}</h2>
+              <span class="text-dim text-xs">Held securely in platform escrow banking ledger</span>
+            </div>
+
+            <div class="attr-grid mt-4">
+              <div class="attr-tile">
+                <div class="attr-tile-content">
+                  <span class="attr-label">STRIPE CONNECT RAIL</span>
+                  <div><span class="badge badge-success">Connected Rail</span></div>
+                </div>
+              </div>
+              <div class="attr-tile">
+                <div class="attr-tile-content">
+                  <span class="attr-label">PAYOUT CURRENCY</span>
+                  <span class="attr-value">USD ($)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions Ledger -->
+        <div class="card table-card">
+          <div class="table-header">
+            <div class="table-title-group">
+              <div class="table-icon-badge blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Recent Wallet Transactions</h3>
+                <span class="sub-text">Disbursements, escrow credits and charges</span>
+              </div>
+            </div>
+          </div>
+          @if (gdprData()?.transactions?.length) {
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (tx of gdprData()?.transactions; track tx.id) {
+                    <tr>
+                      <td><span class="badge badge-info">{{ tx.transaction_type || tx.type || 'BOOKING_PAYOUT' }}</span></td>
+                      <td><b class="text-emerald">${{ (tx.amount || 0) | number:'1.2-2' }}</b></td>
+                      <td><span class="text-dim font-mono">{{ (tx.created_at || tx.createdAt) | date:'short' }}</span></td>
+                      <td><span class="badge badge-success">{{ (tx.status || 'COMPLETED') | uppercase }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <div class="empty-icon-box">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+                </svg>
+              </div>
+              <h4>No Ledger Transactions</h4>
+              <p class="subtitle">No recent transaction entries found in this user's wallet ledger.</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- TAB 5: DISPUTES & CONDUCT -->
+    @if (activeTab() === 'DISPUTES') {
+      <div class="tab-content-grid single-col mt-4">
+        <div class="card table-card">
+          <div class="table-header">
+            <div class="table-title-group">
+              <div class="table-icon-badge red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Disputes &amp; Conduct Moderation Reports</h3>
+                <span class="sub-text">Adjudicated complaints, claims and safety violation flags</span>
+              </div>
+            </div>
+          </div>
+
+          @if (gdprData()?.disputes?.length) {
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Case #</th>
+                    <th>Reason</th>
+                    <th>Disputed Amount</th>
+                    <th>Date Filed</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (disp of gdprData()?.disputes; track disp.id) {
+                    <tr>
+                      <td><code class="mono-badge">#{{ disp.id | slice:0:8 }}</code></td>
+                      <td>
+                        <b>{{ disp.reason }}</b>
+                        <p class="desc-text">{{ disp.description }}</p>
+                      </td>
+                      <td><b class="text-emerald">${{ (disp.amount ?? disp.appointment_details?.total_price ?? 0) | number:'1.2-2' }}</b></td>
+                      <td><span class="text-dim">{{ (disp.created_at || disp.createdAt) | date:'mediumDate' }}</span></td>
+                      <td>
+                        <span class="badge" [ngClass]="(disp.status | lowercase) === 'resolved' ? 'badge-success' : 'badge-warning'">
+                          {{ (disp.status || 'OPEN') | uppercase }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <div class="empty-icon-box">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              </div>
+              <h4>Zero Disputes or Conduct Violations</h4>
+              <p class="subtitle">This user has an immaculate platform record with 0 active or historical dispute cases.</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- TAB 6: AUDIT & SECURITY LOGS -->
+    @if (activeTab() === 'LOGS') {
+      <div class="tab-content-grid single-col mt-4">
+        <div class="card table-card">
+          <div class="table-header">
+            <div class="table-title-group">
+              <div class="table-icon-badge purple">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Immutable Account Audit Stream</h3>
+                <span class="sub-text">Security events, role assignments, authentication and status updates</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Event Type</th>
+                  <th>Actor</th>
+                  <th>Target Resource</th>
+                  <th>Security Context</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="text-dim font-mono">{{ user()!.createdAt | date:'medium' }}</span></td>
+                  <td><span class="badge badge-info">ACCOUNT_SYNC</span></td>
+                  <td><b>system</b></td>
+                  <td><code class="mono-badge">USER:{{ user()!.id | slice:0:8 }}</code></td>
+                  <td><span class="badge badge-success">OK (Status: {{ user()!.isActive ? 'Active' : 'Suspended' }})</span></td>
+                </tr>
+                <tr>
+                  <td><span class="text-dim font-mono">{{ user()!.createdAt | date:'medium' }}</span></td>
+                  <td><span class="badge badge-success">ACCOUNT_REGISTERED</span></td>
+                  <td><b>{{ user()!.email }}</b></td>
+                  <td><code class="mono-badge">AUTH:SIGNUP</code></td>
+                  <td><span class="badge badge-info">Type: {{ user()!.userType | uppercase }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 7: STAFF INTERNAL NOTES & TIMELINE -->
+    @if (activeTab() === 'NOTES') {
+      <div class="tab-content-grid two-col-notes mt-4">
+        <!-- LEFT: STAFF NOTES STREAM & CREATION -->
+        <div class="card notes-editor-card">
+          <div class="table-header">
+            <div class="table-title-group">
+              <div class="table-icon-badge amber">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Internal Staff Notes</h3>
+                <span class="sub-text">Private admin-only intelligence, compliance observations &amp; warnings</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- NOTE COMPOSE BOX -->
+          <div class="note-compose-area">
+            <div class="form-group mb-2">
+              <textarea 
+                [(ngModel)]="newNoteContent" 
+                class="form-control note-textarea" 
+                rows="3" 
+                placeholder="Write an internal operational note regarding this user..."
+              ></textarea>
+            </div>
+            <div class="note-compose-actions">
+              <div class="note-options">
+                <select [(ngModel)]="newNoteCategory" class="form-control select-compact">
+                  <option value="GENERAL">General Note</option>
+                  <option value="COMPLIANCE">Compliance &amp; Risk</option>
+                  <option value="FINANCIAL">Billing &amp; Payouts</option>
+                  <option value="WARNING">Account Warning</option>
+                </select>
+                <label class="pinned-toggle">
+                  <input type="checkbox" [(ngModel)]="newNotePinned" />
+                  <span>Pin to top</span>
+                </label>
+              </div>
+              <button 
+                class="btn btn-primary btn-sm" 
+                (click)="submitStaffNote()" 
+                [disabled]="isActioning() || !newNoteContent.trim()"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                <span>{{ isActioning() ? 'Saving...' : 'Post Staff Note' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- NOTES LIST -->
+          <div class="notes-feed">
+            @if (staffNotes().length) {
+              @for (note of staffNotes(); track note.id) {
+                <div class="note-card" [class.pinned]="note.is_pinned">
+                  <div class="note-top">
+                    <div class="note-meta">
+                      <span class="note-badge" [ngClass]="'badge-' + note.category.toLowerCase()">
+                        {{ note.category }}
+                      </span>
+                      @if (note.is_pinned) {
+                        <span class="pin-indicator">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                          </svg>
+                          Pinned
+                        </span>
+                      }
+                      <span class="note-author">By {{ note.author_email || 'Admin Staff' }}</span>
+                      <span class="note-time">{{ note.created_at | date:'medium' }}</span>
+                    </div>
+                    <button class="btn-delete-note" (click)="deleteStaffNote(note.id)" title="Delete note">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="note-content">
+                    {{ note.content }}
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="empty-state py-4">
+                <p class="subtitle">No staff notes recorded yet for this account.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- RIGHT: COMBINED CHRONOLOGICAL TIMELINE -->
+        <div class="card timeline-card">
+          <div class="table-header">
+            <div class="table-title-group">
+              <div class="table-icon-badge blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Chronological Activity Timeline</h3>
+                <span class="sub-text">Unified timeline of bookings, payments, staff interventions &amp; account lifecycle</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="timeline-stream">
+            <div class="timeline-item status-item">
+              <div class="timeline-marker blue"></div>
+              <div class="timeline-content">
+                <div class="timeline-heading">
+                  <span class="timeline-title">Account Created</span>
+                  <span class="timeline-date">{{ user()!.createdAt | date:'mediumDate' }}</span>
+                </div>
+                <p class="timeline-desc">Signed up as {{ user()!.userType | uppercase }} ({{ user()!.email }}).</p>
+              </div>
+            </div>
+
+            @if (user()!.isVerified) {
+              <div class="timeline-item status-item">
+                <div class="timeline-marker green"></div>
+                <div class="timeline-content">
+                  <div class="timeline-heading">
+                    <span class="timeline-title">Identity &amp; Background Clear</span>
+                    <span class="timeline-badge verified">Verified</span>
+                  </div>
+                  <p class="timeline-desc">Trust &amp; safety requirements met and verified.</p>
+                </div>
+              </div>
+            }
+
+            @for (note of staffNotes(); track note.id) {
+              <div class="timeline-item note-item">
+                <div class="timeline-marker amber"></div>
+                <div class="timeline-content">
+                  <div class="timeline-heading">
+                    <span class="timeline-title">Staff Note: {{ note.category }}</span>
+                    <span class="timeline-date">{{ note.created_at | date:'short' }}</span>
+                  </div>
+                  <p class="timeline-desc">{{ note.content }}</p>
+                  <span class="timeline-author">Author: {{ note.author_email || 'Admin' }}</span>
+                </div>
+              </div>
+            }
+
+            @for (apt of (gdprData()?.appointments || []).slice(0, 5); track apt.id) {
+              <div class="timeline-item apt-item">
+                <div class="timeline-marker purple"></div>
+                <div class="timeline-content">
+                  <div class="timeline-heading">
+                    <span class="timeline-title">Appointment #{{ apt.id | slice:0:8 }}</span>
+                    <span class="timeline-date">{{ apt.scheduledAt | date:'short' }}</span>
+                  </div>
+                  <p class="timeline-desc">Status: <b>{{ apt.status }}</b> — Total: {{ apt.totalPrice | currency }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ASSIGN ROLE MODAL -->
+  @if (showRoleModal()) {
+    <div class="modal-overlay" (click)="closeRoleModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="modal-icon-badge purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <h3>Assign RBAC Security Role</h3>
+              <p class="modal-sub">Account: {{ user()?.email }}</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeRoleModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Select RBAC Security Role</label>
+            <select [(ngModel)]="selectedRoleId" class="form-control select-control">
+              <option value="">Standard Member (No Admin Privileges)</option>
+              @for (r of roles(); track r.id) {
+                <option [value]="r.id">{{ r.name }} ({{ r.slug }})</option>
+              }
+            </select>
+            <span class="form-help">Grants operator portal privileges matching this role's permission scopes.</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRoleModal()" [disabled]="isActioning()">Cancel</button>
+          <button class="btn btn-primary" (click)="saveRoleAssignment()" [disabled]="isActioning()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            <span>{{ isActioning() ? 'Saving Role...' : 'Save Role Assignment' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- EDIT USER DETAILS MODAL -->
+  @if (showEditModal()) {
+    <div class="modal-overlay" (click)="closeEditModal()">
+      <div class="modal-dialog modal-large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="kpi-circle-widget purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </div>
+            <div>
+              <h3>Edit Profile &amp; Account Details</h3>
+              <p class="modal-sub">Account ID: <code class="font-mono">{{ user()?.id }}</code></p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeEditModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- SECTION 1: PERSONAL IDENTITY & DEMOGRAPHICS -->
+          <div class="modal-section-box">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Personal Identity &amp; Demographics</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">First Name</label>
+                <input type="text" [(ngModel)]="editForm.firstName" placeholder="e.g. John" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Last Name</label>
+                <input type="text" [(ngModel)]="editForm.lastName" placeholder="e.g. Doe" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" [(ngModel)]="editForm.email" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" [(ngModel)]="editForm.phone" placeholder="+1 (555) 000-0000" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Gender Identity</label>
+                <select [(ngModel)]="editForm.gender" class="form-control select-control">
+                  <option value="">Not Specified / Prefer not to say</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-Binary">Non-Binary</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Primary Trade / Service Specialty</label>
+                <input type="text" [(ngModel)]="editForm.service" placeholder="e.g. Plumbing &amp; Pipe Fitting" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label class="form-label">Professional Bio / About</label>
+              <textarea [(ngModel)]="editForm.bio" rows="2" placeholder="Short introduction and background..." class="form-control"></textarea>
+            </div>
+          </div>
+
+          <!-- SECTION 2: LOCATION & COVERAGE -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>Address &amp; Location Coverage</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Street Address</label>
+                <input type="text" [(ngModel)]="editForm.address" placeholder="e.g. 123 Market St, Suite 400" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">City</label>
+                <input type="text" [(ngModel)]="editForm.city" placeholder="e.g. San Francisco" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">State / Province</label>
+                <input type="text" [(ngModel)]="editForm.state" placeholder="e.g. CA" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Postal / Zip Code</label>
+                <input type="text" [(ngModel)]="editForm.zipCode" placeholder="e.g. 94103" class="form-control font-mono" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Country</label>
+                <input type="text" [(ngModel)]="editForm.country" placeholder="e.g. United States" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: SUBSCRIPTION, BILLING & RBAC -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              <span>Account Type, Subscription &amp; Governance</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Account Category</label>
+                <select [(ngModel)]="editForm.userType" class="form-control select-control">
+                  <option value="seeker">Seeker (Homeowner / Client)</option>
+                  <option value="provider">Provider (Contractor / Specialist)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Subscription Tier Level</label>
+                <select [(ngModel)]="editForm.subscriptionTier" class="form-control select-control">
+                  @for (plan of getPlansForInterval(editForm.subscriptionInterval); track plan.id || plan.name) {
+                    <option [value]="plan.tier">
+                      {{ plan.name }} ({{ plan.tier }} - {{ plan.currency === 'USD' ? '$' : plan.currency }}{{ plan.price }}/{{ plan.interval }})
+                    </option>
+                  }
+                  @if (getPlansForInterval(editForm.subscriptionInterval).length === 0) {
+                    @for (plan of subscriptionPlans(); track plan.id || plan.name) {
+                      <option [value]="plan.tier">
+                        {{ plan.name }} ({{ plan.tier }} - {{ plan.currency === 'USD' ? '$' : plan.currency }}{{ plan.price }}/{{ plan.interval }})
+                      </option>
+                    }
+                  }
+                  @if (subscriptionPlans().length === 0) {
+                    <option value="SILVER">SILVER</option>
+                    <option value="GOLD">GOLD</option>
+                    <option value="PLATINUM">PLATINUM</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Billing Interval</label>
+                <select [(ngModel)]="editForm.subscriptionInterval" class="form-control select-control">
+                  <option value="month">Monthly (/month)</option>
+                  <option value="year">Yearly (/year)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Preferred Payment Mode</label>
+                <select [(ngModel)]="editForm.preferredPaymentMode" class="form-control select-control">
+                  <option value="IN_APP">In-App Checkout (Stripe &amp; Escrow)</option>
+                  <option value="ON_SITE">On-Site Direct Settlement</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">RBAC Security Role</label>
+                <select [(ngModel)]="editForm.roleId" class="form-control select-control">
+                  <option value="">Standard Member (No Role)</option>
+                  @for (r of roles(); track r.id) {
+                    <option [value]="r.id">{{ r.name }} ({{ r.slug }})</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Reset Password (Optional)</label>
+                <input type="password" [(ngModel)]="editForm.password" placeholder="Leave empty to keep unchanged" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: PRIVILEGES & VERIFICATION SWITCHES -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>Privileges, Verification &amp; Account Status</span>
+            </div>
+
+            <div class="toggle-row-grid">
+              <label class="checkbox-card" [class.checked]="editForm.isStaff">
+                <input type="checkbox" [(ngModel)]="editForm.isStaff" />
+                <div class="chk-label">
+                  <b>Staff Access</b>
+                  <span>Backend operations privileges</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="editForm.isVerified">
+                <input type="checkbox" [(ngModel)]="editForm.isVerified" />
+                <div class="chk-label">
+                  <b>Email Verified</b>
+                  <span>Confirmed email badge</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="editForm.isIdentityVerified">
+                <input type="checkbox" [(ngModel)]="editForm.isIdentityVerified" />
+                <div class="chk-label">
+                  <b>Identity Verified</b>
+                  <span>Government ID check pass</span>
+                </div>
+              </label>
+
+              <label class="checkbox-card" [class.checked]="editForm.isActive">
+                <input type="checkbox" [(ngModel)]="editForm.isActive" />
+                <div class="chk-label">
+                  <b>Active Status</b>
+                  <span>Can log in &amp; transact</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeEditModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="saveUserDetails()" [disabled]="isActioning() || !editForm.email">
+            {{ isActioning() ? 'Saving Changes...' : 'Save Profile Changes' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- RISK EVALUATION REPORT MODAL -->
+  @if (showRiskModal() && riskEvaluation()) {
+    <div class="modal-overlay" (click)="closeRiskModal()">
+      <div class="modal-dialog modal-md" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge" [class.danger]="riskEvaluation()?.risk_score > 60" [class.yellow]="riskEvaluation()?.risk_score > 30 && riskEvaluation()?.risk_score <= 60" [class.purple]="riskEvaluation()?.risk_score <= 30">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M12 8v4"/><path d="M12 16h.01"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title">AI Fraud &amp; Velocity Risk Report</h3>
+              <p class="modal-subtitle">Target User: {{ user()?.firstName }} {{ user()?.lastName }} ({{ user()?.email }})</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeRiskModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="risk-score-hero" [class.risk-high]="riskEvaluation()?.risk_score > 60" [class.risk-medium]="riskEvaluation()?.risk_score > 30 && riskEvaluation()?.risk_score <= 60" [class.risk-low]="riskEvaluation()?.risk_score <= 30">
+            <div class="score-number">{{ riskEvaluation()?.risk_score || 0 }}</div>
+            <div class="score-meta">
+              <div class="score-level">{{ (riskEvaluation()?.risk_level || 'LOW RISK') | uppercase }}</div>
+              <div class="score-sub">Calculated via transactional velocity, dispute ratio &amp; device signals</div>
+            </div>
+          </div>
+
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              <span>Evaluation Factors &amp; Recommendation</span>
+            </div>
+            <p class="text-sm mt-2 text-muted">{{ riskEvaluation()?.recommendation || 'No suspicious velocity anomalies detected for this account.' }}</p>
+          </div>
+
+          @if (riskEvaluation()?.flags && riskEvaluation()?.flags.length > 0) {
+            <div class="modal-section-box mt-3">
+              <div class="modal-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                </svg>
+                <span>Triggered Risk Flags</span>
+              </div>
+              <ul class="risk-flags-list mt-2">
+                @for (flag of riskEvaluation()?.flags; track flag) {
+                  <li class="risk-flag-item" style="display:flex; align-items:center; gap:6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0; color:inherit">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    {{ flag }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRiskModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

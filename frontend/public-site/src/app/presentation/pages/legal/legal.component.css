@@ -1,0 +1,279 @@
+/* ===================== HERO ===================== */
+.p-hero {
+  padding: 150px 0 64px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.p-hero-grain {
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 150%;
+  background:
+    radial-gradient(560px 380px at 14% 12%, rgba(91, 22, 238, 0.06), transparent 70%),
+    radial-gradient(620px 420px at 86% 4%, rgba(102, 120, 108, 0.12), transparent 70%);
+  pointer-events: none;
+}
+
+.p-hero-in {
+  position: relative;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.p-hero h1 {
+  margin: 24px 0 22px;
+  font-size: clamp(38px, 5.5vw, 62px);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.p-hero .lede {
+  max-width: 600px;
+  margin: 0 auto 30px;
+  font-size: clamp(17px, 1.8vw, 20px);
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+
+.updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--futura);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--violet-deep);
+  background: var(--lavender);
+  border: 1px solid var(--lavender-line);
+  padding: 9px 18px;
+  border-radius: 999px;
+}
+
+.updated .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+
+/* ===================== POLICY LAYOUT ===================== */
+.policy {
+  padding: 30px 0 120px;
+}
+
+.policy-layout {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  gap: 64px;
+  align-items: start;
+}
+
+/* directory / TOC */
+.directory {
+  position: sticky;
+  top: calc(var(--nav-h, 78px) + 22px);
+}
+
+.directory-label {
+  font-family: var(--futura);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 16px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.directory ol {
+  list-style: none;
+  counter-reset: toc;
+  padding: 0;
+  margin: 0;
+}
+
+.directory a {
+  counter-increment: toc;
+  display: flex;
+  gap: 12px;
+  font-family: var(--syne);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  padding: 8px 12px 8px 10px;
+  border-left: 2px solid transparent;
+  border-radius: 0 8px 8px 0;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.directory a::before {
+  content: counter(toc, decimal-leading-zero);
+  font-family: var(--futura);
+  font-variant-numeric: tabular-nums;
+  color: var(--violet);
+  font-weight: 600;
+  font-size: 12px;
+  flex: none;
+  padding-top: 1px;
+}
+
+.directory a:hover {
+  color: var(--ink);
+  background: var(--lavender);
+}
+
+.directory a.active {
+  color: var(--violet-deep);
+  background: var(--lavender);
+  border-left-color: var(--violet);
+  font-weight: 700;
+}
+
+/* content */
+.content {
+  max-width: 720px;
+}
+
+.intro {
+  font-size: 18px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 30px;
+  line-height: 1.7;
+}
+
+.sec {
+  padding-top: 46px;
+  scroll-margin-top: calc(var(--nav-h, 78px) + 22px);
+}
+
+.sec-num {
+  font-family: var(--futura);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin: 0 0 8px;
+}
+
+.sec h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  margin: 0 0 18px;
+  color: var(--ink);
+}
+
+.sec p {
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.sec ul {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.sec li {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 9px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.sec li::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0.62em;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--violet);
+  transform: rotate(45deg);
+}
+
+.sec strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* "In plain terms" callout — calm sage secondary */
+.plain {
+  background: var(--sage-soft);
+  border-left: 3px solid var(--sage);
+  border-radius: 0 16px 16px 0;
+  padding: 16px 22px;
+  margin: 0 0 22px;
+}
+
+.plain .plain-label {
+  display: block;
+  font-family: var(--futura);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--sage);
+  margin-bottom: 5px;
+}
+
+.plain p {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: #33433a;
+}
+
+.inline-link {
+  color: var(--violet);
+  font-weight: 600;
+  border-bottom: 1.5px solid var(--lavender-line);
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+  cursor: pointer;
+}
+
+.inline-link:hover {
+  color: var(--violet-deep);
+  border-color: var(--violet);
+}
+
+/* Responsive */
+@media (max-width: 920px) {
+  .policy-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .directory {
+    position: static;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px 16px;
+  }
+  .directory ol {
+    columns: 2;
+    column-gap: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .p-hero {
+    padding: 128px 0 52px;
+  }
+  .directory ol {
+    columns: 1;
+  }
+}

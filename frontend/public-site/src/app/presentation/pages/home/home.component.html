@@ -1,0 +1,449 @@
+<div class="page-container animate-fade-in">
+  <!-- ======================= HERO ======================= -->
+  <header class="hero" id="top">
+    <div class="hero-grain" aria-hidden="true"></div>
+    <div class="wrap hero-in">
+      <p class="eyebrow rv">Help is closer than you think · Now serving your community</p>
+      <h1 class="rv">Trusted help,<br>
+        <span class="accent">right next door.
+          <svg viewBox="0 0 320 14" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M4 10 C 90 2, 230 2, 316 9" stroke="#F2A33C" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </h1>
+      <p class="lede rv">Find trusted local professionals in minutes — or grow your business by serving the people right in your own community. Every provider is background screened before approval.</p>
+
+      <div class="search-shell rv">
+        <form class="search-bar" id="heroSearch" (submit)="onSearch($event)" aria-label="Try Smart Search">
+          <svg class="spark" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill="currentColor"/>
+            <circle cx="19" cy="5" r="1.6" fill="currentColor"/>
+          </svg>
+          <input
+            id="heroInput"
+            type="text"
+            [(ngModel)]="searchQuery"
+            name="searchQuery"
+            aria-label="Describe what you need"
+            autocomplete="off"
+            placeholder="What help do you need? e.g. Plumbing, Electrician, Deep Cleaning…"
+          />
+          <button class="btn btn-primary" type="submit">Find Help</button>
+        </form>
+        <div class="demo-chip" id="demoChip" role="status"></div>
+      </div>
+
+      <div class="trust-strip rv" role="list">
+        <div class="ti" role="listitem">
+          <span class="tic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Every provider<br>background-screened
+        </div>
+        <div class="ti" role="listitem">
+          <span class="tic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill="currentColor"/>
+              <circle cx="19" cy="5" r="1.4" fill="currentColor"/>
+            </svg>
+          </span>
+          AI-powered<br>Smart Search™
+        </div>
+        <div class="ti" role="listitem">
+          <span class="tic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="9" width="16" height="11" rx="3" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 9V7a4 4 0 018 0v2" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="14.5" r="1.6" fill="currentColor"/>
+            </svg>
+          </span>
+          Secure scheduling<br>&amp; verification
+        </div>
+        <div class="ti" role="listitem">
+          <span class="tic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 11a3 3 0 100-6 3 3 0 000 6zM3 19c0-3 2.7-5 6-5s6 2 6 5M16 6.5a3 3 0 010 5.8M21 19c0-2.4-1.6-4.2-4-4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Neighbors<br>helping neighbors
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================= TRUST ======================= -->
+  <section id="trust">
+    <div class="wrap">
+      <div class="head rv">
+        <p class="eyebrow">Our one unbreakable rule</p>
+        <h2>Trust Begins Before<br>The First Conversation.</h2>
+        <p class="lede">Most platforms help you find someone. Neighbor Service App helps you find someone you can feel confident about inviting into your home. Before any provider can offer services, they must successfully complete a third-party background screening.</p>
+      </div>
+      <div class="tiles">
+        <article class="tile rv">
+          <div class="ic">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="tag">Background checked</span>
+          <h3>Screened before they appear</h3>
+          <p>Every provider completes third-party screening through Checkr before activation. You'll see the badge on every profile — because every profile has earned it.</p>
+        </article>
+        <article class="tile rv" style="transition-delay:.08s">
+          <div class="ic">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="9" width="16" height="11" rx="3" stroke="currentColor" stroke-width="2"/>
+              <path d="M8 9V7a4 4 0 018 0v2" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="14.5" r="1.7" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="tag">NSA Security Code™</span>
+          <h3>Verified at the door</h3>
+          <p>Every appointment generates a unique code that confirms your provider's arrival — and confirms the job is complete. From hello to handshake.</p>
+        </article>
+        <article class="tile rv" style="transition-delay:.16s">
+          <div class="ic">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3.5l2.5 5.1 5.6.8-4 4 .9 5.6-5-2.7-5 2.7.9-5.6-4-4 5.6-.8L12 3.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="tag">Real jobs only</span>
+          <h3>Reviews you can believe</h3>
+          <p>Ratings on Neighbor Service App can only come from verified, completed jobs. No imported reviews. No mystery five-stars.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= SMART SEARCH ======================= -->
+  <section id="smart" style="padding-top:0">
+    <div class="wrap split">
+      <div class="phone-stage rv">
+        <div class="phone-toggle-pill">
+          <button class="phone-toggle-btn" [class.active]="activePhoneView() === 'SEEKER'" (click)="activePhoneView.set('SEEKER')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Seeker View
+          </button>
+          <button class="phone-toggle-btn" [class.active]="activePhoneView() === 'PROVIDER'" (click)="activePhoneView.set('PROVIDER')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Provider View
+          </button>
+        </div>
+        <div class="phone" aria-label="Neighbor Service Mobile App">
+          <div class="phone-camera-dot"></div>
+          <div class="screen">
+            <img 
+              [src]="activePhoneView() === 'PROVIDER' ? 'images/app_provider_screen.png' : 'images/app_seeker_screen.png'" 
+              alt="Neighbor Service App Screen" 
+              onerror="this.src='images/app_mockup.png'"
+            />
+          </div>
+        </div>
+        <div class="float-chip fc1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z" stroke="currentColor" stroke-width="2"/>
+            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>Screened · 1.2 mi away
+        </div>
+        <div class="float-chip fc2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>Responds in ~12 min
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow left rv">Smart Search™</p>
+        <h2 class="rv" style="margin:20px 0 18px">Just Say<br>What You Need.</h2>
+        <p class="lede rv" style="margin-bottom:38px">Searching shouldn't feel like work. No categories to guess. No forms to fight. Type "leaking kitchen sink, today" or "photographer for Saturday" and Smart Search weighs what matters — availability, distance, ratings, response time, and that every match is background-checked — then hands you a short list of great options instead of forty maybes.</p>
+        <div class="steps">
+          <div class="step rv"><span class="n">1</span><div><h3>Say it.</h3><p>In your own words. Typing or talking, both work.</p></div></div>
+          <div class="step rv"><span class="n">2</span><div><h3>We match it.</h3><p>Smart Search reads your need, your timing, and your location — and finds screened neighbors who fit.</p></div></div>
+          <div class="step rv"><span class="n">3</span><div><h3>Book it.</h3><p>Compare a short list of great options instead of forty maybes. Message your favorite, lock in a time. Done in minutes.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= HOW IT WORKS ======================= -->
+  <section class="how" id="how">
+    <div class="wrap">
+      <div class="head rv">
+        <p class="eyebrow">Four steps, start to finish</p>
+        <h2>Finding Help Has<br>Never Been Easier.</h2>
+      </div>
+      <div class="how-grid rv">
+        <div class="how-cell"><span class="big">1</span><h3>Search.</h3><p>Tell us what you need. Use Smart Search or browse service categories.</p></div>
+        <div class="how-cell"><span class="big">2</span><h3>Connect.</h3><p>Pick your neighbor. Review trusted providers, ratings, reviews, and availability.</p></div>
+        <div class="how-cell"><span class="big">3</span><h3>Schedule.</h3><p>Book appointments and receive a unique security verification code.</p></div>
+        <div class="how-cell"><span class="big">4</span><h3>Complete.</h3><p>Pay, review, and build lasting connections within your community.</p></div>
+      </div>
+      <p class="how-close rv">That's it. That's the whole thing.</p>
+    </div>
+  </section>
+
+  <!-- ======================= SCREENING ======================= -->
+  <section id="screening" style="padding-top:120px">
+    <div class="wrap">
+      <div class="head rv">
+        <p class="eyebrow">Trust &amp; safety</p>
+        <h2>We check, so you<br>don't have to wonder.</h2>
+        <p class="lede">Every provider completes a third-party background screening — before activation, no exceptions. On most platforms, background checks are optional, inconsistent, or reserved for providers who pay for a badge. We built Neighbor Service the other way around. Screening isn't a premium feature here — it's the front door.</p>
+      </div>
+      <div class="path rv">
+        <div class="path-cell"><h3>Pending registration</h3><p>A provider signs up and builds a profile. It isn't visible to anyone yet.</p></div>
+        <div class="path-cell"><h3>Check submitted</h3><p>The provider completes their screening through Checkr, an independent third-party screening company.</p></div>
+        <div class="path-cell"><h3>Check in review</h3><p>Results are reviewed. Approval is subject to passing.</p></div>
+        <div class="path-cell go"><h3>Approved provider</h3><p>Only now does the profile go live — carrying the badge you'll see on every provider, every time.</p></div>
+      </div>
+      <aside class="honest rv">
+        <h3>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke="#87A08C" stroke-width="2"/>
+            <path d="M12 8v5M12 16.5v.01" stroke="#87A08C" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          What screening covers — and what it can't.
+        </h3>
+        <p>Background screening is a serious, independent check of a provider's history — and it's required of everyone here. It's also not a crystal ball, and we won't pretend otherwise. That's why screening is only the first layer: every job is also verified with a Security Code from arrival to completion, every review comes from a real completed job, and our team reviews every report. Trust isn't one checkbox. It's a system — and you're protected by all of it.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ======================= SECURITY CODE ======================= -->
+  <section class="code-sec" id="securitycode">
+    <div class="wrap">
+      <div class="head rv" style="margin-bottom:0">
+        <p class="eyebrow">Only on Neighbor Service · NSA Security Code™</p>
+        <h2>A Smarter Way<br>To Stay Safe.</h2>
+        <p class="lede">Verified from hello to handshake. Every accepted appointment generates a unique Security Code — both seeker and provider receive the same code, verifying service start and service completion. A simple feature with a powerful purpose: helping neighbors feel safer when helping neighbors.</p>
+      </div>
+      <div class="code-stage rv" id="codeStage">
+        <div class="code-phone"><div class="scr">
+          <div class="who">Seeker · You</div><div class="nm">Saturday · 10:00 AM</div>
+          <div class="code-digits" data-code><b>4</b><b>8</b><b>2</b><b>9</b><b>1</b><b>6</b></div>
+          <div class="st">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span data-status>Confirm when Marcus arrives</span>
+          </div>
+        </div></div>
+        <div class="code-link">
+          <div class="shield">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path class="tick" d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="lbl" data-link-label>Codes match</span>
+        </div>
+        <div class="code-phone"><div class="scr">
+          <div class="who">Provider · Marcus L.</div><div class="nm">Saturday · 10:00 AM</div>
+          <div class="code-digits" data-code><b>4</b><b>8</b><b>2</b><b>9</b><b>1</b><b>6</b></div>
+          <div class="st">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.2-7-11a7 7 0 0114 0c0 5.8-7 11-7 11z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="2"/></svg>
+            <span>Arrived · 9:58 AM</span>
+          </div>
+        </div></div>
+      </div>
+      <div class="both-note rv">
+        <p><b>It protects both of you.</b> The Security Code isn't surveillance — it's a handshake. Providers love it too: it's their proof of showing up on time and finishing the work, fair and square.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= CATEGORIES ======================= -->
+  <section id="categories">
+    <div class="wrap">
+      <div class="head rv">
+        <p class="eyebrow">Popular categories</p>
+        <h2>Whatever The Task.<br>Find The Right Neighbor.</h2>
+        <p class="lede">Ten popular categories — and many more. One standard for all of them: background-checked, every time.</p>
+      </div>
+      <div class="cats rv">
+        @for (cat of cms()?.categories; track cat.id) {
+          <a [routerLink]="['/services']" [queryParams]="{category: cat.id}" class="cat">
+            <div class="ci" [innerHTML]="getCategoryIcon(cat.name)"></div>
+            <b>{{ cat.name }}</b>
+            <span>{{ cat.description }}</span>
+          </a>
+        } @empty {
+          <div class="cat">
+            <div class="ci">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <b>Plumbing</b><span>Leaks, clogs, installs</span>
+          </div>
+          <div class="cat">
+            <div class="ci">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><circle cx="19" cy="5" r="1.4"/></svg>
+            </div>
+            <b>House Cleaning</b><span>Deep cleans &amp; weekly</span>
+          </div>
+          <div class="cat">
+            <div class="ci">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-7 7a2 2 0 0 0 3 3l7-7 3 3z"/><path d="M14 6l4-4 4 4-4 4"/></svg>
+            </div>
+            <b>Handyman</b><span>The whole to-do list</span>
+          </div>
+          <div class="cat">
+            <div class="ci">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <b>Electrical</b><span>Outlets, fixtures, fans</span>
+          </div>
+          <div class="cat">
+            <div class="ci">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+            </div>
+            <b>Landscaping</b><span>Mowing, beds, cleanups</span>
+          </div>
+        }
+      </div>
+      <p class="cats-foot rv" style="margin-top:46px; text-align:center;">Don't see your job? Just describe it in <b>Smart Search</b> — it's smarter than a category list.</p>
+    </div>
+  </section>
+
+  <!-- ======================= TESTIMONIALS ======================= -->
+  <section class="quotes" id="stories">
+    <div class="wrap">
+      <div class="head rv">
+        <p class="eyebrow">Word from the neighborhood</p>
+        <h2>Word travels fast<br>around here.</h2>
+      </div>
+      <div class="q-grid">
+        @for (t of cms()?.testimonials; track t.id) {
+          <article class="q-card rv">
+            <span class="q-stars">★★★★★</span><span class="qm">"</span>
+            <p>{{ t.quote }}</p>
+            <div class="q-meta">
+              <svg class="pic" viewBox="0 0 46 46"><circle cx="23" cy="23" r="23" fill="#EFE9FD"/><circle cx="23" cy="18" r="7" fill="#C9B5F2"/><path d="M9 40c2-8 8-12 14-12s12 4 14 12" fill="#C9B5F2"/></svg>
+              <div><b>{{ t.author }}</b><span>{{ t.role }}</span></div>
+            </div>
+          </article>
+        } @empty {
+          <article class="q-card rv"><span class="q-stars">★★★★★</span><span class="qm">"</span>
+            <p>I found a tutor for my son in 20 minutes — and I knew she was background-checked before I ever sent the first message. That changes how the whole thing feels.</p>
+            <div class="q-meta"><svg class="pic" viewBox="0 0 46 46"><circle cx="23" cy="23" r="23" fill="#EFE9FD"/><circle cx="23" cy="18" r="7" fill="#C9B5F2"/><path d="M9 40c2-8 8-12 14-12s12 4 14 12" fill="#C9B5F2"/></svg><div><b>Dana</b><span>Grapevine · Tutoring</span></div></div>
+          </article>
+          <article class="q-card rv" style="transition-delay:.07s"><span class="q-stars">★★★★★</span><span class="qm">"</span>
+            <p>I literally typed "leaking sink, today." Three plumbers, all screened, one booked by lunch. I keep telling people it can't be that easy. It was.</p>
+            <div class="q-meta"><svg class="pic" viewBox="0 0 46 46"><circle cx="23" cy="23" r="23" fill="#EAF0EB"/><circle cx="23" cy="18" r="7" fill="#9FB8A4"/><path d="M9 40c2-8 8-12 14-12s12 4 14 12" fill="#9FB8A4"/></svg><div><b>Marcus</b><span>Euless · Plumbing</span></div></div>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= FOR PROVIDERS ======================= -->
+  <section class="prov" id="providers">
+    <div class="wrap">
+      <div class="prov-card rv">
+        <p class="eyebrow">For providers</p>
+        <h2>Turn Your Skills<br>Into Opportunity.</h2>
+        <p class="lede">Neighbor Service App connects local professionals with customers already looking for their services. Whether you're an independent specialist or a growing business, NSA gives you the tools to build visibility, trust, and consistent opportunities. One flat monthly plan. No pay-per-lead. Work your own neighborhood — and keep what you earn.</p>
+        <div class="prov-points">
+          <div>
+            <h3>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Flat, fair pricing
+            </h3>
+            <p>One subscription. Unlimited job requests in your radius. Your phone number is yours — nobody's selling it.</p>
+          </div>
+          <div>
+            <h3>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.2-7-11a7 7 0 0114 0c0 5.8-7 11-7 11z" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="2.2"/></svg>
+              Your neighborhood, your radius
+            </h3>
+            <p>Set your own service area. Skip the 45-minute drives. Be the name your zip code knows.</p>
+          </div>
+          <div>
+            <h3>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>
+              Trust that works for you
+            </h3>
+            <p>The badge you earn, verified completions, and reviews from real work only — a reputation engine that compounds.</p>
+          </div>
+        </div>
+        <div class="plan-line">
+          <div class="pl"><span class="tier">Silver</span><span class="price">$24.99<em>&nbsp;/mo</em></span><span class="cats">1 service category</span></div>
+          <div class="pl featured"><span class="tag">Most popular</span><span class="tier">Gold</span><span class="price">$39.99<em>&nbsp;/mo</em></span><span class="cats">Up to 3 categories</span></div>
+          <div class="pl"><span class="tier">Platinum</span><span class="price">$49.99<em>&nbsp;/mo</em></span><span class="cats">Up to 5 categories</span></div>
+        </div>
+        <p class="plan-honest"><b>Every plan includes every feature.</b> You're only choosing how many service categories you want to offer. That's it — no gotchas, no locked tools, no lead fees, ever.</p>
+        <div class="prov-cta-row">
+          <a class="btn btn-amber" routerLink="/" fragment="download">Become a Provider <span class="arr">→</span></a>
+          <a class="btn btn-outline-w" routerLink="/" fragment="faq">Read the Provider FAQ</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= COMMUNITY STATEMENT ======================= -->
+  <section class="belief" style="padding-top:40px">
+    <div class="wrap rv">
+      <p class="eyebrow" style="margin-bottom:34px">More than a marketplace</p>
+      <p class="big">Strong communities aren't built by corporations. <em>They're built by neighbors.</em> Every booking strengthens local connections, supports local businesses, and keeps opportunities <mark>inside the community.</mark></p>
+      <p class="sub">One account, two possibilities. Find help. Offer help.</p>
+    </div>
+  </section>
+
+  <!-- ======================= FAQ ======================= -->
+  <section id="faq" style="padding-top:130px">
+    <div class="wrap">
+      <div class="head rv">
+        <p class="eyebrow">Good questions</p>
+        <h2>Asked over the fence.</h2>
+      </div>
+      <div class="faq-wrap rv">
+        @for (faq of cms()?.faqs; track faq.id) {
+          <div class="faq-item" [class.open]="openFaqId() === faq.id">
+            <button class="faq-q" (click)="toggleFaq(faq.id)" [attr.aria-expanded]="openFaqId() === faq.id">
+              {{ faq.question }}<span class="pm">+</span>
+            </button>
+            <div class="faq-a" [style.maxHeight]="openFaqId() === faq.id ? '300px' : '0'">
+              <p>{{ faq.answer }}</p>
+            </div>
+          </div>
+        } @empty {
+          <div class="faq-item" [class.open]="openFaqId() === 'q1'">
+            <button class="faq-q" (click)="toggleFaq('q1')" [attr.aria-expanded]="openFaqId() === 'q1'">How does provider screening actually work?<span class="pm">+</span></button>
+            <div class="faq-a" [style.maxHeight]="openFaqId() === 'q1' ? '300px' : '0'">
+              <p>Every provider must complete a background screening through Checkr, an independent third-party screening company, before their profile can go live. No provider appears on Neighbor Service — or can contact you — without completing it.</p>
+            </div>
+          </div>
+          <div class="faq-item" [class.open]="openFaqId() === 'q2'">
+            <button class="faq-q" (click)="toggleFaq('q2')" [attr.aria-expanded]="openFaqId() === 'q2'">What does it cost me as a seeker?<span class="pm">+</span></button>
+            <div class="faq-a" [style.maxHeight]="openFaqId() === 'q2' ? '300px' : '0'">
+              <p>Nothing. Searching, matching, messaging, and booking are free for seekers. Providers support the platform with a flat monthly subscription.</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= DOWNLOAD CTA ======================= -->
+  <section class="dl" id="download">
+    <div class="wrap">
+      <div class="dl-card rv">
+        <p class="eyebrow">Your neighborhood is waiting</p>
+        <h2>Ready To Find Trusted Help?<br>Or Ready To Offer It?</h2>
+        <p class="lede" style="margin-bottom:50px;">Join a growing community of neighbors helping neighbors. Background-checked providers near you — some available today.</p>
+        <div class="store-row">
+          <a class="store" href="#" aria-label="Download on the App Store">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 12.9c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.8-3.5.8-.7 0-1.9-.8-3.1-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3.1.7c1.3 0 2.1-1.1 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.6-1-2.6-3.6zM14.3 5.7c.6-.8 1.1-1.9.9-3-.9 0-2.1.6-2.7 1.4-.6.7-1.2 1.9-1 3 1.1.1 2.2-.5 2.8-1.4z"/></svg>
+            <span><span class="s1">Download on the</span><span class="s2">App Store</span></span>
+          </a>
+          <a class="store" href="#" aria-label="Get it on Google Play">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 3.5v17c0 .4.4.7.8.5l9.9-8.2c.3-.2.3-.7 0-.9L4.8 3.1c-.4-.3-.8 0-.8.4zM15.9 10l2.8-2.3c.4-.3 1-.3 1.4 0l1.4 1.2c.5.4.5 1.2 0 1.6l-1.4 1.2c-.4.3-1 .3-1.4 0L15.9 10z" opacity=".9"/></svg>
+            <span><span class="s1">Get it on</span><span class="s2">Google Play</span></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,57 @@
+<footer>
+  <div class="wrap">
+    <p class="f-mission">Neighbors <em>Helping</em> Neighbors.</p>
+    
+    <div class="f-grid">
+      <div>
+        <h4>Neighbor Service</h4>
+        <a routerLink="/" fragment="how">How it Works</a>
+        <a routerLink="/" fragment="trust">Trust &amp; Safety</a>
+        <a routerLink="/services">Categories &amp; Catalog</a>
+        <a routerLink="/about">About Us</a>
+        <a routerLink="/services" fragment="providers">For Providers</a>
+      </div>
+
+      <div>
+        <h4>Trust &amp; Screening</h4>
+        <a routerLink="/" fragment="screening">Checkr Screening Process</a>
+        <a routerLink="/" fragment="securitycode">6-Digit Security Code</a>
+        <a routerLink="/resolution">Resolution Center</a>
+        <a routerLink="/support">Safety FAQs</a>
+        <a routerLink="/contact">Report a Concern</a>
+      </div>
+
+      <div>
+        <h4>Top Categories</h4>
+        <a routerLink="/services" [queryParams]="{category: '1'}">Plumbing &amp; Drains</a>
+        <a routerLink="/services" [queryParams]="{category: '2'}">Electrical &amp; Lighting</a>
+        <a routerLink="/services" [queryParams]="{category: '3'}">House Deep Cleaning</a>
+        <a routerLink="/services" [queryParams]="{category: '4'}">Handyman &amp; Assembly</a>
+        <a routerLink="/services">Explore All Services</a>
+      </div>
+
+      <div>
+        <h4>Support &amp; Legal</h4>
+        <a routerLink="/support">Help &amp; Knowledge Base</a>
+        <a routerLink="/contact">Direct Contact &amp; Hours</a>
+        <a routerLink="/resolution">File a Dispute</a>
+        <a routerLink="/terms">Terms &amp; Conditions</a>
+        <a routerLink="/privacy">Privacy Policy</a>
+      </div>
+
+      <div>
+        <h4>For Providers</h4>
+        <a routerLink="/services" fragment="providers">Earn 100% Commission-Free</a>
+        <a routerLink="/services" fragment="pricing">Subscription Plans</a>
+        <a routerLink="/support" [queryParams]="{tab: 'providers'}">Provider Guidelines</a>
+        <a routerLink="/" fragment="download">Download Provider App</a>
+      </div>
+    </div>
+
+    <div class="f-legal">
+      <p>&copy; 2026 Neighbor Service App, Inc. &middot; All Rights Reserved &middot; Terms &amp; Conditions &middot; Privacy Policy &middot; Accessibility</p>
+      <p class="sub-text">All providers complete mandatory third-party background screening via Checkr prior to profile activation.</p>
+      <span class="sign">Find trusted help. Offer trusted help. Strengthen your community.</span>
+    </div>
+  </div>
+</footer>

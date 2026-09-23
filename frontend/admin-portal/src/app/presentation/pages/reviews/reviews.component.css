@@ -1,0 +1,41 @@
+/* ─── REVIEWS MODERATION STYLES ─────────────────────────────────────────── */
+.rating-badge-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stars-visual {
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+.star-char {
+  color: var(--border-light);
+}
+
+.star-char.star-filled {
+  color: #f59e0b;
+}
+
+.review-comment-box {
+  max-width: 480px;
+}
+
+.review-text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.row-hidden {
+  background: rgba(239, 68, 68, 0.03);
+  opacity: 0.85;
+}
+
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

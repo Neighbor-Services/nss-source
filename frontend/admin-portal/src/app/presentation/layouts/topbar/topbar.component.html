@@ -1,0 +1,194 @@
+<div class="topbar-inner">
+  <!-- Left Side: Mobile Hamburger & Search -->
+  <div class="topbar-left">
+    <button 
+      class="hamburger-btn" 
+      (click)="layoutService.toggleSidebar()" 
+      aria-label="Toggle navigation menu"
+      title="Open navigation menu"
+    >
+      <svg class="hamburger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+
+    <!-- Hope UI Pill Search Bar -->
+    <div class="search-box" (click)="toggleCommandPalette()">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        placeholder="Quick command or jump to page..."
+        class="search-input"
+        readonly
+      />
+      <kbd class="search-kbd">⌘K</kbd>
+    </div>
+  </div>
+
+  <!-- Right Side: Telemetry, Theme, Alerts, User Profile -->
+  <div class="topbar-actions">
+    <!-- Live Go Microservice Backend Badge -->
+    <div
+      class="backend-badge"
+      (click)="checkHealth()"
+      title="Click to ping Golang microservice"
+    >
+      <span class="status-dot" [class.offline]="apiStatus() === 'offline'" [class.degraded]="apiStatus() === 'degraded'"></span>
+      <span class="backend-label">Go Backend :8000</span>
+      <span class="latency-pill">{{ apiLatency() }}ms</span>
+    </div>
+
+    <!-- Theme Toggle (Dark / Light) -->
+    <button 
+      class="action-circle-btn" 
+      (click)="toggleTheme()" 
+      [title]="themeService.currentTheme() === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+    >
+      @if (themeService.currentTheme() === 'dark') {
+        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      } @else {
+        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      }
+    </button>
+
+    <!-- Notification Bell -->
+    <div class="notification-wrapper">
+      <button class="action-circle-btn" (click)="toggleNotifications()" title="Operator Alerts">
+        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        @if (notificationCount() > 0) {
+          <span class="notification-dot">{{ notificationCount() }}</span>
+        }
+      </button>
+
+      <!-- Notification Dropdown -->
+      @if (showNotifications()) {
+        <div class="notification-dropdown">
+          <div class="dropdown-header">
+            <div class="dropdown-header-title">
+              <h4>Real-Time Alerts</h4>
+              <span class="badge badge-primary">Live Stream</span>
+            </div>
+            @if (notificationCount() > 0) {
+              <button class="btn-text-action" (click)="markAllAsRead()">Mark Read</button>
+            }
+          </div>
+          <div class="dropdown-items">
+            @for (item of notifications(); track item.id) {
+              <div class="dropdown-item" [class.item-unread]="!item.is_read" (click)="navigateToAlert(item)">
+                <div class="item-icon" [ngClass]="item.severity === 'HIGH' ? 'red' : (item.severity === 'MEDIUM' ? 'amber' : 'blue')">
+                  @if (item.type === 'DISPUTE') {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/></svg>
+                  } @else if (item.type === 'VERIFICATION') {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  } @else {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  }
+                </div>
+                <div class="item-content">
+                  <div class="item-title">{{ item.title }}</div>
+                  <div class="item-msg">{{ item.message }}</div>
+                  <div class="item-time">{{ item.created_at | date:'shortTime' }}</div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-alerts">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <p>All operations normal. No active alerts.</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- User Profile Dropdown / Trigger -->
+    <div class="user-profile-btn" (click)="authService.logout()" title="Click to Sign Out">
+      <div class="user-avatar-circle">
+        {{ (authService.currentUser()?.first_name || 'A').charAt(0).toUpperCase() }}
+      </div>
+      <div class="user-details">
+        <span class="user-name">{{ authService.currentUser()?.first_name || 'Admin' }}</span>
+        <span class="user-role">{{ authService.currentUser()?.is_superuser ? 'Administrator' : 'Staff' }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GLOBAL COMMAND PALETTE (CMD+K) MODAL -->
+@if (showCommandPalette()) {
+  <div class="palette-backdrop" (click)="closeCommandPalette()">
+    <div class="palette-container" (click)="$event.stopPropagation()">
+      <div class="palette-header">
+        <svg class="palette-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          id="paletteSearchInput"
+          type="text"
+          [ngModel]="commandFilter()"
+          (ngModelChange)="commandFilter.set($event); selectedIndex.set(0)"
+          placeholder="Type a command, search users, or jump to page..."
+          class="palette-input"
+        />
+        <kbd class="palette-esc" (click)="closeCommandPalette()">ESC</kbd>
+      </div>
+
+      <div class="palette-results">
+        @for (cmd of filteredCommands(); track cmd.id; let idx = $index) {
+          <div 
+            class="palette-item" 
+            [class.selected]="idx === selectedIndex()"
+            (click)="executeCommand(cmd)"
+            (mouseenter)="selectedIndex.set(idx)"
+          >
+            <div class="cmd-icon-box">{{ cmd.icon }}</div>
+            <div class="cmd-title-group">
+              <span class="cmd-title">{{ cmd.title }}</span>
+              <span class="cmd-cat">{{ cmd.category }}</span>
+            </div>
+            @if (cmd.badge) {
+              <span class="cmd-badge">{{ cmd.badge }}</span>
+            }
+            <span class="cmd-enter-hint">↵ Jump</span>
+          </div>
+        } @empty {
+          <div class="palette-empty">
+            <p>No matching commands found for "{{ commandFilter() }}"</p>
+          </div>
+        }
+      </div>
+
+      <div class="palette-footer">
+        <div class="palette-shortcuts">
+          <span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
+          <span><kbd>↵</kbd> to select</span>
+          <span><kbd>ESC</kbd> to close</span>
+        </div>
+      </div>
+    </div>
+  </div>
+}

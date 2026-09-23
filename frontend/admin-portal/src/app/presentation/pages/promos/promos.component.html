@@ -1,0 +1,255 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Promo Codes &amp; Marketing Campaigns</h1>
+        <span class="live-pill"><span class="live-dot"></span> Campaign Engine Ready</span>
+      </div>
+      <p class="hero-subtitle">Generate promotional coupon codes, configure discount caps, set expiration windows &amp; audit growth redemptions.</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Create Promo Code</span>
+      </button>
+
+      <button class="btn btn-soft-light" [disabled]="isLoading()" (click)="loadPromos()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC DECKS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+          </svg>
+        </div>
+        <span class="badge badge-info">{{ activePromosCount() }} Active</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL CAMPAIGNS</div>
+        <div class="kpi-value">{{ totalPromos() }}</div>
+      </div>
+      <div class="kpi-meta">Configured discount promo vouchers</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Growth</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL REDEMPTIONS</div>
+        <div class="kpi-value">{{ totalRedemptions() }}</div>
+      </div>
+      <div class="kpi-meta">Orders discounted across platform</div>
+    </div>
+  </div>
+
+  <!-- PROMO CODES TABLE -->
+  <div class="card table-card mt-4">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Coupon Code</th>
+            <th>Discount Value</th>
+            <th>Min Spend / Cap</th>
+            <th>Redemptions &amp; Cap</th>
+            <th>Status</th>
+            <th>Expiration</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (isLoading()) {
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="spinner"></div>
+                <p class="mt-2 text-muted">Loading promo campaigns...</p>
+              </td>
+            </tr>
+          } @else if (promos().length === 0) {
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="empty-state">
+                  <h4>No Promo Codes Configured</h4>
+                  <p class="subtitle">Click "Create Promo Code" to launch your first customer acquisition campaign.</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (p of promos(); track p.id) {
+              <tr>
+                <td>
+                  <div class="coupon-pill-box">
+                    <span class="coupon-code-pill">{{ p.code }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="discount-badge">
+                    @if (p.discount_type === 'PERCENTAGE') {
+                      {{ p.discount_value }}% OFF
+                    } @else {
+                      {{ p.discount_value | currency }} OFF
+                    }
+                  </span>
+                </td>
+                <td>
+                  <div class="cap-meta">
+                    <span>Min Spend: {{ p.min_spend | currency }}</span>
+                    @if (p.max_discount > 0) {
+                      <span class="text-muted">Max Cap: {{ p.max_discount | currency }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <div class="usage-progress-cell">
+                    <span class="usage-num">{{ p.uses_count }} / {{ p.max_uses === 0 ? '∞' : p.max_uses }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="p.is_active ? 'badge-success' : 'badge-danger'">
+                    {{ p.is_active ? 'ACTIVE' : 'PAUSED' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="text-dim font-mono">
+                    {{ p.expires_at ? (p.expires_at | date:'mediumDate') : 'No Expiration' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="btn btn-sm" [ngClass]="p.is_active ? 'btn-soft-warning' : 'btn-soft-success'" (click)="toggleActive(p)">
+                      {{ p.is_active ? 'Pause' : 'Activate' }}
+                    </button>
+                    <button class="btn btn-sm btn-soft-light" (click)="openEditModal(p)">
+                      Edit
+                    </button>
+                    <button class="btn btn-sm btn-soft-danger" (click)="deletePromo(p)">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CREATE / EDIT PROMO MODAL -->
+  @if (showCreateModal()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="modal-icon-badge blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/>
+              </svg>
+            </div>
+            <div>
+              <h3>{{ isEditing() ? 'Edit Promo Code' : 'Create Marketing Promo Code' }}</h3>
+              <p class="modal-sub">Campaign parameters &amp; discount rules</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group mb-3">
+            <label class="form-label">Coupon Code String</label>
+            <input type="text" [(ngModel)]="formCode" class="form-control" placeholder="e.g. SUMMER2026, WELCOME10" style="text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;" />
+          </div>
+
+          <div class="form-row-2 mb-3">
+            <div class="form-group">
+              <label class="form-label">Discount Type</label>
+              <select [(ngModel)]="formDiscountType" class="form-control select-control">
+                <option value="PERCENTAGE">Percentage (%)</option>
+                <option value="FIXED">Fixed Amount ($)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Discount Value</label>
+              <input type="number" [(ngModel)]="formDiscountValue" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-row-2 mb-3">
+            <div class="form-group">
+              <label class="form-label">Min Spend ($)</label>
+              <input type="number" [(ngModel)]="formMinSpend" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Max Discount Cap ($)</label>
+              <input type="number" [(ngModel)]="formMaxDiscount" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-row-2 mb-3">
+            <div class="form-group">
+              <label class="form-label">Max Total Redemptions</label>
+              <input type="number" [(ngModel)]="formMaxUses" class="form-control" placeholder="0 for unlimited" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Expiration Date (Optional)</label>
+              <input type="date" [(ngModel)]="formExpiresAt" class="form-control" />
+            </div>
+          </div>
+
+          <div class="form-check-group mt-2">
+            <label class="pinned-toggle">
+              <input type="checkbox" [(ngModel)]="formIsActive" />
+              <span>Make Coupon Active Immediately</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()" [disabled]="isActioning()">Cancel</button>
+          <button class="btn btn-primary" (click)="savePromo()" [disabled]="isActioning() || !formCode.trim()">
+            <span>{{ isActioning() ? 'Saving...' : 'Save Promo Code' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

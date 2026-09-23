@@ -1,0 +1,120 @@
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeInOverlay 0.2s ease-out forwards;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dialog-card {
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: popInDialog 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+}
+
+.dialog-card.danger-theme {
+  border-color: var(--danger);
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.4), 0 0 24px rgba(192, 50, 33, 0.15);
+}
+
+@keyframes popInDialog {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.dialog-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dialog-icon-wrapper.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.dialog-icon-wrapper.confirm, .dialog-icon-wrapper.info {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dialog-icon-wrapper.prompt {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.dialog-icon-wrapper.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.dialog-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.dialog-title {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.dialog-message {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  word-break: break-word;
+  margin: 0;
+}
+
+.dialog-input-wrapper {
+  margin-top: -4px;
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}

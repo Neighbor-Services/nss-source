@@ -1,0 +1,137 @@
+<div class="page-container animate-fade-in">
+  <!-- ======================= HERO ======================= -->
+  <section class="page-hero">
+    <div class="wrap rv">
+      <p class="eyebrow">Support</p>
+      <h1>How can we help?</h1>
+      <p class="lede">Whether you're a service provider, a seeker, or just curious about our mission, our dedicated support team is ready to assist you.</p>
+    </div>
+  </section>
+
+  <!-- ======================= CONTACT INFO & FORM ======================= -->
+  <section style="padding-top:40px;">
+    <div class="wrap contact-split">
+      <div class="contact-info rv">
+        <h2 style="margin-bottom:40px;">Contact Details</h2>
+
+        <div class="item">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h4>Email Support</h4>
+            <p>support&#64;neighborservice.com</p>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+          </div>
+          <div>
+            <h4>Helpline</h4>
+            <p>+1 (555) 000-0000 (24/7)</p>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+          </div>
+          <div>
+            <h4>Headquarters</h4>
+            <p>123 Community City, CC 12345</p>
+          </div>
+        </div>
+
+        <div class="response-box">
+          <h4>Typical Response Time</h4>
+          <p>We usually respond to all inquiries within 2 hours during business hours.</p>
+          <div class="response-avg">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            Average: 1h 24m
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form rv">
+        <h2 style="margin-bottom:30px; font-size:32px;">Send a Message</h2>
+
+        @if (alertMessage()) {
+          <div class="alert" [ngClass]="isSuccess() ? 'alert-success' : 'alert-error'">
+            <span>
+              @if (isSuccess()) {
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              } @else {
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              }
+            </span>
+            <span>{{ alertMessage() }}</span>
+          </div>
+        }
+
+        <form (submit)="onSubmit($event)">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" name="firstName" [(ngModel)]="formData.firstName" class="form-control" placeholder="John" required>
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" name="lastName" [(ngModel)]="formData.lastName" class="form-control" placeholder="Doe">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" name="email" [(ngModel)]="formData.email" class="form-control" placeholder="john&#64;example.com" required>
+          </div>
+
+          <div class="form-group">
+            <label>How can we help?</label>
+            <select name="inquiryType" [(ngModel)]="formData.inquiryType" class="form-control">
+              <option value="General Inquiry">General Inquiry</option>
+              <option value="Technical Support">Technical Support</option>
+              <option value="Billing Question">Billing Question</option>
+              <option value="Become a Partner">Become a Partner</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Message Detail</label>
+            <textarea name="message" [(ngModel)]="formData.message" class="form-control" placeholder="Tell us more about your request..." required></textarea>
+          </div>
+
+          <button type="submit" [disabled]="isSubmitting()" class="btn btn-primary" style="width:100%; justify-content:center; padding:16px;">
+            {{ isSubmitting() ? 'Sending…' : 'Send Message' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= CTA ======================= -->
+  <section class="bottom-cta">
+    <div class="wrap rv">
+      <h3>Looking for immediate answers?</h3>
+      <p>Check our detailed help center and documentation for quick guides.</p>
+      <a routerLink="/support" class="btn btn-outline-w">VISIT HELP CENTER</a>
+    </div>
+  </section>
+</div>

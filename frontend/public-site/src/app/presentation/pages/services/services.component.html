@@ -1,0 +1,251 @@
+<div class="page-container animate-fade-in">
+  <!-- ======================= HERO ======================= -->
+  <section class="page-hero">
+    <div class="wrap rv">
+      <p class="eyebrow">Service Catalog</p>
+      <h1>Find the right help.</h1>
+      <p class="lede">Find trusted, verified help for every neighborhood need. Our platform connects you with local
+        experts and helpful neighbors across dozens of categories.</p>
+    </div>
+  </section>
+
+  <!-- ======================= FILTER NAV ======================= -->
+  <div class="filter-bar wrap">
+    <button class="filter-link" [class.active]="selectedCategoryId() === 'all'" (click)="selectCategory('all')">ALL
+      CATEGORIES</button>
+    @for (cat of categories(); track cat.id) {
+    <button class="filter-link" [class.active]="selectedCategoryId() === cat.id" (click)="selectCategory(cat.id)">{{
+      cat.name | uppercase }}</button>
+    }
+  </div>
+
+  <!-- ======================= CATEGORIES & SERVICES ======================= -->
+  <div id="all">
+    @if (categories().length > 0) {
+    @for (cat of filteredCategories(); track cat.id; let idx = $index) {
+    @if (getServicesForCategory(cat.id).length > 0 || !searchQuery) {
+    <section [id]="'cat-' + cat.id" class="cat-section" [class.bg-white]="idx % 2 === 0">
+      <div class="wrap">
+        <div class="head rv" style="text-align:left; margin-bottom:40px;">
+          <p class="eyebrow left">{{ cat.name }}</p>
+          <h2 style="margin:10px 0; display:flex; align-items:center; gap:12px;">
+            <span class="cat-title-icon">
+              <ng-container [ngSwitch]="getCategoryIconType(cat.name)">
+                <svg *ngSwitchCase="'automotive'" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 11.2 2 11.6 2 12v4c0 .6.4 1 1 1h2">
+                  </path>
+                  <circle cx="7" cy="17" r="2"></circle>
+                  <path d="M9 17h6"></path>
+                  <circle cx="17" cy="17" r="2"></circle>
+                </svg>
+                <svg *ngSwitchCase="'beauty'" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                </svg>
+                <svg *ngSwitchCase="'caregiving'" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+                  </path>
+                </svg>
+                <svg *ngSwitchCase="'cleaning'" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"></path>
+                  <circle cx="19" cy="5" r="1.4"></circle>
+                </svg>
+                <svg *ngSwitchCase="'education'" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+                <svg *ngSwitchCase="'fashion'" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+                <svg *ngSwitchCase="'food'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                  <line x1="6" y1="1" x2="6" y2="4"></line>
+                  <line x1="10" y1="1" x2="10" y2="4"></line>
+                  <line x1="14" y1="1" x2="14" y2="4"></line>
+                </svg>
+                <svg *ngSwitchCase="'healthcare'" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                <svg *ngSwitchCase="'home'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+                  </path>
+                </svg>
+                <svg *ngSwitchCase="'lawn'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+                </svg>
+                <svg *ngSwitchCase="'pet'" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M12 5c.67 0 1.2.67 1.2 1.5S12.67 8 12 8s-1.2-.67-1.2-1.5S11.33 5 12 5zm-4 2c.67 0 1.2.67 1.2 1.5S8.67 10 8 10s-1.2-.67-1.2-1.5S7.33 7 8 7zm8 0c.67 0 1.2.67 1.2 1.5S16.67 10 16 10s-1.2-.67-1.2-1.5S15.33 7 16 7zm-8 4c.67 0 1.2.67 1.2 1.5S8.67 14 8 14s-1.2-.67-1.2-1.5S7.33 11 8 11zm8 0c.67 0 1.2.67 1.2 1.5S16.67 14 16 14s-1.2-.67-1.2-1.5S15.33 11 16 11zm-4 2c1.66 0 3 1.34 3 3 0 1.5-1.5 2-3 2s-3-.5-3-2c0-1.66 1.34-3 3-3z">
+                  </path>
+                </svg>
+                <svg *ngSwitchDefault width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+              </ng-container>
+            </span>
+            <span>{{ cat.name }}</span>
+          </h2>
+          @if (cat.description) {
+          <p class="lede" style="max-width:800px;">{{ cat.description }}</p>
+          }
+        </div>
+
+        @if (getServicesForCategory(cat.id).length > 0) {
+        <div class="tiles rv" style="grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));">
+          @for (srv of getServicesForCategory(cat.id); track srv.id) {
+          <article class="tile">
+            <div class="ic">
+              <ng-container [ngSwitch]="getCategoryIconType(cat.name)">
+                <svg *ngSwitchCase="'automotive'" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 11.2 2 11.6 2 12v4c0 .6.4 1 1 1h2">
+                  </path>
+                  <circle cx="7" cy="17" r="2"></circle>
+                  <path d="M9 17h6"></path>
+                  <circle cx="17" cy="17" r="2"></circle>
+                </svg>
+                <svg *ngSwitchCase="'beauty'" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                </svg>
+                <svg *ngSwitchCase="'caregiving'" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+                  </path>
+                </svg>
+                <svg *ngSwitchCase="'cleaning'" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"></path>
+                  <circle cx="19" cy="5" r="1.4"></circle>
+                </svg>
+                <svg *ngSwitchCase="'education'" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+                <svg *ngSwitchCase="'fashion'" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+                <svg *ngSwitchCase="'food'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                  <line x1="6" y1="1" x2="6" y2="4"></line>
+                  <line x1="10" y1="1" x2="10" y2="4"></line>
+                  <line x1="14" y1="1" x2="14" y2="4"></line>
+                </svg>
+                <svg *ngSwitchCase="'healthcare'" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                <svg *ngSwitchCase="'home'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+                  </path>
+                </svg>
+                <svg *ngSwitchCase="'lawn'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+                  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+                </svg>
+                <svg *ngSwitchCase="'pet'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M12 5c.67 0 1.2.67 1.2 1.5S12.67 8 12 8s-1.2-.67-1.2-1.5S11.33 5 12 5zm-4 2c.67 0 1.2.67 1.2 1.5S8.67 10 8 10s-1.2-.67-1.2-1.5S7.33 7 8 7zm8 0c.67 0 1.2.67 1.2 1.5S16.67 10 16 10s-1.2-.67-1.2-1.5S15.33 7 16 7zm-8 4c.67 0 1.2.67 1.2 1.5S8.67 14 8 14s-1.2-.67-1.2-1.5S7.33 11 8 11zm8 0c.67 0 1.2.67 1.2 1.5S16.67 14 16 14s-1.2-.67-1.2-1.5S15.33 11 16 11zm-4 2c1.66 0 3 1.34 3 3 0 1.5-1.5 2-3 2s-3-.5-3-2c0-1.66 1.34-3 3-3z">
+                  </path>
+                </svg>
+                <svg *ngSwitchDefault width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+              </ng-container>
+            </div>
+            <h3>{{ srv.name }}</h3>
+            @if (srv.description) {
+            <p style="font-size:14.5px; margin-bottom: 14px;">{{ srv.description }}</p>
+            }
+
+          </article>
+          }
+        </div>
+        } @else {
+        <p class="empty-cat-note">No services matching "{{ searchQuery }}" in this category.</p>
+        }
+      </div>
+    </section>
+    }
+    }
+    } @else {
+    <section style="text-align:center; padding: 80px 0;">
+      <div class="wrap rv">
+        <div class="empty-icon-wrap" style="margin-bottom:20px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#5b16ee" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+            </path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <h2>Loading Service Catalog…</h2>
+        <p class="lede" style="margin:0 auto 30px;">Connecting with verified providers and services in your area.</p>
+      </div>
+    </section>
+    }
+  </div>
+
+  <!-- ======================= SEARCH & FILTER BAR (mobile-friendly) ======================= -->
+  <div class="mobile-search wrap">
+    <input type="text" [(ngModel)]="searchQuery" placeholder="Search services…" class="form-control"
+      (input)="onSearch()" />
+  </div>
+
+  <!-- ======================= CTA ======================= -->
+  <section class="prov-wrap">
+    <div class="wrap">
+      <div class="prov-card rv">
+        <h2>Ready to serve your neighborhood?</h2>
+        <p class="lede">Create a provider profile in minutes and start connecting with local customers who need your
+          expertise.</p>
+        <div style="position:relative; z-index:1;">
+          <a class="btn btn-amber" routerLink="/" fragment="providers">BECOME A PROVIDER</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,399 @@
+<!-- HOPE UI HERO HEADER BANNER -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">Financial Analytics &amp; Tax Exports</h1>
+        <span class="live-pill">
+          <span class="live-dot pulse"></span>
+          Double-Entry Ledger Active
+        </span>
+      </div>
+      <p class="hope-hero-subtitle">Platform take-rate revenue, GAAP financial exports, 1099-K tax filing, and double-entry Stripe reconciliation.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-soft-light" (click)="runReconciliationAudit()" [disabled]="isReconciling()" title="Audit Stripe balance vs internal ledger">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isReconciling()">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+        <span>{{ isReconciling() ? 'Auditing Ledger...' : 'Audit Ledger' }}</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="generateTaxPackage()" [disabled]="exporting() === 'tax'" title="Download IRS 1099-K Tax Package CSV">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/>
+        </svg>
+        <span>{{ exporting() === 'tax' ? 'Generating 1099-K...' : '1099-K Tax Package' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- Date Range & Preset Filter Bar -->
+  <div class="card filter-bar-card">
+    <div class="preset-pills">
+      <button class="preset-pill" [class.active]="activePreset() === '7d'" (click)="setPreset('7d')">7D</button>
+      <button class="preset-pill" [class.active]="activePreset() === '30d'" (click)="setPreset('30d')">30D</button>
+      <button class="preset-pill" [class.active]="activePreset() === '90d'" (click)="setPreset('90d')">90D</button>
+      <button class="preset-pill" [class.active]="activePreset() === 'ytd'" (click)="setPreset('ytd')">YTD</button>
+      <button class="preset-pill" [class.active]="activePreset() === 'all'" (click)="setPreset('all')">All Time</button>
+    </div>
+
+    <div class="date-filter-group">
+      <div class="date-input-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+        </svg>
+        <input type="date" [(ngModel)]="startDate" class="form-control date-ctrl" />
+      </div>
+      <span class="to-text">to</span>
+      <div class="date-input-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+        </svg>
+        <input type="date" [(ngModel)]="endDate" class="form-control date-ctrl" />
+      </div>
+      <button class="btn btn-primary" (click)="fetchFinancialReport()" [disabled]="loading()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loading()">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        <span>{{ loading() ? 'Filtering...' : 'Filter Range' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Data Streaming Exports Card -->
+  <div class="card exports-banner-card">
+    <div class="exports-info">
+      <div class="banner-icon-box">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <div>
+        <h3>Data Streaming &amp; Accounting Exports</h3>
+        <p class="sub-text">Generate on-demand sanitized CSV packages of platform entities for tax, bookkeeping, and external auditing.</p>
+      </div>
+    </div>
+    <div class="exports-actions">
+      <button class="btn btn-secondary btn-sm" (click)="downloadExport('users')" [disabled]="exporting() === 'users'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>{{ exporting() === 'users' ? 'Exporting...' : 'Export Users CSV' }}</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" (click)="downloadExport('payouts')" [disabled]="exporting() === 'payouts'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>{{ exporting() === 'payouts' ? 'Exporting...' : 'Export Payouts CSV' }}</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" (click)="downloadExport('disputes')" [disabled]="exporting() === 'disputes'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>{{ exporting() === 'disputes' ? 'Exporting...' : 'Export Disputes CSV' }}</span>
+      </button>
+      <button class="btn btn-primary btn-sm" (click)="generateTaxPackage()" [disabled]="exporting() === 'tax'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/>
+        </svg>
+        <span>{{ exporting() === 'tax' ? 'Generating 1099-K...' : 'Export 1099-K Tax Package' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Stripe Live Account Balance -->
+  <div class="card stripe-balance-card">
+    <div class="stripe-balance-header">
+      <div class="stripe-balance-title">
+        <div class="stripe-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <span>Stripe Live Account Balance</span>
+        </div>
+        <div class="balance-refresh-badge" [class.spinning]="isLoadingBalance()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" [class.spin]="isLoadingBalance()"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <span>{{ isLoadingBalance() ? 'Refreshing...' : 'Auto-refresh 30s' }}</span>
+        </div>
+      </div>
+      <button class="btn-soft-light btn-xs" (click)="loadStripeBalance()" [disabled]="isLoadingBalance()" title="Force refresh Stripe balance">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoadingBalance()"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+    </div>
+    @if (stripeBalance()) {
+      <div class="stripe-balance-grid">
+        <div class="stripe-balance-item">
+          <div class="stripe-balance-icon available"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
+          <div class="stripe-balance-data">
+            <p class="stripe-balance-label">Available (Payout-Ready)</p>
+            <p class="stripe-balance-amount available">{{ formatCurrency((stripeBalance()?.available || 0) / 100) }}</p>
+            <p class="stripe-balance-sub">Immediately withdrawable</p>
+          </div>
+        </div>
+        <div class="stripe-balance-item">
+          <div class="stripe-balance-icon pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div class="stripe-balance-data">
+            <p class="stripe-balance-label">Pending (In Transit)</p>
+            <p class="stripe-balance-amount pending">{{ formatCurrency((stripeBalance()?.pending || 0) / 100) }}</p>
+            <p class="stripe-balance-sub">Clearing in 1–2 business days</p>
+          </div>
+        </div>
+        <div class="stripe-balance-item">
+          <div class="stripe-balance-icon reserved"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <div class="stripe-balance-data">
+            <p class="stripe-balance-label">Reserved (Risk Hold)</p>
+            <p class="stripe-balance-amount reserved">{{ formatCurrency((stripeBalance()?.reserved || 0) / 100) }}</p>
+            <p class="stripe-balance-sub">Held for chargebacks</p>
+          </div>
+        </div>
+        <div class="stripe-balance-item total-col">
+          <div class="stripe-balance-icon total"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="stripe-balance-data">
+            <p class="stripe-balance-label">Total Stripe Balance</p>
+            <p class="stripe-balance-amount total">{{ formatCurrency(((stripeBalance()?.available || 0) + (stripeBalance()?.pending || 0) + (stripeBalance()?.reserved || 0)) / 100) }}</p>
+            <p class="stripe-balance-sub">{{ stripeBalance()?.currency?.toUpperCase() }} · Refreshed {{ stripeBalance()?.lastRefreshed | date:'shortTime' }}</p>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="stripe-balance-loading">
+        @if (isLoadingBalance()) {
+          <div class="mini-spinner"></div>
+          <span>Fetching live Stripe balance...</span>
+        } @else {
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Stripe balance unavailable. <button class="link-btn" (click)="loadStripeBalance()">Retry</button></span>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- 4-Pillar Financial Metrics -->
+  <div class="stats-grid">
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-info">Net Platform Revenue</span>
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Gross Platform Take-Rate</span>
+        <h2 class="kpi-value">{{ formatCurrency(report()?.totalRevenue) }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        <span class="text-success font-semibold">15% Take-Rate</span> on completed service bookings
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-success">Marketplace Volume</span>
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Gross Merchandise Value (GMV)</span>
+        <h2 class="kpi-value">{{ formatCurrency(report()?.grossMerchandiseValue) }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        Total customer payments processed through escrow
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-warning">Provider Earnings</span>
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Net Payouts Disbursed</span>
+        <h2 class="kpi-value">{{ formatCurrency(report()?.totalPayouts) }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        <span class="text-muted">Direct Stripe transfers to bank accounts</span>
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-purple">Pending Clearing</span>
+        <div class="kpi-circle-widget purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Held in Escrow</span>
+        <h2 class="kpi-value">{{ formatCurrency(report()?.heldInEscrow) }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        Active appointments awaiting seeker sign-off
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Financial Breakdown -->
+  <div class="stats-grid mt-4">
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="kpi-label">Subscription ARR &amp; MRR</span>
+        <span class="badge badge-primary">SaaS</span>
+      </div>
+      <div class="kpi-card-body">
+        <h3 class="kpi-value">{{ formatCurrency(report()?.subscriptionRevenue) }}</h3>
+        <span class="sub-text">Silver &amp; Gold Provider Subscriptions</span>
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="kpi-label">Background Check Fees</span>
+        <span class="badge badge-info">Checkr</span>
+      </div>
+      <div class="kpi-card-body">
+        <h3 class="kpi-value">{{ formatCurrency(report()?.backgroundCheckFees) }}</h3>
+        <span class="sub-text">Screening pass-through revenue</span>
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="kpi-label">Refunds &amp; Disputes</span>
+        <span class="badge badge-danger">Deductions</span>
+      </div>
+      <div class="kpi-card-body">
+        <h3 class="kpi-value text-danger">{{ formatCurrency(report()?.refundedAmount) }}</h3>
+        <span class="sub-text">Chargebacks and mediation reversals</span>
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="kpi-label">Net Margin</span>
+        <span class="badge badge-success">GAAP</span>
+      </div>
+      <div class="kpi-card-body">
+        <h3 class="kpi-value text-success">{{ formatCurrency(report()?.netMargin) }}</h3>
+        <span class="sub-text">Take-rate after processing deductions</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1099-K Tax Compliance & Ledger Deck -->
+  <div class="deck-grid mt-4">
+    <div class="card deck-card">
+      <div class="deck-header">
+        <div class="deck-icon icon-blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <h4>IRS 1099-K Annual Tax Generation</h4>
+          <span class="deck-sub">Quarterly compliance for US providers exceeding $600/yr gross threshold</span>
+        </div>
+      </div>
+
+      <div class="deck-body">
+        <p class="deck-text">
+          Generates compliant IRS-1099K packages matching Form 1099-K reporting standards including TIN validation, gross card payments, and aggregate transactions.
+        </p>
+        <div class="tax-control-row">
+          <div class="form-group">
+            <label class="form-label">Tax Year</label>
+            <select [(ngModel)]="selectedTaxYear" class="form-control select-control">
+              <option [value]="2026">2026 (Current Filing)</option>
+              <option [value]="2025">2025</option>
+              <option [value]="2024">2024</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reporting Period</label>
+            <select [(ngModel)]="selectedTaxQuarter" class="form-control select-control">
+              <option value="FULL_YEAR">Full Tax Year (Jan 1 - Dec 31)</option>
+              <option value="Q1">Q1 (Jan - Mar)</option>
+              <option value="Q2">Q2 (Apr - Jun)</option>
+              <option value="Q3">Q3 (Jul - Sep)</option>
+              <option value="Q4">Q4 (Oct - Dec)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" (click)="generateTaxPackage()" [disabled]="exporting() === 'tax'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>{{ exporting() === 'tax' ? 'Building...' : 'Download IRS 1099-K' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card deck-card">
+      <div class="deck-header">
+        <div class="deck-icon icon-emerald">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h4>Stripe Double-Entry Ledger Reconciliation</h4>
+          <span class="deck-sub">Real-time discrepancy check against platform balance and escrow deposits</span>
+        </div>
+      </div>
+
+      <div class="deck-body">
+        <div class="audit-status-box">
+          <div class="audit-indicator">
+            <span class="pulse-dot"></span>
+            <span>Ledger Integrity Status: <b>Synchronized</b></span>
+          </div>
+          <p class="deck-text">
+            Double-entry platform journal automatically verifies that total Stripe customer payments equal provider escrow liabilities plus platform take-rate.
+          </p>
+          <div class="audit-btn-wrap">
+            <button class="btn btn-secondary" (click)="runReconciliationAudit()" [disabled]="isReconciling()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isReconciling()">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              <span>{{ isReconciling() ? 'Verifying Ledger...' : 'Run Ledger Audit' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

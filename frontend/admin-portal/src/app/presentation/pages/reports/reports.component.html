@@ -1,0 +1,606 @@
+<!-- HOPE UI HERO HEADER BANNER -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">Platform Moderation &amp; Abuse Reports</h1>
+        <span class="live-pill">
+          <span class="live-dot pulse"></span>
+          Content Shield Active
+        </span>
+      </div>
+      <p class="hope-hero-subtitle">Triage user-submitted content complaints, review policy violations, inspect incident evidence, and apply sanctions.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-soft-light" (click)="exportReportsCSV()" [disabled]="!moderationReports().length" title="Download Reports CSV Export">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="fetchModerationReports()" [disabled]="loading()" title="Refresh latest abuse reports">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loading()">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- KPI SUMMARY STATS CARDS -->
+  <div class="stats-grid">
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-info">Total Volume</span>
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Total Abuse Reports</span>
+        <h2 class="kpi-value">{{ moderationReports().length }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        Lifetime user-submitted complaints
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-warning">Awaiting Action</span>
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Pending Triage</span>
+        <h2 class="kpi-value text-warning">{{ pendingReportsCount() }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        Active complaints requiring moderation review
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-success">Sanctioned</span>
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Resolved &amp; Closed</span>
+        <h2 class="kpi-value text-success">{{ resolvedReportsCount() }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        Incidents reviewed and sanctioned
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-card-top">
+        <span class="badge badge-purple">Dismissed</span>
+        <div class="kpi-circle-widget purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-card-body">
+        <span class="kpi-label">Unsubstantiated</span>
+        <h2 class="kpi-value">{{ dismissedReportsCount() }}</h2>
+      </div>
+      <div class="kpi-card-footer">
+        Dismissed without sanctions
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT MODERATION & ABUSE REPORTS SECTION -->
+  <div class="card table-card mt-4">
+    <div class="table-header">
+      <div class="table-title-group">
+        <div class="table-icon-badge purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <h3>Incident Reports Queue</h3>
+            <span class="counter-badge">{{ filteredReports().length }} Reports</span>
+          </div>
+          <span class="sub-text">Triage user-submitted content complaints, safety flags, and incident commentary</span>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <!-- Live Search Bar -->
+        <div class="search-input-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            placeholder="Search reports, users, content..."
+            class="form-control search-control"
+          />
+          @if (searchQuery()) {
+            <button class="clear-search-btn" (click)="searchQuery.set('')" title="Clear search">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          }
+        </div>
+
+        <!-- Category Filter -->
+        @if (availableCategories().length > 0) {
+          <select [(ngModel)]="categoryFilter" class="form-control select-control">
+            <option value="">All Categories</option>
+            @for (cat of availableCategories(); track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        }
+
+        <!-- Status Filter -->
+        <select [(ngModel)]="modStatusFilter" class="form-control select-control">
+          <option value="">All Statuses (All)</option>
+          <option value="PENDING">Pending Triage</option>
+          <option value="RESOLVED">Resolved / Sanctioned</option>
+          <option value="DISMISSED">Dismissed / Archived</option>
+        </select>
+
+        <button class="btn btn-secondary btn-sm" (click)="exportReportsCSV()" title="Export CSV list">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Export CSV</span>
+        </button>
+
+        <button class="btn btn-secondary btn-sm" (click)="fetchModerationReports()" [disabled]="loading()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loading()">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Multi-Select Bulk Actions Bar -->
+    @if (selectedReportsCount() > 0) {
+      <div class="bulk-action-bar">
+        <div class="bulk-info">
+          <span class="badge badge-primary">{{ selectedReportsCount() }} selected</span>
+          <span class="bulk-desc">Perform batch administrative action on selected reports:</span>
+        </div>
+        <div class="bulk-btns">
+          <button class="btn btn-success btn-sm" (click)="bulkResolveReports()" [disabled]="isBulkActioning()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>Bulk Resolve</span>
+          </button>
+          <button class="btn btn-danger btn-sm" (click)="bulkDismissReports()" [disabled]="isBulkActioning()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            <span>Bulk Dismiss</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" (click)="selectedReportIds.set([])">
+            Cancel
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 40px;">
+              <input
+                type="checkbox"
+                [checked]="isAllReportsSelected()"
+                (change)="toggleSelectAllReports()"
+                class="custom-chk"
+                title="Select all"
+              />
+            </th>
+            <th>Reporter</th>
+            <th>Reported Account / Entity</th>
+            <th>Violation Reason</th>
+            <th>Incident Content &amp; Details</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th class="text-right">Triage Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr>
+              <td colspan="8" class="text-center py-5">
+                <div class="loading-state">
+                  <div class="spinner-border text-primary"></div>
+                  <p class="mt-2 text-muted">Retrieving abuse and moderation incident logs...</p>
+                </div>
+              </td>
+            </tr>
+          } @else if (filteredReports().length === 0) {
+            <tr>
+              <td colspan="8" class="text-center py-5">
+                <div class="empty-state-box">
+                  <div class="empty-icon-shield">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <polyline points="9 12 11 14 15 10"/>
+                    </svg>
+                  </div>
+                  <h4 class="mt-3">Zero Abuse Reports Found</h4>
+                  <p class="text-muted">No pending user moderation tickets match your active filter criteria.</p>
+                  @if (searchQuery() || categoryFilter() || modStatusFilter()) {
+                    <button class="btn btn-secondary btn-sm mt-2" (click)="searchQuery.set(''); categoryFilter.set(''); modStatusFilter.set('')">Reset Filters</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (r of filteredReports(); track r.id) {
+              <tr [class.table-row-selected]="selectedReportIds().includes(r.id)">
+                <td>
+                  <input
+                    type="checkbox"
+                    [checked]="selectedReportIds().includes(r.id)"
+                    (change)="toggleReportSelection(r.id)"
+                    class="custom-chk"
+                  />
+                </td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-placeholder">
+                      {{ getAvatarInitial(r.reporterName, r.reporterEmail) }}
+                    </div>
+                    <div class="user-info">
+                      <span class="user-name">{{ getPartyDisplayName(r.reporterName, r.reporterEmail) }}</span>
+                      @if (r.reporterEmail) {
+                        <span class="text-muted text-xs">{{ r.reporterEmail }}</span>
+                      }
+                      <span class="role-pill">Complainant</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-placeholder reported">
+                      {{ getAvatarInitial(r.reportedUserName, r.reportedUserEmail) }}
+                    </div>
+                    <div class="user-info">
+                      <span class="user-name font-semibold text-danger">
+                        {{ getPartyDisplayName(r.reportedUserName, r.reportedUserEmail) }}
+                      </span>
+                      @if (r.reportedUserEmail) {
+                        <span class="text-muted text-xs">{{ r.reportedUserEmail }}</span>
+                      }
+                      @if (r.resourceType) {
+                        <span class="resource-pill">{{ r.resourceType }} Target</span>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getCategoryBadgeClass(r.category || r.reason)">
+                    {{ r.category || r.reason || 'Safety / Terms Violation' }}
+                  </span>
+                </td>
+                <td class="content-cell" (click)="openReportDetail(r)">
+                  <div class="content-preview-box">
+                    <p class="desc-text" [title]="r.description || r.reason">
+                      {{ r.description || r.reason || 'No statement provided with report submission.' }}
+                    </p>
+                    @if (r.adminNotes) {
+                      <span class="res-notes-pill">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        Note: {{ r.adminNotes }}
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'badge-warning': r.status === 'PENDING',
+                    'badge-success': r.status === 'RESOLVED',
+                    'badge-secondary': r.status === 'DISMISSED'
+                  }">
+                    <span class="dot-indicator"></span>
+                    {{ r.status }}
+                  </span>
+                </td>
+                <td>
+                  <div class="date-cell">
+                    <span class="date-val">{{ formatDate(r.createdAt) }}</span>
+                    <span class="time-val">{{ r.createdAt | date:'shortTime' }}</span>
+                  </div>
+                </td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <!-- Inspect Dossier Button -->
+                    <button class="btn btn-secondary btn-xs" (click)="openReportDetail(r)" title="Inspect Report Dossier">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      <span>Details</span>
+                    </button>
+
+                    @if (r.status === 'PENDING') {
+                      <button class="btn btn-success btn-xs" (click)="resolveReport(r)" [disabled]="resolvingReportId() === r.id" title="Resolve & Sanction">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <span>Resolve</span>
+                      </button>
+
+                      <button class="btn btn-danger btn-xs" (click)="dismissReport(r)" [disabled]="resolvingReportId() === r.id" title="Dismiss Report">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        <span>Dismiss</span>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODERATION REPORT DOSSIER MODAL -->
+@if (showDetailModal() && selectedReport()) {
+  <div class="modal-overlay" (click)="closeDetailModal()">
+    <div class="modal-dialog dossier-modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <div class="modal-icon-badge purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Moderation Incident Dossier</h3>
+            <p class="modal-sub">Incident ID: #{{ selectedReport()?.id }}</p>
+          </div>
+        </div>
+        <button class="btn-icon-close" (click)="closeDetailModal()" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Incident Status Banner -->
+        <div class="dossier-status-bar" [ngClass]="{
+          'status-bar-pending': selectedReport()?.status === 'PENDING',
+          'status-bar-resolved': selectedReport()?.status === 'RESOLVED',
+          'status-bar-dismissed': selectedReport()?.status === 'DISMISSED'
+        }">
+          <div class="d-flex align-items-center gap-2">
+            <span class="dot-indicator"></span>
+            <span>Current Moderation State: <b>{{ selectedReport()?.status }}</b></span>
+          </div>
+          <span class="badge" [ngClass]="getCategoryBadgeClass(selectedReport()?.category || '')">
+            {{ selectedReport()?.category || 'General Violation' }}
+          </span>
+        </div>
+
+        <!-- Full Submitted Content Card -->
+        <div class="dossier-section-card highlight-card">
+          <div class="dossier-section-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <h4>Complainant's Submitted Statement &amp; Content</h4>
+          </div>
+          <div class="statement-content-box">
+            <p class="statement-text">{{ selectedReport()?.description || selectedReport()?.reason || 'No detailed statement provided with this submission.' }}</p>
+          </div>
+          @if (selectedReport()?.reason && selectedReport()?.reason !== selectedReport()?.description) {
+            <div class="statement-meta-row mt-2">
+              <span class="text-dim text-xs">Primary Violation Reason:</span>
+              <span class="text-main text-xs font-semibold">{{ selectedReport()?.reason }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Two Parties Involved Grid -->
+        <div class="parties-grid">
+          <!-- Reporter Column -->
+          <div class="dossier-party-card">
+            <div class="party-card-header">
+              <div class="party-role-icon reporter">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div>
+                <h5>Reporting Complainant</h5>
+                <span class="party-subtitle">Submitting Account</span>
+              </div>
+            </div>
+            <div class="party-details-list">
+              <div class="party-detail-item">
+                <span class="detail-label">Name</span>
+                <span class="detail-val font-semibold">{{ getPartyDisplayName(selectedReport()?.reporterName, selectedReport()?.reporterEmail) }}</span>
+              </div>
+              <div class="party-detail-item">
+                <span class="detail-label">Email</span>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="detail-val">{{ selectedReport()?.reporterEmail || 'N/A' }}</span>
+                  @if (selectedReport()?.reporterEmail) {
+                    <button class="btn-copy-sm" (click)="copyToClipboard(selectedReport()!.reporterEmail, 'reporterEmail')" title="Copy email">
+                      @if (copiedField() === 'reporterEmail') {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                      } @else {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="party-detail-item">
+                <span class="detail-label">User ID</span>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="detail-val text-xs code-text">{{ selectedReport()?.reporterId || 'Anonymous / Unregistered' }}</span>
+                  @if (selectedReport()?.reporterId) {
+                    <button class="btn-copy-sm" (click)="copyToClipboard(selectedReport()!.reporterId, 'reporterId')" title="Copy ID">
+                      @if (copiedField() === 'reporterId') {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                      } @else {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reported Column -->
+          <div class="dossier-party-card reported-card">
+            <div class="party-card-header">
+              <div class="party-role-icon reported">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div>
+                <h5 class="text-danger">Reported Target / Account</h5>
+                <span class="party-subtitle">Target of Complaint</span>
+              </div>
+            </div>
+            <div class="party-details-list">
+              <div class="party-detail-item">
+                <span class="detail-label">Name</span>
+                <span class="detail-val font-semibold text-danger">{{ getPartyDisplayName(selectedReport()?.reportedUserName, selectedReport()?.reportedUserEmail) }}</span>
+              </div>
+              <div class="party-detail-item">
+                <span class="detail-label">Email</span>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="detail-val">{{ selectedReport()?.reportedUserEmail || 'N/A' }}</span>
+                  @if (selectedReport()?.reportedUserEmail) {
+                    <button class="btn-copy-sm" (click)="copyToClipboard(selectedReport()!.reportedUserEmail, 'reportedEmail')" title="Copy email">
+                      @if (copiedField() === 'reportedEmail') {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                      } @else {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="party-detail-item">
+                <span class="detail-label">Target ID</span>
+                <div class="d-flex align-items-center gap-1">
+                  <span class="detail-val text-xs code-text">{{ selectedReport()?.reportedUserId || selectedReport()?.resourceId || 'General Platform Target' }}</span>
+                  @if (selectedReport()?.reportedUserId || selectedReport()?.resourceId) {
+                    <button class="btn-copy-sm" (click)="copyToClipboard((selectedReport()!.reportedUserId || selectedReport()!.resourceId)!, 'reportedId')" title="Copy ID">
+                      @if (copiedField() === 'reportedId') {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                      } @else {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+              @if (selectedReport()?.resourceType) {
+                <div class="party-detail-item">
+                  <span class="detail-label">Resource Type</span>
+                  <span class="badge badge-purple">{{ selectedReport()?.resourceType }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Administrative Resolution Notes & Audit Input -->
+        <div class="dossier-section-card mt-3">
+          <div class="dossier-section-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            <h4>Administrative Decision &amp; Audit Trail</h4>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Triage Resolution Notes</label>
+            <textarea
+              [(ngModel)]="detailActionNote"
+              rows="3"
+              class="form-control"
+              placeholder="Record mandatory administrative notes, policy sanctions applied, or reason for dismissal..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDetailModal()">Close Dossier</button>
+        <button
+          class="btn btn-danger"
+          (click)="dismissFromModal()"
+          [disabled]="detailActioning()"
+          title="Dismiss as unsubstantiated"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          <span>{{ detailActioning() ? 'Processing...' : 'Dismiss & Archive' }}</span>
+        </button>
+        <button
+          class="btn btn-success"
+          (click)="resolveFromModal()"
+          [disabled]="detailActioning()"
+          title="Resolve & sanction"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>{{ detailActioning() ? 'Processing...' : 'Resolve & Record Sanction' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

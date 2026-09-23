@@ -1,0 +1,203 @@
+<div class="page-container animate-fade-in">
+  <!-- ======================= HERO ======================= -->
+  <header class="p-hero">
+    <div class="p-hero-grain" aria-hidden="true"></div>
+    <div class="wrap p-hero-in">
+      <p class="eyebrow rv">Resolution Center · neutral by design</p>
+      <h1 class="rv">Let's get it sorted.</h1>
+      <p class="lede rv">Most issues between neighbors clear up with one honest conversation. When they don't, this is where you document what happened and report it. Neighbor Service App stays neutral — we give you the tools; you and the other neighbor reach the resolution.</p>
+      <p class="hero-help rv">Having a technical or account problem instead? <a routerLink="/support">Visit Help &amp; Support →</a></p>
+    </div>
+  </header>
+
+  <!-- ======================= MAIN ======================= -->
+  <main class="policy">
+    <div class="wrap">
+
+      <!-- Neutral framing – 3 steps -->
+      <div class="rc-flow rv">
+        <div class="f"><span class="n">Step one</span><h3>Talk it through</h3><p>Message the other neighbor in the app. A quick, direct conversation resolves most issues faster than anything else.</p></div>
+        <div class="f"><span class="n">Step two</span><h3>Document everything</h3><p>Use the form below to put the facts in one place. Keep your photos, receipts, and messages together.</p></div>
+        <div class="f"><span class="n">Step three</span><h3>Report to NSA</h3><p>Send us your record. We review reports against our policies and can act on violations — we don't mediate the outcome.</p></div>
+      </div>
+
+      <!-- Guided multi-step form -->
+      <div class="rc-wrap rv">
+        <div class="rc-card">
+
+          <!-- Progress bar -->
+          <div class="rc-prog" aria-hidden="true">
+            <div class="pstep" [class.active]="step === 0" [class.done]="step > 0"><span class="bar"></span><span class="lab">You</span></div>
+            <div class="pstep" [class.active]="step === 1" [class.done]="step > 1"><span class="bar"></span><span class="lab">Issue</span></div>
+            <div class="pstep" [class.active]="step === 2" [class.done]="step > 2"><span class="bar"></span><span class="lab">Details</span></div>
+            <div class="pstep" [class.active]="step === 3" [class.done]="step > 3"><span class="bar"></span><span class="lab">Report</span></div>
+          </div>
+
+          <!-- Step 0: Role -->
+          @if (step === 0) {
+            <div class="rc-step show">
+              <p class="rc-q">First, who are you in this?</p>
+              <p class="rc-sub">This helps us frame the steps for your side of the booking.</p>
+              <div class="opt-grid">
+                <button type="button" class="opt" [class.selected]="state.role === 'seeker'" (click)="setRole('seeker', 'Seeker (I hired help)')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                  <span><b>I'm a Seeker</b><small>I hired or booked help</small></span>
+                </button>
+                <button type="button" class="opt" [class.selected]="state.role === 'provider'" (click)="setRole('provider', 'Provider (I offered help)')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 20l3-8 6-3 6 3 3 8" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="6" r="3" stroke="currentColor" stroke-width="2"/></svg></span>
+                  <span><b>I'm a Provider</b><small>I offered or performed a service</small></span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Step 1: Category -->
+          @if (step === 1) {
+            <div class="rc-step show">
+              <p class="rc-q">What happened?</p>
+              <p class="rc-sub">Pick the closest match. You'll add the details next.</p>
+              <div class="opt-grid">
+                <button type="button" class="opt" [class.selected]="state.cat === 'service'" (click)="setCat('service', 'Service quality', 'Describe what was agreed versus what actually happened.')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 7a4 4 0 01-5 5l-5 5 2 2 5-5a4 4 0 005-5l-2 2-2-2 2-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
+                  <span><b>Service quality</b><small>Work wasn't done right or as agreed</small></span>
+                </button>
+                <button type="button" class="opt" [class.selected]="state.cat === 'noshow'" (click)="setCat('noshow', 'No-show or cancellation', 'Note the scheduled time and when you realized it wasn\'t happening.')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                  <span><b>No-show or cancellation</b><small>Someone didn't show or canceled late</small></span>
+                </button>
+                <button type="button" class="opt" [class.selected]="state.cat === 'payment'" (click)="setCat('payment', 'Payment issue', 'Include amounts, dates, and how payment was made.')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="3" stroke="currentColor" stroke-width="2"/><path d="M3 10h18" stroke="currentColor" stroke-width="2"/></svg></span>
+                  <span><b>Payment issue</b><small>A charge, refund, or payment dispute</small></span>
+                </button>
+                <button type="button" class="opt" [class.selected]="state.cat === 'property'" (click)="setCat('property', 'Property damage or theft', 'Describe what was damaged or missing and note any photos you have.')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 11.5 12 4l9 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9h14v-9" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
+                  <span><b>Property damage or theft</b><small>Damage, loss, or theft during a job</small></span>
+                </button>
+                <button type="button" class="opt" [class.selected]="state.cat === 'safety'" (click)="setCat('safety', 'Safety concern', 'Describe what happened. If you\'re in immediate danger, contact emergency services first.')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 8v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1" fill="currentColor"/></svg></span>
+                  <span><b>Safety concern</b><small>Threats, harassment, or feeling unsafe</small></span>
+                </button>
+                <button type="button" class="opt" [class.selected]="state.cat === 'other'" (click)="setCat('other', 'Something else', 'Share the key facts: what, when, and who was involved.')">
+                  <span class="oic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg></span>
+                  <span><b>Something else</b><small>Anything not listed above</small></span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Step 2: Details -->
+          @if (step === 2) {
+            <div class="rc-step show">
+              <p class="rc-q">Add the details</p>
+              <p class="rc-sub">The clearer your record, the easier it is to resolve. Only the description is required.</p>
+              @if (state.cat === 'safety') {
+                <div class="urgent">
+                  <span class="ul">Your safety comes first</span>
+                  <p>If you're in immediate danger, call <strong>911</strong> before using this form. For urgent safety reports on the platform, include all relevant details below.</p>
+                </div>
+              }
+              <div class="two">
+                <div class="field">
+                  <label for="ref">Booking or job reference</label>
+                  <input id="ref" type="text" [(ngModel)]="state.ref" name="ref" autocomplete="off" placeholder="e.g. NSA-48213">
+                  <p class="hint">Optional — find it under your bookings.</p>
+                </div>
+                <div class="field">
+                  <label for="other">The other neighbor</label>
+                  <input id="other" type="text" [(ngModel)]="state.other" name="other" autocomplete="off" placeholder="Name or @handle">
+                  <p class="hint">Optional, if you have it.</p>
+                </div>
+              </div>
+              <div class="field" style="max-width:260px">
+                <label for="date">Date of service</label>
+                <input id="date" type="date" [(ngModel)]="state.date" name="date">
+              </div>
+              <div class="field">
+                <label for="desc">What happened? *</label>
+                <textarea id="desc" [(ngModel)]="state.desc" name="desc" placeholder="Describe the situation in your own words…"></textarea>
+                <p class="hint">{{ state.hint || 'Share the key facts: what, when, and who was involved.' }}</p>
+              </div>
+              <div class="field">
+                <label>What outcome are you hoping for?</label>
+                <div class="chips">
+                  @for (out of outcomes; track out) {
+                    <button type="button" class="chip" [attr.aria-pressed]="state.outcome.includes(out)" (click)="toggleOutcome(out)">{{ out }}</button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Step 3: Review & Submit -->
+          @if (step === 3) {
+            <div class="rc-step show">
+              <p class="rc-q">Your resolution record</p>
+              <p class="rc-sub">Here's everything in one place. Copy or download it for your records, then follow the steps below.</p>
+              <div class="summary-box" tabindex="0" aria-label="Resolution record summary">{{ summaryText() }}</div>
+              <div class="rc-dl">
+                @if (!submitted) {
+                  <button type="button" class="btn btn-primary" [disabled]="isSubmitting" (click)="submitReport()">
+                    {{ isSubmitting ? 'Submitting…' : 'Submit to NSA' }}
+                  </button>
+                }
+                @if (submitted) {
+                  <span style="color:var(--violet); font-family:var(--futura); font-size:12px; letter-spacing:.12em; text-transform:uppercase; font-weight:600;">Submitted ✓</span>
+                }
+                <button type="button" class="btn btn-light" (click)="copyReport()">{{ copied ? 'Copied ✓' : 'Copy' }}</button>
+              </div>
+              <div class="guide">
+                <h4>What to do next</h4>
+                <ol>
+                  <li>Message the other neighbor in the app and share what you're hoping for. Most issues end here.</li>
+                  <li>Keep your evidence together — photos, receipts, and your in-app messages.</li>
+                  <li>If it isn't resolved, submit this record to NSA at <a href="mailto:support@neighborservice.com">support&#64;neighborservice.com</a> or tap "Report a concern" in the app. We review it against our policies.</li>
+                </ol>
+              </div>
+            </div>
+          }
+
+          <!-- Navigation actions -->
+          <div class="rc-actions">
+            <button type="button" class="link-btn" [style.visibility]="step === 0 ? 'hidden' : 'visible'" (click)="goBack()">← Back</button>
+            <button type="button" class="btn btn-primary" [disabled]="!canAdvance()" (click)="goNext()">
+              {{ step === 3 ? 'Start over' : 'Continue' }}
+            </button>
+          </div>
+        </div>
+
+        <p class="neutral-note">Neighbor Service App is a neutral marketplace. We provide tools to document and report issues, but we don't mediate disputes or guarantee outcomes. Nothing is sent to NSA until you submit your record.</p>
+      </div>
+
+      <!-- Can / Can't section -->
+      <div style="padding-top:96px">
+        <div class="rc-head rv">
+          <p class="eyebrow">Knowing the boundaries</p>
+          <h2>What NSA Can &amp; Can't Do</h2>
+        </div>
+        <div class="duo rv">
+          <div class="d can">
+            <h3>What we can do</h3>
+            <ul>
+              <li>Give you tools to document and report an issue</li>
+              <li>Review reports against our platform policies</li>
+              <li>Remove reviews or content that break the rules</li>
+              <li>Suspend or terminate accounts for violations, fraud, or safety concerns</li>
+              <li>Point you to the right next step</li>
+            </ul>
+          </div>
+          <div class="d cant">
+            <h3>What we can't do</h3>
+            <ul>
+              <li>Mediate or decide disputes between users</li>
+              <li>Guarantee a refund, redo, or any specific outcome</li>
+              <li>Control or recover payments made off-platform</li>
+              <li>Take responsibility for services, property access, or interactions between users</li>
+              <li>Act as your legal representative</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

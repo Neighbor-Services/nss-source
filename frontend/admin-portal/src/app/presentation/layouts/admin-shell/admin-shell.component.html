@@ -1,0 +1,24 @@
+<div class="admin-layout" [class.sidebar-collapsed]="layoutService.isDesktopCollapsed()">
+  <!-- Mobile Backdrop Overlay -->
+  @if (layoutService.isMobileSidebarOpen()) {
+    <div class="mobile-sidebar-backdrop" (click)="layoutService.closeMobileSidebar()"></div>
+  }
+
+  <!-- Sidebar (Docked on Desktop, Drawer on Mobile) -->
+  <aside class="sidebar-dock" [class.mobile-open]="layoutService.isMobileSidebarOpen()" [class.collapsed]="layoutService.isDesktopCollapsed()">
+    <app-sidebar></app-sidebar>
+  </aside>
+
+  <!-- Main Workstation Area -->
+  <div class="admin-main">
+    <!-- Topbar -->
+    <header class="topbar-dock">
+      <app-topbar></app-topbar>
+    </header>
+
+    <!-- Scrollable Content Viewport -->
+    <main class="content-scroll">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

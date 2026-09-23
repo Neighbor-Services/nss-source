@@ -1,0 +1,759 @@
+<!-- Hope UI Hero Header Banner -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div>
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">Provider Subscriptions &amp; Monetization</h1>
+        <span class="live-pill"><span class="live-dot"></span> Stripe Billing Active</span>
+      </div>
+      <p class="hope-hero-subtitle">Manage recurring provider tier access (Pro, Elite), billing intervals, and subscription memberships.</p>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-primary" (click)="openManualSubscribeModal()" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(30,58,138,0.3);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="8.5" cy="7" r="4"/>
+          <line x1="20" y1="8" x2="20" y2="14"/>
+          <line x1="23" y1="11" x2="17" y2="11"/>
+        </svg>
+        <span>+ Grant Subscription</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="openCreatePlanModal()" style="display: flex; align-items: center; gap: 6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>+ Add Plan Tier</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="exportCSV()" style="display: flex; align-items: center; gap: 6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+
+      <button class="btn-soft-light" (click)="loadSubscriptions(); loadPlans()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="stats-grid">
+    <div class="kpi-card" (click)="activeTab.set('ACTIVE'); mainSection.set('SUBSCRIBERS')" [class.kpi-active]="activeTab() === 'ACTIVE' && mainSection() === 'SUBSCRIBERS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Active</span>
+      </div>
+      <div>
+        <div class="kpi-label">ACTIVE SUBSCRIPTIONS</div>
+        <div class="kpi-value text-emerald">{{ activeCount() }}</div>
+      </div>
+      <div class="kpi-meta">Paid active provider memberships</div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('BILLING_ENGINE')" [class.kpi-active]="mainSection() === 'BILLING_ENGINE'">
+      <div class="kpi-head">
+        <div class="kpi-icon-badge amber">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-value">{{ eliteCount() }}</div>
+      <div class="kpi-meta">0% commission &amp; VIP lead routing</div>
+    </div>
+  </div>
+
+  <!-- MAIN TABBED NAVIGATION BAR -->
+  <div class="card tab-bar-card">
+    <div class="tab-pill-bar">
+      <button class="tab-pill" [class.active]="mainSection() === 'SUBSCRIBERS'" (click)="mainSection.set('SUBSCRIBERS')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Subscribed Providers</span>
+        <span class="pill-count">{{ totalCount() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="mainSection() === 'TIER_MATRIX'" (click)="mainSection.set('TIER_MATRIX')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>
+        </svg>
+        <span>Tier Matrix &amp; Economics</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="mainSection() === 'BILLING_ENGINE'" (click)="mainSection.set('BILLING_ENGINE')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+        </svg>
+        <span>Stripe Billing Engine</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: SUBSCRIBED PROVIDERS REGISTRY -->
+  @if (mainSection() === 'SUBSCRIBERS') {
+    <div class="card table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <div class="table-icon-badge purple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Subscribed Providers Registry</h3>
+            <span class="sub-text">{{ filteredSubscriptions().length }} Filtered Membership Records</span>
+          </div>
+        </div>
+
+        <!-- Filter Tabs directly in header -->
+        <div class="tab-pill-bar">
+          <button class="tab-pill" [class.active]="activeTab() === 'ALL'" (click)="activeTab.set('ALL')">
+            All <span class="pill-count">{{ totalCount() }}</span>
+          </button>
+          <button class="tab-pill" [class.active]="activeTab() === 'ACTIVE'" (click)="activeTab.set('ACTIVE')">
+            Active <span class="pill-count">{{ activeCount() }}</span>
+          </button>
+          <button class="tab-pill" [class.active]="activeTab() === 'PRO'" (click)="activeTab.set('PRO')">
+            Pro <span class="pill-count">{{ proCount() }}</span>
+          </button>
+          <button class="tab-pill" [class.active]="activeTab() === 'ELITE'" (click)="activeTab.set('ELITE')">
+            Elite <span class="pill-count">{{ eliteCount() }}</span>
+          </button>
+          <button class="tab-pill" [class.active]="activeTab() === 'INACTIVE'" (click)="activeTab.set('INACTIVE')">
+            Inactive <span class="pill-count">{{ totalCount() - activeCount() }}</span>
+          </button>
+        </div>
+      </div>
+
+      @if (filteredSubscriptions().length === 0 && !isLoading()) {
+        <div class="empty-state">
+          <div class="empty-icon-box">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <h4>No Subscriptions In This Category</h4>
+          <p class="subtitle">There are currently no provider memberships registered under the selected tier.</p>
+          <button class="btn btn-primary mt-3" (click)="openManualSubscribeModal()">
+            + Manually Grant Provider Subscription
+          </button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Provider Account</th>
+                <th>Membership Tier</th>
+                <th>Status</th>
+                <th>Billing Interval</th>
+                <th>Auto-Renew</th>
+                <th>Current Period Ends</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sub of filteredSubscriptions(); track sub.id) {
+                <tr class="table-row">
+                  <td>
+                    <div class="user-cell">
+                      <div class="user-avatar-ring">
+                        {{ (sub.userName || 'P').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <b>{{ sub.userName }}</b>
+                        <span class="user-sub">{{ sub.userEmail }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getTierBadge(sub.tier)">
+                      {{ sub.tier | uppercase }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="sub.isActive ? 'badge-success' : 'badge-danger'">
+                      <span class="dot-indicator"></span>
+                      {{ sub.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="interval-badge font-mono">{{ sub.interval || 'Monthly' | uppercase }}</span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="sub.isActive ? 'badge-info' : 'badge-neutral'">
+                      {{ sub.stripeSubscriptionId ? 'Stripe Auto' : 'Manual Tier' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-dim">{{ (sub.currentPeriodEnd | date:'mediumDate') || 'Lifetime / Active' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <button
+                      class="btn btn-sm"
+                      [ngClass]="sub.isActive ? 'btn-danger' : 'btn-success'"
+                      [disabled]="togglingId() === sub.id"
+                      (click)="toggleActive(sub)"
+                    >
+                      {{ togglingId() === sub.id ? 'Updating...' : (sub.isActive ? 'Deactivate' : 'Activate') }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 2: TIER SPECIFICATIONS & MATRIX -->
+  @if (mainSection() === 'TIER_MATRIX') {
+    <div class="card table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <div class="table-icon-badge blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Configured Subscription Plans &amp; Tiers</h3>
+            <p class="sub-text">Define pricing tiers, recurring billing cycles, entitlements, and catalog priority</p>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary" (click)="openCreatePlanModal()">
+          + Create New Tier
+        </button>
+      </div>
+
+      @if (plans().length === 0 && !isLoadingPlans()) {
+        <div class="empty-state">
+          <h4>No Custom Subscription Plans Configured</h4>
+          <p class="subtitle">Click "+ Create New Tier" to define custom silver, gold, or platinum provider tiers.</p>
+          <button class="btn btn-primary mt-3" (click)="openCreatePlanModal()">+ Create First Plan Tier</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Plan Name &amp; Tier</th>
+                <th>Price &amp; Billing</th>
+                <th>In-App Purchases (IAP)</th>
+                <th>Max Services</th>
+                <th>Entitlements</th>
+                <th>Status</th>
+                <th>Display Order</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (plan of plans(); track plan.id || plan.name) {
+                <tr class="table-row">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="badge" [ngClass]="getTierBadge(plan.tier)">
+                        {{ plan.tier | uppercase }}
+                      </span>
+                      <b style="font-size: 13.5px;">{{ plan.name }}</b>
+                    </div>
+                  </td>
+                  <td>
+                    <b class="text-primary" style="font-size: 14px;">${{ plan.price | number:'1.2-2' }}</b>
+                    <span class="text-dim font-mono"> / {{ plan.interval }}</span>
+                  </td>
+                  <td>
+                    <div class="iap-badge-group">
+                      @if (plan.appleProductId) {
+                        <span class="iap-pill apple" title="Apple App Store Product ID">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.63 1.35-.58.67-1.08 1.74-.95 2.77.99.08 2.03-.52 2.66-1.27z"/></svg>
+                          {{ plan.appleProductId }}
+                        </span>
+                      }
+                      @if (plan.googleProductId) {
+                        <span class="iap-pill google" title="Google Play Store Product ID">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186c-.347-.323-.55-.783-.55-1.286V3.1c0-.503.203-.963.549-1.286zm11.233 11.236l2.128-2.13-11.95-6.85 9.822 8.98zm2.128-2.13l2.87 1.644c.82.47.82 1.234 0 1.704l-2.87 1.644-2.178-2.178 2.178-2.814zm-3.178 3.814l-9.822 8.98 11.95-6.85-2.128-2.13z"/></svg>
+                          {{ plan.googleProductId }}
+                        </span>
+                      }
+                      @if (!plan.appleProductId && !plan.googleProductId) {
+                        <span class="text-dim">Web / Stripe Only</span>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge badge-secondary font-mono">{{ plan.maxCatalogServices === 0 ? 'Unlimited' : (plan.maxCatalogServices || 1) + ' Services' }}</span>
+                  </td>
+                  <td>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; max-width: 260px;">
+                      @for (feat of plan.features; track feat) {
+                        <span class="badge badge-secondary badge-xs">{{ feat }}</span>
+                      }
+                      @if (!plan.features?.length) {
+                        <span class="text-dim">Standard Access</span>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="plan.isActive !== false ? 'badge-success' : 'badge-neutral'">
+                      {{ plan.isActive !== false ? 'Active' : 'Disabled' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="font-mono text-dim">#{{ plan.displayOrder }}</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="table-actions">
+                      <button class="btn btn-sm btn-outline-primary" (click)="openEditPlanModal(plan)">
+                        Edit
+                      </button>
+                      <button class="btn btn-sm btn-danger" (click)="deletePlan(plan)">
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 3: BILLING ENGINE & TELEMETRY -->
+  @if (mainSection() === 'BILLING_ENGINE') {
+    <div class="deck-grid">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Tier Entitlements &amp; Commission Economics</h4>
+            <p class="deck-sub">Platform commission discounts and search algorithm weights</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Pro Take-Rate</span>
+              <span class="metric-val text-emerald">5% Fee (67% Off)</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Elite Take-Rate</span>
+              <span class="metric-val text-emerald">0% Fee (100% Margin)</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Providers with Pro/Elite tiers receive reduced platform commission deductions on completed appointments, verified badges on public profiles, and early notification of high-ticket job leads.
+          </p>
+        </div>
+      </div>
+
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Automated Dunning &amp; Invoicing</h4>
+            <p class="deck-sub">Integrated Webhook lifecycle with Stripe &amp; Store Receipts</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Payment Engine</span>
+              <span class="metric-val text-emerald">Stripe &amp; Native Store IAP</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Dunning Retries</span>
+              <span class="metric-val">Smart Retries (3 Attempts)</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Invoice payment failures automatically trigger grace period notifications before access revocation. Store receipts synchronize in-app purchases automatically across iOS and Android.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- CREATE / EDIT PLAN MODAL -->
+  @if (showPlanModal()) {
+    <div class="modal-overlay" (click)="closePlanModal()">
+      <div class="modal-dialog modal-large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="kpi-circle-widget blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div>
+              <h3>{{ editingPlan() ? 'Edit Subscription Tier Plan' : 'Create Subscription Plan Tier' }}</h3>
+              <p class="subtitle">Configure membership tier terms, in-app store product IDs, limits, and pricing</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closePlanModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- SECTION 1: CORE TIER & PRICING -->
+          <div class="modal-section-box">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              <span>Tier Classification &amp; Core Pricing</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Plan Name *</label>
+                <input type="text" [(ngModel)]="planForm.name" placeholder="e.g. Silver Partner" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Tier Level *</label>
+                <select [(ngModel)]="planForm.tier" class="form-control select-control">
+                  <option value="BASIC">BASIC (Free Starter)</option>
+                  <option value="SILVER">SILVER (Growth)</option>
+                  <option value="GOLD">GOLD (Professional)</option>
+                  <option value="PLATINUM">PLATINUM (Enterprise)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Recurring Billing Interval</label>
+                <select [(ngModel)]="planForm.interval" class="form-control select-control">
+                  <option value="month">Monthly (/month)</option>
+                  <option value="year">Yearly (/year)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Price *</label>
+                <div class="input-with-addon">
+                  <span class="input-addon">$</span>
+                  <input type="number" [(ngModel)]="planForm.price" step="0.01" class="form-control" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Currency Code</label>
+                <select [(ngModel)]="planForm.currency" class="form-control select-control">
+                  <option value="USD">USD ($) - US Dollar</option>
+                  <option value="EUR">EUR (€) - Euro</option>
+                  <option value="GBP">GBP (£) - British Pound</option>
+                  <option value="CAD">CAD ($) - Canadian Dollar</option>
+                  <option value="AUD">AUD ($) - Australian Dollar</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Max Catalog Services Quota</label>
+                <input type="number" [(ngModel)]="planForm.maxCatalogServices" min="0" placeholder="1 (0 = unlimited)" class="form-control" />
+                <span class="field-hint">Maximum services a provider on this tier can publish (0 = unlimited).</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2: MOBILE IN-APP PURCHASES (IAP) -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/>
+              </svg>
+              <span>Store In-App Purchase (IAP) Sync</span>
+              <span class="badge badge-info" style="font-size: 10px; margin-left: auto;">Multi-Country Pricing</span>
+            </div>
+            <p class="section-intro">
+              Connecting Apple &amp; Google product IDs automatically maps mobile subscriptions to local storefront currencies and regional pricing configured in App Store Connect and Google Play Console.
+            </p>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">
+                  <span class="brand-icon-label apple">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.63 1.35-.58.67-1.08 1.74-.95 2.77.99.08 2.03-.52 2.66-1.27z"/></svg>
+                    Apple App Store Product ID
+                  </span>
+                </label>
+                <input type="text" [(ngModel)]="planForm.appleProductId" placeholder="e.g. nsapp_pro_monthly" class="form-control font-mono" />
+                <span class="field-hint">Must match App Store Connect In-App Purchase product identifier exactly.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">
+                  <span class="brand-icon-label google">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186c-.347-.323-.55-.783-.55-1.286V3.1c0-.503.203-.963.549-1.286zm11.233 11.236l2.128-2.13-11.95-6.85 9.822 8.98zm2.128-2.13l2.87 1.644c.82.47.82 1.234 0 1.704l-2.87 1.644-2.178-2.178 2.178-2.814zm-3.178 3.814l-9.822 8.98 11.95-6.85-2.128-2.13z"/></svg>
+                    Google Play Product ID
+                  </span>
+                </label>
+                <input type="text" [(ngModel)]="planForm.googleProductId" placeholder="e.g. nsapp_pro_monthly" class="form-control font-mono" />
+                <span class="field-hint">Must match Google Play Console Base Plan / Subscription ID.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: PLAN DESCRIPTION & ENTITLEMENTS -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>
+              </svg>
+              <span>Features, Description &amp; Display</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Display Sort Order</label>
+                <input type="number" [(ngModel)]="planForm.displayOrder" min="1" class="form-control" />
+                <span class="field-hint">Lower numbers appear first on the provider upgrade card matrix.</span>
+              </div>
+
+              <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
+                <label class="checkbox-card" style="margin-top: 14px;">
+                  <input type="checkbox" [(ngModel)]="planForm.isActive" />
+                  <div class="chk-label">
+                    <b>Plan Active for Purchase</b>
+                    <span>When enabled, providers can select and subscribe to this tier.</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group mt-3">
+              <label class="form-label">Plan Description</label>
+              <textarea [(ngModel)]="planForm.description" rows="2" class="form-control" placeholder="Short description of who this tier is designed for..."></textarea>
+            </div>
+
+            <div class="form-group mt-3">
+              <label class="form-label">Entitlement Features (One bullet per line)</label>
+              <textarea [(ngModel)]="featuresText" rows="4" class="form-control" placeholder="Direct Client Chat&#10;Instant Booking Broadcast Alerts&#10;Verified Provider Gold Badge&#10;0% Commission on In-App Invoices"></textarea>
+              <span class="field-hint">Each line is rendered as a distinct checkmark entitlement feature for mobile and web providers.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closePlanModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="savePlan()" [disabled]="isActioning() || !planForm.name">
+            {{ isActioning() ? 'Saving Plan...' : (editingPlan() ? 'Save Tier Changes' : 'Create Plan Tier') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: MANUALLY SUBSCRIBE PROVIDER -->
+  @if (showManualModal()) {
+    <div class="modal-backdrop" (click)="closeManualModal()">
+      <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+            </div>
+            <div>
+              <h3>Manually Grant Provider Subscription</h3>
+              <p class="modal-sub">Directly grant a provider tier access without requiring Stripe or mobile checkout</p>
+            </div>
+          </div>
+          <button class="btn-close" (click)="closeManualModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Step 1: Provider Selection -->
+          <div class="modal-section-box">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>1. Select Provider Account</span>
+              <span class="badge badge-info" style="font-size: 10px; margin-left: auto;">
+                {{ isLoadingProviders() ? 'Loading providers...' : (providersList().length + ' Providers Available') }}
+              </span>
+            </div>
+
+            <div class="form-group mb-2">
+              <label class="form-label">Search Providers</label>
+              <input
+                type="text"
+                [ngModel]="providerSearch()"
+                (ngModelChange)="providerSearch.set($event)"
+                placeholder="Search by provider name, email, or ID..."
+                class="form-control"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Provider Account <span class="required">*</span></label>
+              <select [(ngModel)]="manualSubForm.userId" class="form-control select-control font-medium">
+                <option value="" disabled>-- Select a Provider Account --</option>
+                @for (provider of filteredProviders(); track provider.id) {
+                  <option [value]="provider.id">
+                    {{ provider.firstName }} {{ provider.lastName }} ({{ provider.email }}) - Current: {{ provider.subscriptionTier || 'Free' }}
+                  </option>
+                }
+              </select>
+              <span class="field-hint">Select the service provider who will receive this subscription tier.</span>
+            </div>
+          </div>
+
+          <!-- Step 2: Subscription Plan & Tier Settings -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <span>2. Membership Tier &amp; Billing Term</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Select Preconfigured Plan (Optional)</label>
+                <select [(ngModel)]="manualSubForm.planId" (ngModelChange)="onManualPlanChange($event)" class="form-control">
+                  <option value="">-- Custom Tier / None --</option>
+                  @for (p of plans(); track p.id) {
+                    <option [value]="p.id">{{ p.name }} ({{ p.tier }} - {{ p.interval }})</option>
+                  }
+                </select>
+                <span class="field-hint">Selecting a plan auto-fills the tier and billing interval.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Membership Tier <span class="required">*</span></label>
+                <select [(ngModel)]="manualSubForm.tier" class="form-control font-bold">
+                  <option value="PRO">PRO Tier (Silver / Standard)</option>
+                  <option value="ELITE">ELITE Tier (Gold / Platinum)</option>
+                  <option value="SILVER">SILVER</option>
+                  <option value="GOLD">GOLD</option>
+                  <option value="PLATINUM">PLATINUM</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-2 mt-3">
+              <div class="form-group">
+                <label class="form-label">Billing Interval</label>
+                <select [(ngModel)]="manualSubForm.interval" class="form-control">
+                  <option value="month">Monthly</option>
+                  <option value="year">Annual / Yearly</option>
+                  <option value="lifetime">Lifetime</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Access Duration Preset</label>
+                <select [(ngModel)]="manualSubForm.durationPreset" class="form-control">
+                  <option value="1m">1 Month Access</option>
+                  <option value="3m">3 Months Access</option>
+                  <option value="6m">6 Months Access</option>
+                  <option value="1y">1 Year Access</option>
+                  <option value="lifetime">Lifetime (100 Years)</option>
+                  <option value="custom">Custom Expiry Date</option>
+                </select>
+              </div>
+            </div>
+
+            @if (manualSubForm.durationPreset === 'custom') {
+              <div class="form-group mt-3">
+                <label class="form-label">Custom Expiration Date <span class="required">*</span></label>
+                <input type="date" [(ngModel)]="manualSubForm.customEndDate" class="form-control" />
+              </div>
+            }
+
+            <div class="form-group mt-3">
+              <label class="checkbox-card">
+                <input type="checkbox" [(ngModel)]="manualSubForm.isActive" />
+                <div class="chk-label">
+                  <b>Immediately Activate Subscription</b>
+                  <span>Grant immediate VIP lead routing, messaging, and lower commissions.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Step 3: Admin Notes & Reason -->
+          <div class="modal-section-box mt-3">
+            <div class="modal-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>
+              </svg>
+              <span>3. Administrative Audit Notes (Optional)</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Grant Justification / Notes</label>
+              <textarea
+                [(ngModel)]="manualSubForm.notes"
+                rows="2"
+                class="form-control"
+                placeholder="e.g. VIP onboarding incentive, customer support promo extension..."
+              ></textarea>
+              <span class="field-hint">Internal record explaining why this provider was manually granted access.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeManualModal()">Cancel</button>
+          <button
+            class="btn btn-primary"
+            (click)="saveManualSubscription()"
+            [disabled]="isActioning() || !manualSubForm.userId"
+          >
+            {{ isActioning() ? 'Assigning Subscription...' : 'Confirm & Grant Subscription' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

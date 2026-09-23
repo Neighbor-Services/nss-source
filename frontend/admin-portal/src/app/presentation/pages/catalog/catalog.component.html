@@ -1,0 +1,578 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Categories &amp; Service Catalog</h1>
+        <span class="live-pill"><span class="live-dot"></span> Taxonomy Engine Active</span>
+      </div>
+      <p class="hero-subtitle">Marketplace taxonomies, suggested price corridors, and standardized provider service templates</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-soft-light" (click)="openAddCategory()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Add Category</span>
+      </button>
+      <button class="btn btn-soft-light" (click)="openAddService()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+        </svg>
+        <span>New Catalog Service</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Taxonomy</span>
+      </div>
+      <div>
+        <div class="kpi-label">TAXONOMY GROUPS</div>
+        <div class="kpi-value">{{ totalCategories() }}</div>
+      </div>
+      <div class="kpi-meta">{{ activeCategoriesCount() }} Active taxonomy groups</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Templates</span>
+      </div>
+      <div>
+        <div class="kpi-label">CATALOG SERVICES</div>
+        <div class="kpi-value text-emerald">{{ totalServices() }}</div>
+      </div>
+      <div class="kpi-meta">Standardized service templates</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Featured</span>
+      </div>
+      <div>
+        <div class="kpi-label">FEATURED SERVICES</div>
+        <div class="kpi-value text-purple">{{ featuredServicesCount() }}</div>
+      </div>
+      <div class="kpi-meta">High-demand seeker suggestions</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget info">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>
+          </svg>
+        </div>
+        <span class="badge badge-info">25 KM Radius</span>
+      </div>
+      <div>
+        <div class="kpi-label">DISCOVERY INDEXING</div>
+        <div class="kpi-value text-emerald">Active</div>
+      </div>
+      <div class="kpi-meta">Spatial radius matching enabled</div>
+    </div>
+  </div>
+
+
+  <!-- ── SECTION TAB BAR ───────────────────────────────────────────────── -->
+  <div class="section-tab-bar mt-4">
+    <button
+      class="section-tab-btn"
+      [class.active]="activeSection() === 'CATEGORIES'"
+      (click)="activeSection.set('CATEGORIES')"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+      </svg>
+      <span>Marketplace Categories</span>
+      <span class="tab-count-pill">{{ categories().length }}</span>
+    </button>
+
+    <button
+      class="section-tab-btn"
+      [class.active]="activeSection() === 'SERVICES'"
+      (click)="activeSection.set('SERVICES')"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+      <span>Catalog Services</span>
+      <span class="tab-count-pill">{{ services().length }}</span>
+    </button>
+
+    <button
+      class="section-tab-btn"
+      [class.active]="activeSection() === 'TAXONOMY'"
+      (click)="activeSection.set('TAXONOMY')"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>
+      </svg>
+      <span>Taxonomy & Discovery</span>
+    </button>
+  </div>
+
+  <!-- ── TAB: CATEGORIES GRID ──────────────────────────────────────────── -->
+  @if (activeSection() === 'CATEGORIES') {
+    <div class="catalog-tab-panel">
+      <div class="categories-grid">
+        @for (cat of categories(); track cat.id) {
+          <div class="card category-card">
+            <div class="cat-header">
+              <div class="cat-title-box">
+                <div class="cat-icon-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4>{{ cat.name }}</h4>
+                  <span class="cat-slug font-mono">{{ cat.slug }}</span>
+                </div>
+              </div>
+              <div class="cat-header-right">
+                <span class="svc-count-chip">{{ getServiceCountForCategory(cat.id) }} services</span>
+                <span class="badge" [class.badge-success]="cat.isActive" [class.badge-danger]="!cat.isActive">
+                  <span class="dot-indicator"></span>
+                  {{ cat.isActive ? 'Active' : 'Disabled' }}
+                </span>
+              </div>
+            </div>
+
+            <p class="cat-desc">{{ cat.description || 'General category for localized home and commercial services.' }}</p>
+
+            <div class="cat-actions">
+              <button class="btn btn-sm btn-secondary" (click)="openEditCategory(cat)">Edit</button>
+              <button class="btn btn-sm btn-danger" (click)="deleteCategory(cat)">Delete</button>
+            </div>
+          </div>
+        } @empty {
+          <div class="card empty-category-card">
+            <div class="empty-icon-box">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              </svg>
+            </div>
+            <h4>No Categories Registered Yet</h4>
+            <p class="subtitle">Click "Add Category" above to initialize taxonomy groupings.</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ── TAB: CATALOG SERVICES TABLE ──────────────────────────────────── -->
+  @if (activeSection() === 'SERVICES') {
+    <div class="catalog-tab-panel">
+      <!-- Search + Category Filter -->
+      <div class="services-top-bar">
+        <div class="services-filter-row">
+          <div class="search-input-wrap">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              class="form-control search-field"
+              placeholder="Search catalog services…"
+              [value]="serviceSearchQuery()"
+              (input)="serviceSearchQuery.set($any($event.target).value)"
+            />
+          </div>
+          <span class="services-count-badge">{{ filteredServices().length }} of {{ services().length }} services</span>
+        </div>
+
+        <div class="tab-filters">
+          <button
+            class="tab-btn"
+            [class.active]="selectedCategoryTab() === 'all'"
+            (click)="selectedCategoryTab.set('all')"
+          >All</button>
+          @for (cat of categories(); track cat.id) {
+            <button
+              class="tab-btn"
+              [class.active]="selectedCategoryTab() === cat.id"
+              (click)="selectedCategoryTab.set(cat.id)"
+            >{{ cat.name }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Service Details</th>
+                <th>Category</th>
+                <th>Price Corridor</th>
+                <th>Pricing Model</th>
+                <th>Featured</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (srv of filteredServices(); track srv.id) {
+                <tr>
+                  <td>
+                    <b>{{ srv.name }}</b>
+                    <p class="sub-text srv-desc">{{ srv.description }}</p>
+                  </td>
+                  <td>
+                    <span class="badge badge-info">{{ srv.categoryName || 'General' }}</span>
+                  </td>
+                  <td>
+                    <b class="text-success amount-tag font-bold">${{ srv.minPrice | number:'1.0-0' }} - ${{ srv.maxPrice | number:'1.0-0' }}</b>
+                  </td>
+                  <td>
+                    <span class="badge badge-secondary">{{ srv.pricingType | uppercase }}</span>
+                  </td>
+                  <td>
+                    @if (srv.isPopular) {
+                      <span class="badge badge-purple"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Featured</span>
+                    } @else {
+                      <span class="text-dim">—</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge" [class.badge-success]="srv.isActive" [class.badge-danger]="!srv.isActive">
+                      <span class="dot-indicator"></span>
+                      {{ srv.isActive ? 'Active' : 'Hidden' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="table-actions">
+                      <button class="btn btn-sm btn-secondary" (click)="openEditService(srv)">Edit</button>
+                      <button class="btn btn-sm btn-danger" (click)="deleteService(srv)">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="empty-state text-center">
+                    <div class="empty-state-box">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
+                      <p class="subtitle">No catalog services match your current filter.</p>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── TAB: TAXONOMY & DISCOVERY ARCHITECTURE ────────────────────────── -->
+  @if (activeSection() === 'TAXONOMY') {
+    <div class="catalog-tab-panel">
+      <div class="deck-grid">
+        <div class="card deck-card">
+          <div class="deck-header">
+            <div class="deck-icon icon-blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>
+              </svg>
+            </div>
+            <div>
+              <h4>Spatial Taxonomy &amp; Geolocation Radius</h4>
+              <p class="deck-sub">Automated spatial indexing for fast provider discovery</p>
+            </div>
+          </div>
+          <div class="deck-body">
+            <div class="deck-metric-row">
+              <div class="metric-item">
+                <span class="metric-label">Discovery Radius</span>
+                <span class="metric-val text-success">25 KM Radius</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Broadcast Alert</span>
+                <span class="metric-val">25 KM Instant Push</span>
+              </div>
+            </div>
+            <p class="deck-description">
+              When seekers search for home repair or yard care, the geolocation engine matches active verified providers within the defined category corridor.
+            </p>
+          </div>
+        </div>
+
+        <div class="card deck-card">
+          <div class="deck-header">
+            <div class="deck-icon icon-emerald">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <h4>Suggested Price Corridor Safeguards</h4>
+              <p class="deck-sub">Fair pricing recommendations and marketplace anti-gouging policy</p>
+            </div>
+          </div>
+          <div class="deck-body">
+            <div class="deck-metric-row">
+              <div class="metric-item">
+                <span class="metric-label">Pricing Models</span>
+                <span class="metric-val">Hourly, Fixed &amp; Custom</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Corridor Bound</span>
+                <span class="metric-val text-success">Automated Min / Max</span>
+              </div>
+            </div>
+            <p class="deck-description">
+              Providers onboarding to standardized services are presented with regional price bounds to maintain fair marketplace pricing consistency.
+            </p>
+          </div>
+        </div>
+
+        <div class="card deck-card">
+          <div class="deck-header">
+            <div class="deck-icon icon-purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              </svg>
+            </div>
+            <div>
+              <h4>AI Semantic Service Matching</h4>
+              <p class="deck-sub">TF-IDF vector engine for intelligent provider-to-seeker pairing</p>
+            </div>
+          </div>
+          <div class="deck-body">
+            <div class="deck-metric-row">
+              <div class="metric-item">
+                <span class="metric-label">Engine Type</span>
+                <span class="metric-val">TF-IDF + Concept Ontology</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Match Threshold</span>
+                <span class="metric-val text-success">≥ 40% Cosine Score</span>
+              </div>
+            </div>
+            <p class="deck-description">
+              The in-engine AI matcher scores provider catalog descriptions against seeker service requests using weighted TF-IDF vectors and domain concept expansion — no external LLM required.
+            </p>
+          </div>
+        </div>
+
+        <div class="card deck-card">
+          <div class="deck-header">
+            <div class="deck-icon icon-amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div>
+              <h4>Catalog Taxonomy Standards</h4>
+              <p class="deck-sub">Normalized service naming and classification schema</p>
+            </div>
+          </div>
+          <div class="deck-body">
+            <div class="deck-metric-row">
+              <div class="metric-item">
+                <span class="metric-label">Categories</span>
+                <span class="metric-val">{{ categories().length }} Taxonomy Groups</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Total Templates</span>
+                <span class="metric-val text-success">{{ services().length }} Services</span>
+              </div>
+            </div>
+            <p class="deck-description">
+              All catalog entries follow a standardized naming schema tied to provider onboarding. Featured services are promoted in seeker discovery feeds based on demand signals.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- CATEGORY MODAL -->
+  @if (showCategoryModal()) {
+    <div class="modal-overlay" (click)="closeCategoryModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="modal-icon-badge blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              </svg>
+            </div>
+            <div>
+              <h3>{{ isEditingCategory() ? 'Edit Taxonomy Category' : 'Create Taxonomy Category' }}</h3>
+              <p class="modal-sub">Define marketplace category grouping</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeCategoryModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <form (ngSubmit)="saveCategory()">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Category Display Name</label>
+              <input type="text" [(ngModel)]="categoryForm.name" (ngModelChange)="onCategoryNameChange()" name="catName" class="form-control" placeholder="e.g. Electrical &amp; Smart Home" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Slug Identifier</label>
+              <input type="text" [(ngModel)]="categoryForm.slug" name="catSlug" class="form-control font-mono" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea [(ngModel)]="categoryForm.description" name="catDesc" rows="2" class="form-control" placeholder="Brief summary of services covered in this category"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeCategoryModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSubmitting()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/>
+              </svg>
+              <span>{{ isSubmitting() ? 'Saving...' : 'Save Category' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- CATALOG SERVICE MODAL -->
+  @if (showServiceModal()) {
+    <div class="modal-overlay" (click)="closeServiceModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <div class="modal-icon-badge purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              </svg>
+            </div>
+            <div>
+              <h3>{{ isEditingService() ? 'Edit Catalog Service' : 'Add Standard Catalog Service' }}</h3>
+              <p class="modal-sub">Create preset service template for provider catalogs</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeServiceModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <form (ngSubmit)="saveService()">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Parent Taxonomy Category</label>
+              <select [(ngModel)]="serviceForm.categoryId" name="srvCat" class="form-control select-control" required>
+                @for (c of categories(); track c.id) {
+                  <option [value]="c.id">{{ c.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Service Title</label>
+              <input type="text" [(ngModel)]="serviceForm.name" name="srvName" class="form-control" placeholder="e.g. EV Charger Installation &amp; Panel Upgrade" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea [(ngModel)]="serviceForm.description" name="srvDesc" rows="2" class="form-control"></textarea>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label">Suggested Min Price ($ USD)</label>
+                <input type="number" [(ngModel)]="serviceForm.minPrice" name="minPrice" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Suggested Max Price ($ USD)</label>
+                <input type="number" [(ngModel)]="serviceForm.maxPrice" name="maxPrice" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Pricing Model</label>
+              <select [(ngModel)]="serviceForm.pricingType" name="pricingType" class="form-control select-control">
+                <option value="hourly">Hourly Rate ($/hr)</option>
+                <option value="fixed">Fixed Price Scope</option>
+                <option value="quote">Custom Assessment / On-Site Quote</option>
+              </select>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="checkbox-card" [class.checked]="serviceForm.isPopular">
+                  <input type="checkbox" [(ngModel)]="serviceForm.isPopular" name="isPopular" class="custom-chk" />
+                  <div class="chk-label">
+                    <b>Featured Service</b>
+                    <span>High-demand marketplace suggestion</span>
+                  </div>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-card" [class.checked]="serviceForm.isActive">
+                  <input type="checkbox" [(ngModel)]="serviceForm.isActive" name="isActive" class="custom-chk" />
+                  <div class="chk-label">
+                    <b>Active / Visible</b>
+                    <span>Show in provider onboarding catalog</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeServiceModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSubmitting()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/>
+              </svg>
+              <span>{{ isSubmitting() ? 'Saving Service...' : 'Save Catalog Template' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

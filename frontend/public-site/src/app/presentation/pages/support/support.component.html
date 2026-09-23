@@ -1,0 +1,177 @@
+<div class="page-container animate-fade-in">
+  <!-- ======================= HERO ======================= -->
+  <header class="p-hero">
+    <div class="p-hero-grain" aria-hidden="true"></div>
+    <div class="wrap p-hero-in">
+      <p class="eyebrow rv">Help &amp; Support</p>
+      <h1 class="rv">How can we help?</h1>
+      <p class="lede rv">Search the help center or browse by topic. Most answers are one tap away — and if you're stuck, we'll point you to the right place.</p>
+      <div class="sup-search rv">
+        <div class="bar">
+          <svg class="sic" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+            <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input
+            id="faqSearch"
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearch()"
+            placeholder="Search help articles…"
+            aria-label="Search help articles"
+            autocomplete="off"
+          >
+          @if (searchQuery) {
+            <button class="clear" type="button" aria-label="Clear search" (click)="clearSearch()">×</button>
+          }
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================= FAQ CONTENT ======================= -->
+  <main class="policy">
+    <div class="wrap">
+
+      <!-- Category pills -->
+      <div class="cat-row rv">
+        <button type="button" class="cat-pill" [class.active]="activeCat === 'all'" (click)="setCat('all')">All topics</button>
+        @for (cat of faqCategories(); track cat.value) {
+          <button type="button" class="cat-pill" [class.active]="activeCat === cat.value" (click)="setCat(cat.value)">{{ cat.label }}</button>
+        }
+      </div>
+
+      <!-- FAQ groups -->
+      <div id="faqResults">
+        @for (group of visibleGroups(); track group.category) {
+          <section class="faq-group">
+            <div class="faq-gh">
+              <span class="gic">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+                  <path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <h3>{{ group.label }}</h3>
+              <span class="ct">{{ group.items.length }} {{ group.items.length === 1 ? 'article' : 'articles' }}</span>
+            </div>
+            <div class="faq-list">
+              @for (faq of group.items; track faq.id) {
+                <div class="faq-item" [class.open]="openFaqId() === faq.id">
+                  <button class="faq-q" [attr.aria-expanded]="openFaqId() === faq.id" (click)="toggleFaq(faq.id)">
+                    <span>{{ faq.question }}</span>
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                  <div class="faq-a" [style.maxHeight]="openFaqId() === faq.id ? faq.id + 'px' : '0'">
+                    <div class="inner" #answerEl>
+                      <p>{{ faq.answer }}</p>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        } @empty {
+          <!-- Default fallback groups when no CMS data -->
+          @if (!searchQuery) {
+            <!-- Seekers group -->
+            <section class="faq-group">
+              <div class="faq-gh">
+                <span class="gic">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                <h3>For Seekers</h3>
+                <span class="ct">2 articles</span>
+              </div>
+              <div class="faq-list">
+                <div class="faq-item" [class.open]="openFaqId() === 'q1'">
+                  <button class="faq-q" (click)="toggleFaq('q1')" [attr.aria-expanded]="openFaqId() === 'q1'">
+                    <span>How does provider screening actually work?</span>
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  </button>
+                  <div class="faq-a" [style.maxHeight]="openFaqId() === 'q1' ? '200px' : '0'">
+                    <div class="inner"><p>Every provider must complete a background screening through Checkr, an independent third-party screening company, before their profile can go live. No provider appears on Neighbor Service — or can contact you — without completing it.</p></div>
+                  </div>
+                </div>
+                <div class="faq-item" [class.open]="openFaqId() === 'q2'">
+                  <button class="faq-q" (click)="toggleFaq('q2')" [attr.aria-expanded]="openFaqId() === 'q2'">
+                    <span>What does it cost me as a seeker?</span>
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  </button>
+                  <div class="faq-a" [style.maxHeight]="openFaqId() === 'q2' ? '200px' : '0'">
+                    <div class="inner"><p>Nothing. Searching, matching, messaging, and booking are free for seekers. Providers support the platform with a flat monthly subscription.</p></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Providers group -->
+            <section class="faq-group">
+              <div class="faq-gh">
+                <span class="gic">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                <h3>For Providers</h3>
+                <span class="ct">2 articles</span>
+              </div>
+              <div class="faq-list">
+                <div class="faq-item" [class.open]="openFaqId() === 'q3'">
+                  <button class="faq-q" (click)="toggleFaq('q3')" [attr.aria-expanded]="openFaqId() === 'q3'">
+                    <span>How much does a provider subscription cost?</span>
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  </button>
+                  <div class="faq-a" [style.maxHeight]="openFaqId() === 'q3' ? '200px' : '0'">
+                    <div class="inner"><p>We offer three flat monthly plans: Silver ($24.99/mo, 1 category), Gold ($39.99/mo, up to 3 categories), and Platinum ($49.99/mo, up to 5 categories). Every plan includes all platform features — no locked tools, no lead fees, ever.</p></div>
+                  </div>
+                </div>
+                <div class="faq-item" [class.open]="openFaqId() === 'q4'">
+                  <button class="faq-q" (click)="toggleFaq('q4')" [attr.aria-expanded]="openFaqId() === 'q4'">
+                    <span>What is the NSA Security Code and how does it work?</span>
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  </button>
+                  <div class="faq-a" [style.maxHeight]="openFaqId() === 'q4' ? '200px' : '0'">
+                    <div class="inner"><p>Every accepted appointment generates a unique 6-digit Security Code. Both the seeker and provider receive the same code. You share codes to verify arrival and confirm job completion — it's your proof of showing up on time and finishing the work.</p></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          }
+        }
+      </div>
+
+      @if (searchQuery && visibleGroups().length === 0) {
+        <div class="no-results">
+          <b>No matches found</b>
+          <span>Try a different search, or reach out below.</span>
+        </div>
+      }
+
+      <!-- Help CTA cards -->
+      <div class="help-cta rv">
+        <div class="hc alt">
+          <span class="hic">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M4 5h16v11H8l-4 4V5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <h3>Contact support</h3>
+          <p>Still stuck on an account, payment, or app problem? Send us the details and your app version, and we'll help.</p>
+          <a class="btn btn-primary" routerLink="/contact">Email support</a>
+        </div>
+        <div class="hc">
+          <span class="hic">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <h3>Have an issue with a booking?</h3>
+          <p>For disputes with another neighbor — service, payment, property, or safety — document and report it in the Resolution Center.</p>
+          <a class="btn btn-ghost" routerLink="/resolution">Open Resolution Center</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

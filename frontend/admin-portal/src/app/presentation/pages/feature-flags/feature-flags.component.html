@@ -1,0 +1,328 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Feature Flags &amp; Runtime Toggles</h1>
+        <span class="live-pill"><span class="live-dot"></span> Live Dynamic Config</span>
+      </div>
+      <p class="hero-subtitle">Instant platform killswitches, experimental capability gates, and runtime microservice configurations</p>
+    </div>
+    <div class="hero-actions">
+      @if (activeTab() === 'FLAGS') {
+        <div class="header-search-box">
+          <svg class="search-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="searchFilter"
+            placeholder="Filter flag keys..."
+            class="header-search-input"
+          />
+        </div>
+      }
+      <button class="btn btn-soft-light" (click)="loadFlags()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Reload Flags' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'FLAGS'" (click)="activeTab.set('FLAGS')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+        <line x1="4" y1="22" x2="4" y2="15"/>
+      </svg>
+      <span>Runtime Capability Toggles</span>
+      <span class="tab-badge">{{ totalFlags() }}</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'KILLSWITCH'" (click)="activeTab.set('KILLSWITCH')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>Killswitches &amp; Safeguards</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'CANARY'" (click)="activeTab.set('CANARY')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      <span>Canary &amp; Dark Launches</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="activeTab.set('FLAGS')" [class.kpi-active]="activeTab() === 'FLAGS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+            <line x1="4" y1="22" x2="4" y2="15"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Toggles</span>
+      </div>
+      <div>
+        <div class="kpi-label">ACTIVE FEATURE FLAGS</div>
+        <div class="kpi-value">{{ totalFlags() }}</div>
+      </div>
+      <div class="kpi-meta">Controlled in Redis / Postgres</div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('FLAGS')" [class.kpi-active]="activeTab() === 'FLAGS'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Online</span>
+      </div>
+      <div>
+        <div class="kpi-label">ENABLED CAPABILITIES</div>
+        <div class="kpi-value text-emerald">{{ enabledCount() }}</div>
+      </div>
+      <div class="kpi-meta">Live features accessible to clients</div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('KILLSWITCH')" [class.kpi-active]="activeTab() === 'KILLSWITCH'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Gated</span>
+      </div>
+      <div>
+        <div class="kpi-label">DISABLED / GATED</div>
+        <div class="kpi-value text-warning">{{ disabledCount() }}</div>
+      </div>
+      <div class="kpi-meta">Gated or dark-launched modules</div>
+    </div>
+
+    <div class="kpi-card" (click)="activeTab.set('CANARY')" [class.kpi-active]="activeTab() === 'CANARY'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">Instant</span>
+      </div>
+      <div>
+        <div class="kpi-label">PROPAGATION LATENCY</div>
+        <div class="kpi-value text-purple">&lt; 50ms</div>
+      </div>
+      <div class="kpi-meta">Sub-millisecond Pub/Sub sync</div>
+    </div>
+  </div>
+
+  <!-- TAB 1: RUNTIME CAPABILITY TOGGLES -->
+  @if (activeTab() === 'FLAGS') {
+    @if (isLoading()) {
+      <div class="card loading-card mt-4">
+        <div class="spinner"></div>
+        <p>Loading feature flag settings and environment variables...</p>
+      </div>
+    } @else {
+      <div class="card table-card mt-4">
+        <div class="table-header">
+          <div class="table-title-group">
+            <div class="table-icon-badge blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+            </div>
+            <div>
+              <h3>System Runtime Capabilities</h3>
+              <span class="sub-text">{{ filteredFlags().length }} Configuration Keys</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Feature Identifier &amp; Key</th>
+                <th>Category / Target</th>
+                <th>Description &amp; Impact</th>
+                <th>Runtime State</th>
+                <th class="text-right">Toggle Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of filteredFlags(); track f.key) {
+                <tr class="table-row">
+                  <td>
+                    <div class="flag-key-group">
+                      <b class="flag-title">{{ f.name || f.key }}</b>
+                      <code class="flag-slug font-mono">{{ f.key }}</code>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge badge-secondary">Global System</span>
+                  </td>
+                  <td>
+                    <p class="desc-text">{{ f.description || 'Controls dynamic system behavior in runtime.' }}</p>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="f.enabled ? 'badge-success' : 'badge-danger'">
+                      <span class="dot-indicator"></span>
+                      {{ f.enabled ? 'ENABLED' : 'DISABLED' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <button
+                      class="btn btn-sm"
+                      [ngClass]="f.enabled ? 'btn-danger' : 'btn-success'"
+                      (click)="toggleFlag(f)"
+                      [disabled]="isTogglingKey() === f.key"
+                    >
+                      {{ isTogglingKey() === f.key ? 'Updating...' : (f.enabled ? 'Turn OFF' : 'Turn ON') }}
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty-state text-center">
+                    <p class="subtitle">No feature flags matched your keyword filter.</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- TAB 2: KILLSWITCH PROTECTION -->
+  @if (activeTab() === 'KILLSWITCH') {
+    <div class="deck-grid mt-4">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Production Killswitch Protection</h4>
+            <p class="deck-sub">Instant quarantine of downstream third-party integrations</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Stripe Killswitch</span>
+              <span class="metric-val text-success">Available</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Checkr Killswitch</span>
+              <span class="metric-val text-success">Available</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            In the event of an external provider outage or API incident, disabling corresponding flags halts outward calls without requiring backend service restarts.
+          </p>
+        </div>
+      </div>
+
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-red">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Immediate Payouts Emergency Freeze</h4>
+            <p class="deck-sub">Emergency killswitch for instant disbursements</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Payout Rail</span>
+              <span class="metric-val text-success">Active / Monitored</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Escrow Quarantine</span>
+              <span class="metric-val">Zero Risk</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Freezing automated payouts halts ACH transfers instantly while allowing users to continue booking services normally.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: CANARY & DEPLOYMENT POLICIES -->
+  @if (activeTab() === 'CANARY') {
+    <div class="deck-grid mt-4">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Canary &amp; Staging Dark Launches</h4>
+            <p class="deck-sub">Gradual percentage rollouts for new marketplace mechanics</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Cache Invalidation</span>
+              <span class="metric-val">Redis Pub/Sub Sync</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Audit History</span>
+              <span class="metric-val">Operator Tracked</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Flag state changes propagate across all container clusters within milliseconds via Redis pub/sub. Every toggle event is logged with operator timestamp.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+</div>

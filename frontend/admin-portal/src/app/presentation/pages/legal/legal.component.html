@@ -1,0 +1,297 @@
+<!-- Hope UI Hero Header Banner -->
+<div class="hope-hero-banner">
+  <div class="hope-hero-content">
+    <div>
+      <div class="title-with-pill">
+        <h1 class="hope-hero-title">Legal &amp; Compliance Center</h1>
+        <span class="live-pill"><span class="live-dot"></span> Regulatory Engine Active</span>
+      </div>
+      <p class="hope-hero-subtitle">Manage terms of service, privacy policies, community guidelines, cancellation policies, and versioned compliance agreements.</p>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-primary" (click)="openCreateModal()" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(30,58,138,0.3);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>+ New Legal Document</span>
+      </button>
+
+      <button class="btn-soft-light" [disabled]="isLoading()" (click)="loadDocuments()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Nav Tabs -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'ALL'" (click)="setStatusFilter('ALL')">
+      <span>All Policies</span>
+      <span class="tab-badge">{{ totalDocs() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'ACTIVE'" (click)="setStatusFilter('ACTIVE')">
+      <span>Active (Public)</span>
+      <span class="tab-badge">{{ activeDocs() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'INACTIVE'" (click)="setStatusFilter('INACTIVE')">
+      <span>Archived / Drafts</span>
+      <span class="tab-badge">{{ totalDocs() - activeDocs() }}</span>
+    </button>
+  </div>
+</div>
+
+<!-- Floating Content Body -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  }
+
+  <!-- KPI Metric Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="setStatusFilter('ALL')" [class.kpi-active]="selectedStatus() === 'ALL'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Total Agreements</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL LEGAL POLICIES</div>
+        <div class="kpi-value">{{ totalDocs() }}</div>
+      </div>
+      <div class="kpi-meta">Managed compliance documents</div>
+    </div>
+
+    <div class="kpi-card" (click)="setStatusFilter('ACTIVE')" [class.kpi-active]="selectedStatus() === 'ACTIVE'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">
+          <span class="live-dot"></span> Live &amp; Enforced
+        </span>
+      </div>
+      <div>
+        <div class="kpi-label">ACTIVE (PUBLIC) POLICIES</div>
+        <div class="kpi-value">{{ activeDocs() }}</div>
+      </div>
+      <div class="kpi-meta">Publicly accessible terms</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">{{ docTypes().length }} Active Types</span>
+      </div>
+      <div>
+        <div class="kpi-label">POLICY CATEGORIES</div>
+        <div class="kpi-value">{{ docTypes().length }}</div>
+      </div>
+      <div class="kpi-meta">Terms, Privacy, Safety, Community</div>
+    </div>
+  </div>
+
+  <!-- Documents Table Card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="header-left">
+        <h3 class="card-title">Published Compliance Agreements</h3>
+        <p class="card-subtitle">Version control and document management for all platform contracts</p>
+      </div>
+      <div class="header-right">
+        <div class="filter-controls-row">
+          <div class="select-box">
+            <select class="form-control select-control" [ngModel]="selectedType()" (ngModelChange)="setTypeFilter($event)">
+              <option value="ALL">All Categories</option>
+              <option value="TERMS">Terms of Service</option>
+              <option value="PRIVACY">Privacy Policy</option>
+              <option value="SAFETY">Safety Standards</option>
+              <option value="COMMUNITY">Community Guidelines</option>
+              <option value="PAYMENT_TERMS">Payment Terms</option>
+              <option value="PROMO_TERMS">Promo Terms</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading compliance policies...</p>
+      </div>
+    } @else if (filteredDocuments().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon-wrap">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <div class="empty-title">No Legal Documents Found</div>
+        <p class="empty-sub">Create your first compliance policy or legal agreement to publish terms for users.</p>
+        <button class="btn btn-primary" (click)="openCreateModal()">+ Create Document</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="min-width: 240px;">Document Title</th>
+              <th>Category</th>
+              <th>Slug / Endpoint</th>
+              <th>Version</th>
+              <th>Status</th>
+              <th>Published Date</th>
+              <th class="text-right" style="min-width: 100px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (doc of filteredDocuments(); track doc.id) {
+              <tr>
+                <td>
+                  <div class="doc-cell">
+                    <div class="doc-icon-badge">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                    </div>
+                    <div class="doc-meta-info">
+                      <span class="doc-name">{{ doc.title }}</span>
+                      <span class="doc-sub">Version {{ doc.version }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-info">{{ doc.document_type }}</span>
+                </td>
+                <td>
+                  <code class="slug-pill">/legal/{{ doc.slug }}</code>
+                </td>
+                <td>
+                  <span class="badge badge-purple">v{{ doc.version }}</span>
+                </td>
+                <td>
+                  @if (doc.is_active) {
+                    <span class="badge badge-success">
+                      <span class="dot-indicator" style="background: currentColor; width: 6px; height: 6px; border-radius: 50%; display: inline-block;"></span> Active
+                    </span>
+                  } @else {
+                    <span class="badge badge-secondary">Archived</span>
+                  }
+                </td>
+                <td class="text-muted font-mono" style="font-size: 12.5px;">
+                  {{ (doc.published_at || doc.created_at) | date:'mediumDate' }}
+                </td>
+                <td class="text-right">
+                  <div class="action-btn-group">
+                    <button class="action-btn-circle" (click)="openEditModal(doc)" title="Edit Agreement">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    <button class="action-btn-circle danger" (click)="deleteDocument(doc)" title="Delete Agreement">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- CREATE / EDIT MODAL -->
+@if (isModalOpen()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">{{ isEditing() ? 'Edit Legal Agreement' : 'Create New Legal Agreement' }}</h3>
+          <p class="modal-subtitle">Configure compliance policy metadata, versioning, and document body</p>
+        </div>
+        <button class="btn-close" (click)="closeModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Document Title *</label>
+            <input type="text" class="form-control" [(ngModel)]="currentDoc().title" (input)="generateSlug()" placeholder="e.g. Terms of Service">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select class="form-control select-control" [(ngModel)]="currentDoc().document_type">
+              <option value="TERMS">Terms of Service</option>
+              <option value="PRIVACY">Privacy Policy</option>
+              <option value="SAFETY">Safety Standards</option>
+              <option value="COMMUNITY">Community Guidelines</option>
+              <option value="PAYMENT_TERMS">Payment Terms</option>
+              <option value="PROMO_TERMS">Promo Terms</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Public Slug *</label>
+            <input type="text" class="form-control font-mono" [(ngModel)]="currentDoc().slug" placeholder="e.g. terms-of-service">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Version Number *</label>
+            <input type="text" class="form-control font-mono" [(ngModel)]="currentDoc().version" placeholder="e.g. 1.0">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label">Document Body (Markdown or HTML format) *</label>
+          <textarea class="form-control font-mono text-editor" rows="12" [(ngModel)]="currentDoc().content" placeholder="Type or paste the complete agreement text here..."></textarea>
+        </div>
+
+        <div class="form-group checkbox-row" style="margin-top: 16px;">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="currentDoc().is_active">
+            <span>Publish immediately (Active &amp; publicly visible on platform)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" [disabled]="isSaving()" (click)="saveDocument()">
+          {{ isSaving() ? 'Saving...' : (isEditing() ? 'Update Policy' : 'Publish Policy') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

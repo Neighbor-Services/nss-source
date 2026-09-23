@@ -1,0 +1,48 @@
+/* ─── PROMOS COMPONENT STYLES ─────────────────────────────────────────── */
+.coupon-pill-box {
+  display: flex;
+  align-items: center;
+}
+
+.coupon-code-pill {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 13px;
+  background: var(--bg-surface-hover);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  border: 1px dashed var(--primary);
+  color: var(--primary);
+  letter-spacing: 0.05em;
+}
+
+.discount-badge {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--success);
+}
+
+.cap-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.usage-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}

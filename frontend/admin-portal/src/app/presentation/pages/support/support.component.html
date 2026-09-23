@@ -1,0 +1,537 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Support &amp; Resolution Command Center</h1>
+        <span class="live-pill"><span class="live-dot"></span> Inbox Active</span>
+      </div>
+      <p class="hero-subtitle">Triage customer inquiries, review feedback, and arbitrate formal incident claims from the public site.</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-soft-light" [disabled]="isLoading()" (click)="loadData()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh Inbox' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'MESSAGES'" (click)="setTab('MESSAGES')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>Contact Inquiries</span>
+      <span class="tab-badge">{{ totalMessages() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'RESOLUTIONS'" (click)="setTab('RESOLUTIONS')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>Incident Resolution Reports</span>
+      <span class="tab-badge">{{ totalResolutions() }}</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="setTab('MESSAGES'); messageResolvedFilter.set('UNRESOLVED'); loadMessages()" [class.kpi-active]="activeTab() === 'MESSAGES' && messageResolvedFilter() === 'UNRESOLVED'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Needs Action</span>
+      </div>
+      <div>
+        <div class="kpi-label">PENDING INQUIRIES</div>
+        <div class="kpi-value text-amber">{{ pendingMessagesCount() }}</div>
+      </div>
+      <div class="kpi-meta">Unresolved contact requests</div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('MESSAGES'); messageResolvedFilter.set('RESOLVED'); loadMessages()" [class.kpi-active]="activeTab() === 'MESSAGES' && messageResolvedFilter() === 'RESOLVED'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Closed</span>
+      </div>
+      <div>
+        <div class="kpi-label">RESOLVED INQUIRIES</div>
+        <div class="kpi-value text-emerald">{{ totalMessages() - pendingMessagesCount() }}</div>
+      </div>
+      <div class="kpi-meta">Completed support threads</div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('RESOLUTIONS'); resolutionReviewedFilter.set('UNREVIEWED'); loadResolutions()" [class.kpi-active]="activeTab() === 'RESOLUTIONS' && resolutionReviewedFilter() === 'UNREVIEWED'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">Open Claims</span>
+      </div>
+      <div>
+        <div class="kpi-label">INCIDENT CLAIMS</div>
+        <div class="kpi-value text-purple">{{ openResolutionsCount() }}</div>
+      </div>
+      <div class="kpi-meta">Escrow claims &amp; service disputes</div>
+    </div>
+
+    <div class="kpi-card" (click)="setTab('MESSAGES'); messageResolvedFilter.set('ALL'); loadMessages()" [class.kpi-active]="activeTab() === 'MESSAGES' && messageResolvedFilter() === 'ALL'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Total Volume</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL INQUIRIES</div>
+        <div class="kpi-value">{{ totalMessages() }}</div>
+      </div>
+      <div class="kpi-meta">Lifetime public site messages</div>
+    </div>
+  </div>
+
+  <!-- TAB 1: CONTACT INQUIRIES -->
+  @if (activeTab() === 'MESSAGES') {
+    <div class="card table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <div class="table-icon-badge blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Customer Support Inbox</h3>
+            <span class="sub-text">General platform inquiries, contact form submissions, and customer questions</span>
+          </div>
+        </div>
+
+        <div class="table-controls-group">
+          <div class="preset-pills">
+            <button class="preset-pill" [class.active]="messageResolvedFilter() === 'ALL'" (click)="messageResolvedFilter.set('ALL'); loadMessages()">All ({{ totalMessages() }})</button>
+            <button class="preset-pill" [class.active]="messageResolvedFilter() === 'UNRESOLVED'" (click)="messageResolvedFilter.set('UNRESOLVED'); loadMessages()">Pending ({{ pendingMessagesCount() }})</button>
+            <button class="preset-pill" [class.active]="messageResolvedFilter() === 'RESOLVED'" (click)="messageResolvedFilter.set('RESOLVED'); loadMessages()">Resolved</button>
+          </div>
+
+          <div class="search-input-wrapper">
+            <svg class="search-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input 
+              type="text" 
+              class="form-control table-search-control" 
+              placeholder="Search sender, email, message..." 
+              [(ngModel)]="messageSearch" 
+              (keyup.enter)="loadMessages()"
+            />
+          </div>
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading inquiries...</p>
+        </div>
+      } @else if (messages().length === 0) {
+        <div class="empty-table-wrap">
+          <div class="empty-state-box">
+            <div class="empty-icon-circle blue">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <h4 class="empty-state-title">No Inquiries Found</h4>
+            <p class="empty-state-desc">All contact messages have been addressed or none match your search criteria.</p>
+          </div>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="min-width: 240px;">Sender</th>
+                <th style="min-width: 140px;">Inquiry Type</th>
+                <th style="min-width: 320px;">Message Content</th>
+                <th style="min-width: 140px;">Status</th>
+                <th style="min-width: 160px;">Received Date</th>
+                <th class="text-right" style="min-width: 110px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (msg of messages(); track msg.id) {
+                <tr [class.unread-row]="!msg.is_resolved">
+                  <td>
+                    <div class="user-cell">
+                      <div class="user-avatar-ring">
+                        {{ getAvatarInitials(msg.first_name, msg.last_name) }}
+                      </div>
+                      <div class="user-meta-info">
+                        <span class="user-fullname">{{ msg.first_name }} {{ msg.last_name }}</span>
+                        <a [href]="'mailto:' + msg.email" class="user-sub user-email-link" (click)="$event.stopPropagation()">{{ msg.email }}</a>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getInquiryBadgeClass(msg.inquiry_type)">
+                      {{ msg.inquiry_type || 'General' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="message-bubble-preview" (click)="viewMessage(msg)" title="Click to view full message">
+                      <span class="bubble-text">{{ msg.message }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    @if (msg.is_resolved) {
+                      <button class="badge-status-pill resolved" (click)="toggleMessageResolved(msg)" title="Click to toggle status">
+                        <span class="status-dot green"></span>
+                        <span>Resolved</span>
+                      </button>
+                    } @else {
+                      <button class="badge-status-pill pending" (click)="toggleMessageResolved(msg)" title="Click to toggle status">
+                        <span class="status-dot amber pulse"></span>
+                        <span>Pending Action</span>
+                      </button>
+                    }
+                  </td>
+                  <td>
+                    <span class="text-dim font-mono text-xs">{{ msg.created_at | date:'medium' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="action-btn-group">
+                      <button class="action-btn-circle" (click)="viewMessage(msg)" title="Read Full Message">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      </button>
+                      <button class="action-btn-circle" [class.active-check]="msg.is_resolved" (click)="toggleMessageResolved(msg)" [title]="msg.is_resolved ? 'Mark as Pending' : 'Mark as Resolved'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      </button>
+                      <button class="action-btn-circle danger" (click)="deleteMessage(msg)" title="Delete Inquiry">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 2: RESOLUTION REPORTS -->
+  @if (activeTab() === 'RESOLUTIONS') {
+    <div class="card table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <div class="table-icon-badge purple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Incident Resolution Claims</h3>
+            <span class="sub-text">Formal neighbor-to-neighbor incident reports, damage claims, and escrow resolution disputes</span>
+          </div>
+        </div>
+
+        <div class="table-controls-group">
+          <div class="preset-pills">
+            <button class="preset-pill" [class.active]="resolutionReviewedFilter() === 'ALL'" (click)="resolutionReviewedFilter.set('ALL'); loadResolutions()">All ({{ totalResolutions() }})</button>
+            <button class="preset-pill" [class.active]="resolutionReviewedFilter() === 'UNREVIEWED'" (click)="resolutionReviewedFilter.set('UNREVIEWED'); loadResolutions()">Open ({{ openResolutionsCount() }})</button>
+            <button class="preset-pill" [class.active]="resolutionReviewedFilter() === 'REVIEWED'" (click)="resolutionReviewedFilter.set('REVIEWED'); loadResolutions()">Closed</button>
+          </div>
+
+          <div class="search-input-wrapper">
+            <svg class="search-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input 
+              type="text" 
+              class="form-control table-search-control" 
+              placeholder="Search booking ref, issue..." 
+              [(ngModel)]="resolutionSearch" 
+              (keyup.enter)="loadResolutions()"
+            />
+          </div>
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading claims...</p>
+        </div>
+      } @else if (resolutions().length === 0) {
+        <div class="empty-table-wrap">
+          <div class="empty-state-box">
+            <div class="empty-icon-circle purple">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <h4 class="empty-state-title">No Resolution Claims</h4>
+            <p class="empty-state-desc">No pending neighbor claims or incident disputes currently filed.</p>
+          </div>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="min-width: 160px;">Booking Ref</th>
+                <th style="min-width: 120px;">Filer Role</th>
+                <th style="min-width: 150px;">Issue Category</th>
+                <th style="min-width: 300px;">Incident Details</th>
+                <th style="min-width: 150px;">Status</th>
+                <th style="min-width: 150px;">Filed Date</th>
+                <th class="text-right" style="min-width: 110px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rep of resolutions(); track rep.id) {
+                <tr [class.unread-row]="!rep.is_reviewed">
+                  <td>
+                    <code class="slug-pill font-mono">{{ rep.booking_ref || 'N/A' }}</code>
+                  </td>
+                  <td>
+                    <span class="badge badge-purple">{{ rep.role | uppercase }}</span>
+                  </td>
+                  <td>
+                    <span class="badge badge-warning">{{ rep.issue_type }}</span>
+                  </td>
+                  <td>
+                    <div class="message-bubble-preview" (click)="viewResolution(rep)" title="Click to view full incident report">
+                      <span class="bubble-text">{{ rep.description }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    @if (rep.is_reviewed) {
+                      <button class="badge-status-pill resolved" (click)="toggleResolutionReviewed(rep)" title="Click to toggle review status">
+                        <span class="status-dot green"></span>
+                        <span>Reviewed &amp; Closed</span>
+                      </button>
+                    } @else {
+                      <button class="badge-status-pill danger" (click)="toggleResolutionReviewed(rep)" title="Click to toggle review status">
+                        <span class="status-dot red pulse"></span>
+                        <span>Action Required</span>
+                      </button>
+                    }
+                  </td>
+                  <td>
+                    <span class="text-dim font-mono text-xs">{{ rep.created_at | date:'medium' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="action-btn-group">
+                      <button class="action-btn-circle" (click)="viewResolution(rep)" title="View Full Incident Claim">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      </button>
+                      <button class="action-btn-circle danger" (click)="deleteResolution(rep)" title="Delete Claim">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- DETAIL MODAL: CONTACT MESSAGE -->
+@if (selectedMessage()) {
+  <div class="modal-overlay" (click)="closeMessageModal()">
+    <div class="modal-dialog modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="user-avatar-ring large">
+            {{ getAvatarInitials(selectedMessage()!.first_name, selectedMessage()!.last_name) }}
+          </div>
+          <div>
+            <h3 class="modal-title">{{ selectedMessage()!.first_name }} {{ selectedMessage()!.last_name }}</h3>
+            <p class="modal-subtitle">{{ selectedMessage()!.email }}</p>
+          </div>
+        </div>
+        <button class="btn-close-icon" (click)="closeMessageModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-badge-row">
+          <span class="badge" [ngClass]="getInquiryBadgeClass(selectedMessage()!.inquiry_type)">
+            {{ selectedMessage()!.inquiry_type || 'General Inquiry' }}
+          </span>
+          @if (selectedMessage()!.is_resolved) {
+            <span class="badge badge-success"><span class="status-dot green"></span> Resolved</span>
+          } @else {
+            <span class="badge badge-warning"><span class="status-dot amber pulse"></span> Pending Review</span>
+          }
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label">Customer Message</label>
+          <div class="detail-message-box">
+            {{ selectedMessage()!.message }}
+          </div>
+        </div>
+
+        <div class="meta-info-grid" style="margin-top: 18px;">
+          <div class="meta-item">
+            <span class="meta-label">Submitted Timestamp</span>
+            <span class="meta-value font-mono">{{ selectedMessage()!.created_at | date:'medium' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Sender Email</span>
+            <a [href]="'mailto:' + selectedMessage()!.email" class="meta-value text-primary font-mono">{{ selectedMessage()!.email }}</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeMessageModal()">Close</button>
+        <button class="btn btn-primary" (click)="toggleMessageResolved(selectedMessage()!)" [disabled]="isActioning()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>{{ selectedMessage()!.is_resolved ? 'Mark as Pending' : 'Mark as Resolved' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- DETAIL MODAL: RESOLUTION REPORT -->
+@if (selectedResolution()) {
+  <div class="modal-overlay" (click)="closeResolutionModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="table-icon-badge purple" style="width: 42px; height: 42px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title">Incident Claim: {{ selectedResolution()!.issue_type }}</h3>
+            <p class="modal-subtitle">Booking Ref: <code class="slug-pill font-mono">{{ selectedResolution()!.booking_ref || 'N/A' }}</code> &bull; Filer: {{ selectedResolution()!.role | uppercase }}</p>
+          </div>
+        </div>
+        <button class="btn-close-icon" (click)="closeResolutionModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Incident Description</label>
+          <div class="detail-message-box">
+            {{ selectedResolution()!.description }}
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label">Requested Resolution / Expected Outcome</label>
+          <div class="detail-message-box outcome-box">
+            {{ selectedResolution()!.expected_outcome }}
+          </div>
+        </div>
+
+        <div class="meta-info-grid" style="margin-top: 18px;">
+          <div class="meta-item">
+            <span class="meta-label">Counterparty Neighbor</span>
+            <span class="meta-value">{{ selectedResolution()!.other_neighbor || 'N/A' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Date of Service</span>
+            <span class="meta-value">{{ selectedResolution()!.date_of_service ? (selectedResolution()!.date_of_service | date:'mediumDate') : 'N/A' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Filed On</span>
+            <span class="meta-value font-mono">{{ selectedResolution()!.created_at | date:'medium' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Resolution Status</span>
+            @if (selectedResolution()!.is_reviewed) {
+              <span class="badge badge-success"><span class="status-dot green"></span> Reviewed &amp; Closed</span>
+            } @else {
+              <span class="badge badge-danger"><span class="status-dot red pulse"></span> Action Required</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeResolutionModal()">Close</button>
+        <button class="btn btn-primary" (click)="toggleResolutionReviewed(selectedResolution()!)" [disabled]="isActioning()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>{{ selectedResolution()!.is_reviewed ? 'Re-open for Review' : 'Mark as Reviewed & Closed' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

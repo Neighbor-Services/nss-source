@@ -1,0 +1,362 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Notification &amp; Email Templates</h1>
+        <span class="live-pill"><span class="live-dot"></span> Dispatch Cluster Active</span>
+      </div>
+      <p class="hero-subtitle">Configure transactional email HTML layouts, push notification copy, and dynamic payload token tags</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-soft-light" (click)="fetchTemplates()" [disabled]="loading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ loading() ? 'Syncing...' : 'Refresh Templates' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="mainSection() === 'EDITOR'" (click)="mainSection.set('EDITOR')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+      </svg>
+      <span>Template Registry &amp; Editor</span>
+      <span class="tab-badge">{{ totalTemplates() }}</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="mainSection() === 'SMTP_GATEWAY'" (click)="mainSection.set('SMTP_GATEWAY')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><rect width="20" height="16" x="2" y="4" rx="2"/>
+      </svg>
+      <span>SMTP &amp; DKIM Gateway</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="mainSection() === 'FCM_PUSH'" (click)="mainSection.set('FCM_PUSH')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span>FCM &amp; Mobile Push Rails</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="mainSection.set('EDITOR')" [class.kpi-active]="mainSection() === 'EDITOR'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Catalog</span>
+      </div>
+      <div>
+        <div class="kpi-label">REGISTERED TEMPLATES</div>
+        <div class="kpi-value">{{ totalTemplates() }}</div>
+      </div>
+      <div class="kpi-meta">Active system message layouts</div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('SMTP_GATEWAY')" [class.kpi-active]="mainSection() === 'SMTP_GATEWAY'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Email</span>
+      </div>
+      <div>
+        <div class="kpi-label">EMAIL CHANNELS</div>
+        <div class="kpi-value text-emerald">{{ emailTemplatesCount() }}</div>
+      </div>
+      <div class="kpi-meta">SMTP &amp; HTML MIME layouts</div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('FCM_PUSH')" [class.kpi-active]="mainSection() === 'FCM_PUSH'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">Push</span>
+      </div>
+      <div>
+        <div class="kpi-label">PUSH NOTIFICATIONS</div>
+        <div class="kpi-value">{{ pushTemplatesCount() }}</div>
+      </div>
+      <div class="kpi-meta">FCM &amp; APNS mobile alerts</div>
+    </div>
+
+    <div class="kpi-card" (click)="mainSection.set('SMTP_GATEWAY')">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Transport</span>
+      </div>
+      <div>
+        <div class="kpi-label">DELIVERY TRANSPORT</div>
+        <div class="kpi-value text-emerald">99.98%</div>
+      </div>
+      <div class="kpi-meta">DKIM &amp; SPF Verified SLA</div>
+    </div>
+  </div>
+
+  <!-- TAB 1: TEMPLATE REGISTRY & EDITOR -->
+  @if (mainSection() === 'EDITOR') {
+    @if (loading()) {
+      <div class="card loading-card mt-4">
+        <div class="spinner"></div>
+        <p>Loading notification and email template registries...</p>
+      </div>
+    } @else {
+      <div class="templates-split-layout mt-4">
+        <!-- Templates Sidebar List -->
+        <div class="card templates-sidebar-card">
+          <div class="list-header">
+            <div class="list-header-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              <h3>Template Registry</h3>
+            </div>
+            <span class="badge badge-info">{{ templates().length }}</span>
+          </div>
+          <div class="templates-list-scroll">
+            @for (t of templates(); track t.key) {
+              <button
+                class="template-nav-item"
+                [class.active]="selectedTemplate()?.key === t.key"
+                (click)="selectTemplate(t)"
+              >
+                <div class="t-meta">
+                  <b>{{ t.name }}</b>
+                  <code class="font-mono t-slug">{{ t.key }}</code>
+                </div>
+                <span class="badge" [class.badge-info]="t.channel === 'EMAIL'" [class.badge-purple]="t.channel === 'PUSH'">
+                  {{ t.channel }}
+                </span>
+              </button>
+            } @empty {
+              <div class="empty-list">No templates registered</div>
+            }
+          </div>
+        </div>
+
+        <!-- Template Editor Card -->
+        @if (selectedTemplate()) {
+          <div class="card editor-card">
+            <div class="editor-header">
+              <div>
+                <div class="editor-title-row">
+                  <h3>{{ selectedTemplate()!.name }}</h3>
+                  <span class="badge" [class.badge-info]="selectedTemplate()!.channel === 'EMAIL'" [class.badge-purple]="selectedTemplate()!.channel === 'PUSH'">
+                    {{ selectedTemplate()!.channel }}
+                  </span>
+                </div>
+                <span class="font-mono text-primary text-sm">{{ selectedTemplate()!.key }}</span>
+              </div>
+              <div class="editor-header-actions">
+                <!-- Mode Tabs -->
+                <div class="editor-mode-toggle">
+                  <button
+                    type="button"
+                    class="mode-btn"
+                    [class.active]="activeTab() === 'code'"
+                    (click)="activeTab.set('code')"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                    </svg>
+                    <span>Editor</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="mode-btn"
+                    [class.active]="activeTab() === 'preview'"
+                    (click)="activeTab.set('preview')"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>Live Preview</span>
+                  </button>
+                </div>
+
+                <button class="btn btn-primary" (click)="saveSelectedTemplate()" [disabled]="saving()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/>
+                  </svg>
+                  <span>{{ saving() ? 'Saving Template...' : 'Save Template' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="editor-body">
+              <!-- Dynamic Variables Bar -->
+              <div class="variables-box">
+                <div class="var-box-head">
+                  <span class="var-title">Available Dynamic Token Tags (Click to Insert):</span>
+                  <span class="text-dim text-xs">Replaced at runtime via worker queue</span>
+                </div>
+                <div class="var-pills">
+                  @for (v of selectedTemplate()!.variables; track v) {
+                    <button type="button" class="var-pill" (click)="insertToken(v)" title="Click to insert {{ '{' + '{' + v + '}' + '}' }}">
+                      + {{ '{' + '{' + v + '}' + '}' }}
+                    </button>
+                  } @empty {
+                    <span class="text-dim text-sm">No dynamic token variables defined for this template</span>
+                  }
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Subject Line / Push Notification Title</label>
+                <input type="text" [(ngModel)]="selectedTemplate()!.subject" class="form-control" />
+              </div>
+
+              @if (activeTab() === 'code') {
+                <div class="form-group">
+                  <label class="form-label">HTML Email Body Content (MIME Layout)</label>
+                  <textarea [(ngModel)]="selectedTemplate()!.bodyHtml" rows="9" class="form-control font-mono code-editor"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Plaintext Fallback Copy (SMS / Accessibility)</label>
+                  <textarea [(ngModel)]="selectedTemplate()!.bodyText" rows="3" class="form-control font-mono"></textarea>
+                </div>
+              } @else {
+                <!-- Live Preview Container -->
+                <div class="preview-container">
+                  <div class="preview-header">
+                    <div class="preview-client-bar">
+                      <span class="preview-dot red"></span>
+                      <span class="preview-dot yellow"></span>
+                      <span class="preview-dot green"></span>
+                      <span class="preview-subject-mock">Subject: {{ selectedTemplate()!.subject }}</span>
+                    </div>
+                  </div>
+                  <div class="preview-rendered-body" [innerHTML]="getSafePreviewHtml()"></div>
+                </div>
+              }
+
+              <!-- Test Email Dispatcher Section -->
+              <div class="test-send-card">
+                <div class="test-send-info">
+                  <h4>Test Dispatcher</h4>
+                  <p class="sub-text">Dispatch a sample of this template to your inbox with mocked payload data.</p>
+                </div>
+                <div class="test-send-form">
+                  <input type="email" [(ngModel)]="testRecipientEmail" placeholder="admin@neighborservice.com" class="form-control" />
+                  <button class="btn btn-secondary" (click)="sendTestEmail()" [disabled]="sendingTest()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                    <span>{{ sendingTest() ? 'Sending...' : 'Send Sample' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- TAB 2: SMTP & DKIM GATEWAY -->
+  @if (mainSection() === 'SMTP_GATEWAY') {
+    <div class="deck-grid mt-4">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+          </div>
+          <div>
+            <h4>SMTP Relay &amp; DKIM Authentication</h4>
+            <p class="deck-sub">High-throughput transactional mail cluster with TLS 1.3 encryption</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Relay Gateway</span>
+              <span class="metric-val">smtp.neighborservice.com</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">DKIM / SPF</span>
+              <span class="metric-val text-success">100% Passed</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            All transactional emails are signed with 2048-bit RSA keys to prevent spoofing and guarantee primary inbox deliverability.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: FCM & APNS MOBILE PUSH -->
+  @if (mainSection() === 'FCM_PUSH') {
+    <div class="deck-grid mt-4">
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Firebase Cloud Messaging &amp; APNS Gateway</h4>
+            <p class="deck-sub">Low-latency mobile push dispatcher for instantaneous provider lead alerts</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Dispatch Latency</span>
+              <span class="metric-val text-success">&lt; 120ms</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Push Retry Worker</span>
+              <span class="metric-val">Exponential Backoff</span>
+            </div>
+          </div>
+          <p class="deck-description">
+            Push alerts are asynchronously queued in Redis and fanned out to iOS APNs and Android FCM with automatic device token rotation.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+</div>
