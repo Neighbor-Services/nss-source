@@ -77,6 +77,8 @@ wheels/
 htmlcov/
 media/
 staticfiles/
+# Do NOT ignore the Go media package
+!backend-go/pkg/media/
 
 # ── Node / Angular / Web Frontend ─────────────────────────────────────────────
 node_modules/
