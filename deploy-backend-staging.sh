@@ -16,8 +16,8 @@ BACKEND_PORT=8001
 DEFAULT_DOMAIN="staging-api.neighborservice.com"
 
 # Database Configuration Defaults
-DB_NAME="ns_db_staging"
-DB_USER="postgres"
+DB_NAME=""
+DB_USER=""
 DB_PASSWORD=""
 
 # Cloudflare Cache Purge (optional)
@@ -159,16 +159,32 @@ if [ ! -f "$APP_DIR/.env" ]; then
         echo -e "${YELLOW}Copying existing .env...${NC}"
         cp "$SCRIPT_DIR/backend-go/.env" "$APP_DIR/.env"
     fi
-    # Update staging specific port and environment
-    sed -i 's/^PORT=.*/PORT=8001/' "$APP_DIR/.env" 2>/dev/null || true
-    sed -i 's/^ENV=.*/ENV=staging/' "$APP_DIR/.env" 2>/dev/null || true
-    chown $USER:$GROUP "$APP_DIR/.env"
-    chmod 600 "$APP_DIR/.env"
     echo -e "${CYAN}Please verify database credentials & secrets in $APP_DIR/.env${NC}"
 else
     echo -e "${GREEN}✓ Existing .env preserved at $APP_DIR/.env${NC}"
-    chmod 600 "$APP_DIR/.env"
 fi
+
+# Always enforce staging PORT (8001) and environment in .env
+if grep -q '^PORT=' "$APP_DIR/.env"; then
+    sed -i "s/^PORT=.*/PORT=$BACKEND_PORT/" "$APP_DIR/.env"
+else
+    echo "PORT=$BACKEND_PORT" >> "$APP_DIR/.env"
+fi
+
+if grep -q '^ENV=' "$APP_DIR/.env"; then
+    sed -i 's/^ENV=.*/ENV=staging/' "$APP_DIR/.env"
+else
+    echo "ENV=staging" >> "$APP_DIR/.env"
+fi
+
+if grep -q '^ENVIRONMENT=' "$APP_DIR/.env"; then
+    sed -i 's/^ENVIRONMENT=.*/ENVIRONMENT=staging/' "$APP_DIR/.env"
+else
+    echo "ENVIRONMENT=staging" >> "$APP_DIR/.env"
+fi
+
+chown $USER:$GROUP "$APP_DIR/.env"
+chmod 600 "$APP_DIR/.env"
 
 echo -e "${YELLOW}Phase 4: Direct Compilation (Go Binary Build)${NC}"
 
