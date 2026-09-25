@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -205,6 +206,25 @@ func (p *Profile) GetMaxCatalogServices() int {
 		return 3
 	default:
 		return 1
+	}
+}
+
+func (p *Profile) EnrichCatalogServices() {
+	if len(p.CatalogServices) > 0 {
+		p.CatalogServiceIDs = make([]string, 0, len(p.CatalogServices))
+		p.CatalogServiceNames = make([]string, 0, len(p.CatalogServices))
+		for _, cs := range p.CatalogServices {
+			p.CatalogServiceIDs = append(p.CatalogServiceIDs, cs.ID.String())
+			if cs.Name != "" {
+				p.CatalogServiceNames = append(p.CatalogServiceNames, cs.Name)
+			}
+		}
+		if len(p.CatalogServiceNames) > 0 {
+			p.CatalogServiceName = p.CatalogServiceNames[0]
+			if p.Service == "" {
+				p.Service = strings.Join(p.CatalogServiceNames, ", ")
+			}
+		}
 	}
 }
 

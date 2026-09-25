@@ -38,21 +38,34 @@ func NewProfileUseCase(
 }
 
 func (u *profileUseCase) GetProfile(ctx context.Context, userID uuid.UUID, targetID *uuid.UUID) (*entity.Profile, error) {
+	var profile *entity.Profile
+	var err error
 	if targetID != nil {
-		return u.profileRepo.GetByID(ctx, *targetID)
+		profile, err = u.profileRepo.GetByID(ctx, *targetID)
+	} else {
+		profile, err = u.profileRepo.GetByUserID(ctx, userID)
 	}
-	profile, err := u.profileRepo.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	if profile != nil && profile.RecordActivity() {
-		_ = u.profileRepo.Update(ctx, profile)
+	if profile != nil {
+		profile.EnrichCatalogServices()
+		if profile.RecordActivity() {
+			_ = u.profileRepo.Update(ctx, profile)
+		}
 	}
 	return profile, nil
 }
 
 func (u *profileUseCase) ListProfiles(ctx context.Context, params repository.ProfileFilterParams) ([]entity.Profile, error) {
-	return u.profileRepo.List(ctx, params)
+	profiles, err := u.profileRepo.List(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	for i := range profiles {
+		profiles[i].EnrichCatalogServices()
+	}
+	return profiles, nil
 }
 
 func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, updates map[string]interface{}) (*entity.Profile, error) {
@@ -177,7 +190,11 @@ func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, up
 		}
 	}
 
-	return u.profileRepo.GetByID(ctx, profile.ID)
+	updated, err := u.profileRepo.GetByID(ctx, profile.ID)
+	if err == nil && updated != nil {
+		updated.EnrichCatalogServices()
+	}
+	return updated, err
 }
 
 func (u *profileUseCase) GetAbout(ctx context.Context, userID uuid.UUID) (*entity.About, error) {
