@@ -118,7 +118,7 @@ if [ -z "$SRC_DIR" ] || [ ! -f "$SRC_DIR/cmd/server/main.go" ]; then
     echo -e "${RED}Error: backend-go source directory not found.${NC}"
     echo -e "${YELLOW}Please manually place the source before running this script:${NC}"
     echo -e "  Option 1 — Copy from local machine:"
-    echo -e "    ${CYAN}rsync -av /path/to/ns/backend-go/ root@<server-ip>:/opt/ns/backend-go/${NC}"
+    echo -e "    ${CYAN}rsync -av --exclude='media' --exclude='logs' --exclude='.env*' --exclude='*.json' /path/to/ns/backend-go/ root@<server-ip>:/opt/ns/backend-go/${NC}"
     echo -e "  Option 2 — Place alongside this script:"
     echo -e "    ${CYAN}The script expects:  $(dirname "$0")/backend-go/cmd/server/main.go${NC}"
     echo -e "  Option 3 — Clone with submodules on the server:"
@@ -131,14 +131,40 @@ echo -e "${GREEN}✓ Found source at: $SRC_DIR${NC}"
 # Preserve server-only files: .env, service account JSON credentials, media uploads, logs, and binaries
 rsync -a \
     --exclude='bin' \
+    --exclude='bin/' \
+    --exclude='bin/**' \
     --exclude='.git' \
+    --exclude='.git/' \
+    --exclude='.git/**' \
     --exclude='.env*' \
+    --exclude='*.env' \
     --exclude='media' \
+    --exclude='media/' \
+    --exclude='media/**' \
+    --exclude='/media' \
+    --exclude='/media/' \
+    --exclude='/media/**' \
+    --exclude='uploads' \
+    --exclude='uploads/' \
+    --exclude='uploads/**' \
     --exclude='logs' \
+    --exclude='logs/' \
+    --exclude='logs/**' \
+    --exclude='backups' \
+    --exclude='backups/' \
+    --exclude='backups/**' \
     --exclude='*service*account*.json' \
     --exclude='*serviceAccount*.json' \
     --exclude='firebase*.json' \
+    --exclude='google-play*.json' \
+    --exclude='sa.json' \
+    --exclude='*.p8' \
+    --exclude='*.pem' \
+    --exclude='*.key' \
+    --exclude='*.crt' \
     --exclude='certs' \
+    --exclude='certs/' \
+    --exclude='certs/**' \
     "$SRC_DIR/" "$APP_DIR/"
 chown -R $USER:$GROUP "$APP_DIR" || true
 chmod -R u+rwX,g+rX,o+rX "$APP_DIR" || true

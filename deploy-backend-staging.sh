@@ -107,14 +107,40 @@ echo -e "${GREEN}✓ Found source at: $SRC_DIR${NC}"
 # Preserve server-only files: .env, service account JSON credentials, media uploads, logs, and binaries
 rsync -a \
     --exclude='bin' \
+    --exclude='bin/' \
+    --exclude='bin/**' \
     --exclude='.git' \
+    --exclude='.git/' \
+    --exclude='.git/**' \
     --exclude='.env*' \
+    --exclude='*.env' \
     --exclude='media' \
+    --exclude='media/' \
+    --exclude='media/**' \
+    --exclude='/media' \
+    --exclude='/media/' \
+    --exclude='/media/**' \
+    --exclude='uploads' \
+    --exclude='uploads/' \
+    --exclude='uploads/**' \
     --exclude='logs' \
+    --exclude='logs/' \
+    --exclude='logs/**' \
+    --exclude='backups' \
+    --exclude='backups/' \
+    --exclude='backups/**' \
     --exclude='*service*account*.json' \
     --exclude='*serviceAccount*.json' \
     --exclude='firebase*.json' \
+    --exclude='google-play*.json' \
+    --exclude='sa.json' \
+    --exclude='*.p8' \
+    --exclude='*.pem' \
+    --exclude='*.key' \
+    --exclude='*.crt' \
     --exclude='certs' \
+    --exclude='certs/' \
+    --exclude='certs/**' \
     "$SRC_DIR/" "$APP_DIR/"
 chown -R $USER:$GROUP "$APP_DIR"
 chmod -R u+rwX,g+rX,o+rX "$APP_DIR"

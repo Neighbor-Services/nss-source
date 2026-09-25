@@ -36,6 +36,7 @@ backups/
 *.sqlite3
 *.db
 
+# Media & Uploads
 # Logs & Temp
 logs/
 *.log
