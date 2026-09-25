@@ -148,40 +148,40 @@ fi
 
 echo -e "${YELLOW}Phase 3: Environment Configuration${NC}"
 
-if [ ! -f "$APP_DIR/.env" ]; then
-    if [ -f "$APP_DIR/.env.example" ]; then
-        echo -e "${YELLOW}Creating .env from .env.example...${NC}"
-        cp "$APP_DIR/.env.example" "$APP_DIR/.env"
-    elif [ -f "$SRC_DIR/.env" ]; then
-        echo -e "${YELLOW}Copying existing .env...${NC}"
-        cp "$SRC_DIR/.env" "$APP_DIR/.env"
-    elif [ -f "$SCRIPT_DIR/backend-go/.env" ]; then
-        echo -e "${YELLOW}Copying existing .env...${NC}"
-        cp "$SCRIPT_DIR/backend-go/.env" "$APP_DIR/.env"
-    fi
-    echo -e "${CYAN}Please verify database credentials & secrets in $APP_DIR/.env${NC}"
-else
-    echo -e "${GREEN}✓ Existing .env preserved at $APP_DIR/.env${NC}"
-fi
+# if [ ! -f "$APP_DIR/.env" ]; then
+#     if [ -f "$APP_DIR/.env.example" ]; then
+#         echo -e "${YELLOW}Creating .env from .env.example...${NC}"
+#         cp "$APP_DIR/.env.example" "$APP_DIR/.env"
+#     elif [ -f "$SRC_DIR/.env" ]; then
+#         echo -e "${YELLOW}Copying existing .env...${NC}"
+#         cp "$SRC_DIR/.env" "$APP_DIR/.env"
+#     elif [ -f "$SCRIPT_DIR/backend-go/.env" ]; then
+#         echo -e "${YELLOW}Copying existing .env...${NC}"
+#         cp "$SCRIPT_DIR/backend-go/.env" "$APP_DIR/.env"
+#     fi
+#     echo -e "${CYAN}Please verify database credentials & secrets in $APP_DIR/.env${NC}"
+# else
+#     echo -e "${GREEN}✓ Existing .env preserved at $APP_DIR/.env${NC}"
+# fi
 
-# Always enforce staging PORT (8001) and environment in .env
-if grep -q '^PORT=' "$APP_DIR/.env"; then
-    sed -i "s/^PORT=.*/PORT=$BACKEND_PORT/" "$APP_DIR/.env"
-else
-    echo "PORT=$BACKEND_PORT" >> "$APP_DIR/.env"
-fi
+# # Always enforce staging PORT (8001) and environment in .env
+# if grep -q '^PORT=' "$APP_DIR/.env"; then
+#     sed -i "s/^PORT=.*/PORT=$BACKEND_PORT/" "$APP_DIR/.env"
+# else
+#     echo "PORT=$BACKEND_PORT" >> "$APP_DIR/.env"
+# fi
 
-if grep -q '^ENV=' "$APP_DIR/.env"; then
-    sed -i 's/^ENV=.*/ENV=staging/' "$APP_DIR/.env"
-else
-    echo "ENV=staging" >> "$APP_DIR/.env"
-fi
+# if grep -q '^ENV=' "$APP_DIR/.env"; then
+#     sed -i 's/^ENV=.*/ENV=staging/' "$APP_DIR/.env"
+# else
+#     echo "ENV=staging" >> "$APP_DIR/.env"
+# fi
 
-if grep -q '^ENVIRONMENT=' "$APP_DIR/.env"; then
-    sed -i 's/^ENVIRONMENT=.*/ENVIRONMENT=staging/' "$APP_DIR/.env"
-else
-    echo "ENVIRONMENT=staging" >> "$APP_DIR/.env"
-fi
+# if grep -q '^ENVIRONMENT=' "$APP_DIR/.env"; then
+#     sed -i 's/^ENVIRONMENT=.*/ENVIRONMENT=staging/' "$APP_DIR/.env"
+# else
+#     echo "ENVIRONMENT=staging" >> "$APP_DIR/.env"
+# fi
 
 chown $USER:$GROUP "$APP_DIR/.env"
 chmod 600 "$APP_DIR/.env"

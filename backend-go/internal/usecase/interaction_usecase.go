@@ -176,13 +176,15 @@ func (u *interactionUseCase) CreateReview(ctx context.Context, reviewerID uuid.U
 }
 
 func (u *interactionUseCase) GetAppointments(ctx context.Context, userID uuid.UUID, userType, status string) ([]entity.Appointment, error) {
-	switch userType {
+	normType := strings.ToUpper(strings.TrimSpace(userType))
+	switch normType {
 	case "CUSTOMER", "SEEKER":
 		return u.aptRepo.List(ctx, &userID, nil, status)
 	case "PROVIDER":
 		return u.aptRepo.List(ctx, nil, &userID, status)
+	default:
+		return u.aptRepo.List(ctx, &userID, &userID, status)
 	}
-	return u.aptRepo.List(ctx, nil, nil, status)
 }
 
 func (u *interactionUseCase) CreateAppointment(ctx context.Context, customerID uuid.UUID, apt *entity.Appointment) (*entity.Appointment, error) {

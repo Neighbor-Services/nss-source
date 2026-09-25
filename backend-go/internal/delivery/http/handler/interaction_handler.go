@@ -31,10 +31,14 @@ func (h *InteractionHandler) wrapAppointments(appointments []entity.Appointment,
 			role = "seeker"
 			if apt.Provider != nil && apt.Provider.Profile != nil {
 				userProfile = apt.Provider.Profile
+			} else if apt.ProviderProfile != nil {
+				userProfile = apt.ProviderProfile
 			}
 		} else {
 			if apt.Seeker != nil && apt.Seeker.Profile != nil {
 				userProfile = apt.Seeker.Profile
+			} else if apt.SeekerProfile != nil {
+				userProfile = apt.SeekerProfile
 			}
 		}
 

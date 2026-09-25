@@ -72,6 +72,7 @@ func (h *ServiceHandler) GetRequests(c *gin.Context) {
 	userType := c.GetString("userType")
 	userUUID, _ := uuid.Parse(userIDStr)
 	status := c.Query("status")
+	targeted := c.Query("targeted") == "true"
 
 	userMe := c.Query("user_me") == "true" || c.Query("seeker_me") == "true" || c.Query("my_requests") == "true"
 	if userMe {
@@ -80,7 +81,7 @@ func (h *ServiceHandler) GetRequests(c *gin.Context) {
 		userType = queryUserType
 	}
 
-	requests, err := h.serviceUC.GetRequests(c.Request.Context(), userUUID, userType, status)
+	requests, err := h.serviceUC.GetRequests(c.Request.Context(), userUUID, userType, status, targeted)
 	if err != nil {
 		response.InternalError(c, "Failed to load requests")
 		return

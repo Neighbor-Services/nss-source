@@ -277,15 +277,29 @@ func (u *serviceUseCase) enrichServiceRequest(ctx context.Context, req *entity.S
 		}
 	}
 
-	// 4. Image URL
+	// 4. Enrich AppointmentID if an appointment exists for this request
+	if u.aptRepo != nil {
+		if apts, err := u.aptRepo.List(ctx, &req.UserID, nil, ""); err == nil {
+			for _, apt := range apts {
+				if apt.ServiceRequestID != nil && *apt.ServiceRequestID == req.ID {
+					aptIDStr := apt.ID.String()
+					req.AppointmentID = &aptIDStr
+					break
+				}
+			}
+		}
+	}
+
+	// 5. Image URL
 	if req.ImageURL == "" && req.Image != "" {
 		req.ImageURL = req.Image
 	}
 }
 
-func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, userType string, status string) ([]entity.ServiceRequest, error) {
+func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, userType string, status string, targetedOnly ...bool) ([]entity.ServiceRequest, error) {
 	normType := strings.ToUpper(strings.TrimSpace(userType))
-	cacheKey := fmt.Sprintf("cache:nearby_requests:user:%s:%s:%s", userID.String(), normType, status)
+	isTargetedOnly := len(targetedOnly) > 0 && targetedOnly[0]
+	cacheKey := fmt.Sprintf("cache:nearby_requests:user:%s:%s:%s:%t", userID.String(), normType, status, isTargetedOnly)
 	if u.cache != nil {
 		var cached []entity.ServiceRequest
 		if found, _ := u.cache.Get(ctx, cacheKey, &cached); found && len(cached) > 0 {
@@ -295,7 +309,14 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 
 	var requests []entity.ServiceRequest
 	var err error
-	if normType == "CUSTOMER" || normType == "SEEKER" || normType == "USER" || normType == "" {
+	if isTargetedOnly {
+		// Specific targeted/direct requests query
+		filterParams := repository.ServiceRequestFilterParams{
+			Status:           status,
+			TargetProviderID: &userID,
+		}
+		requests, err = u.requestRepo.List(ctx, filterParams)
+	} else if normType == "CUSTOMER" || normType == "SEEKER" || normType == "USER" || normType == "" {
 		requests, err = u.requestRepo.ListByUser(ctx, &userID, nil, status)
 	} else {
 		// Provider flow: Fetch provider profile to determine offered services and location
@@ -357,6 +378,13 @@ func (u *serviceUseCase) GetRequestByID(ctx context.Context, id uuid.UUID) (*ent
 func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID, req *entity.ServiceRequest) (*entity.ServiceRequest, error) {
 	if req.Title == "" {
 		return nil, errors.New("title is required")
+	}
+
+	// If target provider was passed as Profile ID instead of User ID, resolve it
+	if req.TargetProviderID != nil && *req.TargetProviderID != uuid.Nil {
+		if p, pErr := u.profileRepo.GetByID(ctx, *req.TargetProviderID); pErr == nil && p != nil && p.UserID != uuid.Nil {
+			req.TargetProviderID = &p.UserID
+		}
 	}
 
 	req.ID = uuid.New()

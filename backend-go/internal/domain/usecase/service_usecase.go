@@ -22,7 +22,7 @@ type ServiceUseCase interface {
 	GetCategories(ctx context.Context) ([]entity.Category, error)
 	GetCatalogServices(ctx context.Context, categorySlug string, search string) ([]entity.CatalogService, error)
 	MatchProviders(ctx context.Context, input MatchProvidersInput) ([]entity.Profile, error)
-	GetRequests(ctx context.Context, userID uuid.UUID, userType string, status string) ([]entity.ServiceRequest, error)
+	GetRequests(ctx context.Context, userID uuid.UUID, userType string, status string, targetedOnly ...bool) ([]entity.ServiceRequest, error)
 	GetRequestByID(ctx context.Context, id uuid.UUID) (*entity.ServiceRequest, error)
 	CreateRequest(ctx context.Context, customerID uuid.UUID, req *entity.ServiceRequest) (*entity.ServiceRequest, error)
 	UpdateRequest(ctx context.Context, userID, id uuid.UUID, updates map[string]interface{}) (*entity.ServiceRequest, error)

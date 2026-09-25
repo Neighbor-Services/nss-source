@@ -826,15 +826,22 @@ func SendMultipartEmail(cfg *Config, toEmail, subject, plainText, htmlBody strin
 		return nil
 	}
 
-	from := cfg.From
-	if from == "" {
-		from = cfg.User
+	fromRaw := cfg.From
+	if fromRaw == "" {
+		fromRaw = cfg.User
+	}
+	cleanFromEmail := extractEmail(fromRaw)
+
+	// Format From with a trusted Display Name if not already present
+	fromFormatted := fromRaw
+	if !strings.Contains(fromRaw, "<") {
+		fromFormatted = fmt.Sprintf("\"Neighbor Service\" <%s>", cleanFromEmail)
 	}
 
-	// Extract domain for Message-ID
+	// Extract domain for Message-ID and headers
 	domain := "neighborservice.com"
-	if idx := strings.LastIndex(from, "@"); idx != -1 {
-		domain = strings.Trim(from[idx+1:], " >")
+	if idx := strings.LastIndex(cleanFromEmail, "@"); idx != -1 {
+		domain = strings.Trim(cleanFromEmail[idx+1:], " >")
 	}
 
 	msgID := fmt.Sprintf("<%s@%s>", uuid.New().String(), domain)
@@ -843,15 +850,19 @@ func SendMultipartEmail(cfg *Config, toEmail, subject, plainText, htmlBody strin
 
 	// Build RFC 5322 & anti-spam compliant headers
 	var msgBuilder strings.Builder
-	msgBuilder.WriteString(fmt.Sprintf("From: %s\r\n", from))
+	msgBuilder.WriteString(fmt.Sprintf("From: %s\r\n", fromFormatted))
 	msgBuilder.WriteString(fmt.Sprintf("To: %s\r\n", toEmail))
+	msgBuilder.WriteString(fmt.Sprintf("Reply-To: %s\r\n", fromFormatted))
 	msgBuilder.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
 	msgBuilder.WriteString(fmt.Sprintf("Date: %s\r\n", dateHeader))
 	msgBuilder.WriteString(fmt.Sprintf("Message-ID: %s\r\n", msgID))
 	msgBuilder.WriteString("MIME-Version: 1.0\r\n")
+	msgBuilder.WriteString("X-Priority: 3\r\n")
+	msgBuilder.WriteString("Importance: Normal\r\n")
 	msgBuilder.WriteString("Auto-Submitted: auto-generated\r\n")
 	msgBuilder.WriteString("X-Auto-Response-Suppress: All\r\n")
-	msgBuilder.WriteString("X-Mailer: NeighborService-Mailer/1.0\r\n")
+	msgBuilder.WriteString(fmt.Sprintf("List-Unsubscribe: <mailto:support@%s?subject=Unsubscribe>\r\n", domain))
+	msgBuilder.WriteString("List-Unsubscribe-Post: List-Unsubscribe=One-Click\r\n")
 	msgBuilder.WriteString(fmt.Sprintf("Content-Type: multipart/alternative; boundary=\"%s\"\r\n", boundary))
 	msgBuilder.WriteString("\r\n")
 
@@ -897,7 +908,7 @@ func SendMultipartEmail(cfg *Config, toEmail, subject, plainText, htmlBody strin
 		if err = client.Auth(auth); err != nil {
 			return err
 		}
-		if err = client.Mail(extractEmail(from)); err != nil {
+		if err = client.Mail(cleanFromEmail); err != nil {
 			return err
 		}
 		if err = client.Rcpt(toEmail); err != nil {
@@ -915,7 +926,7 @@ func SendMultipartEmail(cfg *Config, toEmail, subject, plainText, htmlBody strin
 	}
 
 	// Standard STARTTLS (Port 587 / 25)
-	return smtp.SendMail(addr, auth, extractEmail(from), []string{toEmail}, []byte(message))
+	return smtp.SendMail(addr, auth, cleanFromEmail, []string{toEmail}, []byte(message))
 }
 
 // extractEmail parses plain email from formats like "Neighbor Service <noreply@domain.com>"

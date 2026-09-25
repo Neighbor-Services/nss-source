@@ -103,10 +103,11 @@ func (r *appointmentRepository) List(ctx context.Context, seekerID *uuid.UUID, p
 		Preload("Proposal").
 		Order("created_at DESC")
 
-	if seekerID != nil {
+	if seekerID != nil && providerID != nil {
+		query = query.Where("seeker_id = ? OR provider_id = ?", *seekerID, *providerID)
+	} else if seekerID != nil {
 		query = query.Where("seeker_id = ?", *seekerID)
-	}
-	if providerID != nil {
+	} else if providerID != nil {
 		query = query.Where("provider_id = ?", *providerID)
 	}
 	if status != "" {

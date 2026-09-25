@@ -502,6 +502,10 @@ func (m *mockAdminUseCase) UpdateAboutContent(ctx context.Context, adminID uuid.
 	return about, m.err
 }
 
+func (m *mockAdminUseCase) GetBackupSnapshot(ctx context.Context, adminID uuid.UUID, idOrFilename string) (*entity.BackupSnapshot, error) {
+	return &entity.BackupSnapshot{ID: uuid.New(), Filename: idOrFilename}, m.err
+}
+
 func setupAdminTestRouter(uc domainUsecase.AdminUseCase) (*gin.Engine, *handler.AdminHandler) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
