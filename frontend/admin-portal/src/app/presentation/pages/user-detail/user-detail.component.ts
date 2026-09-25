@@ -186,16 +186,16 @@ export class UserDetailComponent implements OnInit {
     if (!u.isActive) {
       this.isActioning.set(true);
       this.errorMessage.set(null);
-      this.userUC.restoreUser(u.id).subscribe({
+      this.userUC.updateUser(u.id, { isActive: true }).subscribe({
         next: () => {
           this.isActioning.set(false);
-          this.successMessage.set(`Account ${u.email} has been restored to active status.`);
+          this.successMessage.set(`Account ${u.email} has been activated.`);
           this.loadFullUserDetails(u.id);
           setTimeout(() => this.successMessage.set(null), 4000);
         },
         error: (err) => {
           this.isActioning.set(false);
-          this.errorMessage.set(err?.error?.message || 'Failed to restore account.');
+          this.errorMessage.set(err?.error?.message || err?.error?.error || 'Failed to activate account.');
         }
       });
     } else {
@@ -208,7 +208,7 @@ export class UserDetailComponent implements OnInit {
 
       this.isActioning.set(true);
       this.errorMessage.set(null);
-      this.userUC.deleteUser(u.id).subscribe({
+      this.userUC.updateUser(u.id, { isActive: false }).subscribe({
         next: () => {
           this.isActioning.set(false);
           this.successMessage.set(`Account ${u.email} has been suspended.`);
@@ -217,10 +217,37 @@ export class UserDetailComponent implements OnInit {
         },
         error: (err) => {
           this.isActioning.set(false);
-          this.errorMessage.set(err?.error?.message || 'Failed to suspend account.');
+          this.errorMessage.set(err?.error?.message || err?.error?.error || 'Failed to suspend account.');
         }
       });
     }
+  }
+
+  async deleteUserAccount(): Promise<void> {
+    const u = this.user();
+    if (!u) return;
+
+    const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+    const displayName = fullName ? `${fullName} (${u.email})` : u.email;
+    const confirmed = await this.dialog.dangerConfirm(
+      'Delete User Account',
+      `Are you sure you want to permanently delete user account "${displayName}"? This will terminate active sessions and remove the account.`,
+      'Delete User Account'
+    );
+    if (!confirmed) return;
+
+    this.isActioning.set(true);
+    this.errorMessage.set(null);
+    this.userUC.deleteUser(u.id).subscribe({
+      next: () => {
+        this.isActioning.set(false);
+        this.router.navigate(['/admin/users']);
+      },
+      error: (err) => {
+        this.isActioning.set(false);
+        this.errorMessage.set(err?.error?.message || err?.error?.error || 'Failed to delete user account.');
+      }
+    });
   }
 
   impersonate(): void {

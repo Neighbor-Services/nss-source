@@ -301,8 +301,9 @@
         @if (selectedCount() > 0) {
           <div class="batch-action-pill-bar">
             <span class="batch-count">{{ selectedCount() }} Selected</span>
-            <button class="btn btn-xs btn-danger" (click)="bulkSuspend()" [disabled]="isActioning()">Bulk Suspend</button>
+            <button class="btn btn-xs btn-warning" (click)="bulkSuspend()" [disabled]="isActioning()">Bulk Suspend</button>
             <button class="btn btn-xs btn-success" (click)="bulkActivate()" [disabled]="isActioning()">Bulk Activate</button>
+            <button class="btn btn-xs btn-danger" (click)="bulkDelete()" [disabled]="isActioning()">Bulk Delete</button>
             <button class="btn btn-xs btn-secondary" (click)="exportSelectedCSV()">Export Selected</button>
             <button class="btn btn-xs btn-link" (click)="clearSelection()">Clear</button>
           </div>
@@ -443,7 +444,7 @@
                     </button>
 
                     @if (user.isActive) {
-                      <button class="btn btn-sm btn-danger" (click)="toggleActive(user, false)" title="Suspend Account">
+                      <button class="btn btn-sm btn-warning" (click)="toggleActive(user, false)" title="Suspend Account">
                         Suspend
                       </button>
                     } @else {
@@ -451,6 +452,16 @@
                         Restore
                       </button>
                     }
+
+                    <button class="btn btn-sm btn-danger" (click)="deleteUser(user)" title="Delete User Account">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                      </svg>
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -694,7 +705,7 @@
             </button>
 
             @if (selectedUser()?.isActive) {
-              <button class="btn btn-danger" (click)="toggleActive(selectedUser()!, false)">
+              <button class="btn btn-warning" (click)="toggleActive(selectedUser()!, false)">
                 Suspend Account
               </button>
             } @else {
@@ -702,6 +713,14 @@
                 Restore Account
               </button>
             }
+
+            <button class="btn btn-danger" (click)="deleteUser(selectedUser()!); closeDetail()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              <span>Delete Account</span>
+            </button>
           </div>
         </div>
 

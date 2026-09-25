@@ -1398,3 +1398,27 @@
   border-radius: var(--radius-sm);
 }
 
+/* ─── DANGER ZONE ────────────────────────────────────────────────────────── */
+.danger-zone-card {
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  background: rgba(230, 57, 70, 0.02);
+}
+
+.danger-zone-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.danger-zone-item h5 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 4px 0;
+}
+

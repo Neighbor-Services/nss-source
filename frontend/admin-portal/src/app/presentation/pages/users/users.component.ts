@@ -5,6 +5,7 @@ import { RouterModule, Router } from '@angular/router';
 import { UserUseCase } from '../../../core/usecases/user.usecase';
 import { RoleUseCase } from '../../../core/usecases/role.usecase';
 import { SubscriptionUseCase } from '../../../core/usecases/subscription.usecase';
+import { DialogService } from '../../../core/services/dialog.service';
 import { AdminUser, ImpersonationResult, ProviderFunnelData } from '../../../core/domain/entities/user.model';
 import { AdminRole } from '../../../core/domain/entities/role.model';
 import { SubscriptionPlan } from '../../../core/domain/entities/subscription.model';
@@ -81,7 +82,8 @@ export class UsersComponent implements OnInit {
   constructor(
     private userUC: UserUseCase,
     private roleUC: RoleUseCase,
-    private subUC: SubscriptionUseCase
+    private subUC: SubscriptionUseCase,
+    private dialog: DialogService
   ) {}
 
   ngOnInit() {
@@ -206,31 +208,43 @@ export class UsersComponent implements OnInit {
   }
 
   toggleActive(user: AdminUser, makeActive: boolean) {
-    if (makeActive) {
-      this.userUC.restoreUser(user.id).subscribe({
-        next: () => {
-          this.actionMessage.set(`User ${user.email} has been restored successfully.`);
-          this.isSuccess.set(true);
-          this.loadUsers();
-        },
-        error: (err) => {
-          this.actionMessage.set(err?.error?.error || 'Failed to restore user.');
-          this.isSuccess.set(false);
-        }
-      });
-    } else {
-      this.userUC.deleteUser(user.id).subscribe({
-        next: () => {
-          this.actionMessage.set(`User ${user.email} has been suspended.`);
-          this.isSuccess.set(true);
-          this.loadUsers();
-        },
-        error: (err) => {
-          this.actionMessage.set(err?.error?.error || 'Failed to suspend user.');
-          this.isSuccess.set(false);
-        }
-      });
-    }
+    this.userUC.updateUser(user.id, { isActive: makeActive }).subscribe({
+      next: () => {
+        this.actionMessage.set(makeActive ? `User ${user.email} has been activated successfully.` : `User ${user.email} has been suspended.`);
+        this.isSuccess.set(true);
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.actionMessage.set(err?.error?.error || err?.error?.message || `Failed to ${makeActive ? 'activate' : 'suspend'} user.`);
+        this.isSuccess.set(false);
+      }
+    });
+  }
+
+  async deleteUser(user: AdminUser): Promise<void> {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    const displayName = fullName ? `${fullName} (${user.email})` : user.email;
+    const confirmed = await this.dialog.dangerConfirm(
+      'Delete User Account',
+      `Are you sure you want to permanently delete user account "${displayName}"? This will terminate active sessions and remove the account.`,
+      'Delete Account'
+    );
+    if (!confirmed) return;
+
+    this.isActioning.set(true);
+    this.userUC.deleteUser(user.id).subscribe({
+      next: () => {
+        this.isActioning.set(false);
+        this.actionMessage.set(`User account ${user.email} has been deleted successfully.`);
+        this.isSuccess.set(true);
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.isActioning.set(false);
+        this.actionMessage.set(err?.error?.error || err?.error?.message || 'Failed to delete user account.');
+        this.isSuccess.set(false);
+      }
+    });
   }
 
   toggleSelectAll(checked: boolean): void {
@@ -265,22 +279,26 @@ export class UsersComponent implements OnInit {
     
     this.isActioning.set(true);
     let completed = 0;
+    let failed = 0;
     ids.forEach(id => {
-      this.userUC.deleteUser(id).subscribe({
+      this.userUC.updateUser(id, { isActive: false }).subscribe({
         next: () => {
           completed++;
-          if (completed === ids.length) {
+          if (completed + failed === ids.length) {
             this.isActioning.set(false);
-            this.actionMessage.set(`Successfully suspended ${completed} selected user accounts.`);
+            this.actionMessage.set(`Successfully suspended ${completed} selected user accounts.` + (failed > 0 ? ` (${failed} failed)` : ''));
             this.isSuccess.set(true);
             this.clearSelection();
             this.loadUsers();
           }
         },
         error: () => {
-          completed++;
-          if (completed === ids.length) {
+          failed++;
+          if (completed + failed === ids.length) {
             this.isActioning.set(false);
+            this.actionMessage.set(`Suspended ${completed} user(s), ${failed} failed.`);
+            this.isSuccess.set(completed > 0);
+            this.clearSelection();
             this.loadUsers();
           }
         }
@@ -294,22 +312,66 @@ export class UsersComponent implements OnInit {
     
     this.isActioning.set(true);
     let completed = 0;
+    let failed = 0;
     ids.forEach(id => {
-      this.userUC.restoreUser(id).subscribe({
+      this.userUC.updateUser(id, { isActive: true }).subscribe({
         next: () => {
           completed++;
-          if (completed === ids.length) {
+          if (completed + failed === ids.length) {
             this.isActioning.set(false);
-            this.actionMessage.set(`Successfully activated ${completed} selected user accounts.`);
+            this.actionMessage.set(`Successfully activated ${completed} selected user accounts.` + (failed > 0 ? ` (${failed} failed)` : ''));
             this.isSuccess.set(true);
             this.clearSelection();
             this.loadUsers();
           }
         },
         error: () => {
-          completed++;
-          if (completed === ids.length) {
+          failed++;
+          if (completed + failed === ids.length) {
             this.isActioning.set(false);
+            this.actionMessage.set(`Activated ${completed} user(s), ${failed} failed.`);
+            this.isSuccess.set(completed > 0);
+            this.clearSelection();
+            this.loadUsers();
+          }
+        }
+      });
+    });
+  }
+
+  async bulkDelete(): Promise<void> {
+    const ids = this.selectedUserIds();
+    if (!ids.length) return;
+
+    const confirmed = await this.dialog.dangerConfirm(
+      'Bulk Delete Users',
+      `Are you sure you want to permanently delete ${ids.length} selected user accounts? This action cannot be undone.`,
+      'Delete Selected Accounts'
+    );
+    if (!confirmed) return;
+
+    this.isActioning.set(true);
+    let completed = 0;
+    let failed = 0;
+    ids.forEach(id => {
+      this.userUC.deleteUser(id).subscribe({
+        next: () => {
+          completed++;
+          if (completed + failed === ids.length) {
+            this.isActioning.set(false);
+            this.actionMessage.set(`Successfully deleted ${completed} user account(s).` + (failed > 0 ? ` (${failed} failed)` : ''));
+            this.isSuccess.set(true);
+            this.clearSelection();
+            this.loadUsers();
+          }
+        },
+        error: () => {
+          failed++;
+          if (completed + failed === ids.length) {
+            this.isActioning.set(false);
+            this.actionMessage.set(`Deleted ${completed} user(s), ${failed} failed.`);
+            this.isSuccess.set(completed > 0);
+            this.clearSelection();
             this.loadUsers();
           }
         }

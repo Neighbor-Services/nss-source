@@ -303,6 +303,9 @@ func (u *adminUseCase) UpdateUser(ctx context.Context, adminID, userID uuid.UUID
 }
 
 func (u *adminUseCase) DeleteUser(ctx context.Context, adminID, userID uuid.UUID) error {
+	if adminID == userID {
+		return errors.New("cannot delete your own account")
+	}
 	err := u.adminRepo.DeleteUser(ctx, userID)
 	if err == nil {
 		u.logAudit(ctx, &adminID, "ADMIN_DELETE_USER", "User", userID.String(), nil)
