@@ -125,17 +125,259 @@
     </div>
 
     <!-- User Profile Dropdown / Trigger -->
-    <div class="user-profile-btn" (click)="authService.logout()" title="Click to Sign Out">
-      <div class="user-avatar-circle">
-        {{ (authService.currentUser()?.first_name || 'A').charAt(0).toUpperCase() }}
+    <div class="user-profile-wrapper">
+      <div class="user-profile-btn" (click)="toggleUserDropdown()" title="Account & Security">
+        <div class="user-avatar-circle">
+          {{ (authService.currentUser()?.first_name || 'A').charAt(0).toUpperCase() }}
+        </div>
+        <div class="user-details">
+          <span class="user-name">{{ authService.currentUser()?.first_name || 'Admin' }}</span>
+          <span class="user-role">{{ authService.currentUser()?.is_superuser ? 'Administrator' : 'Staff' }}</span>
+        </div>
+        <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
       </div>
-      <div class="user-details">
-        <span class="user-name">{{ authService.currentUser()?.first_name || 'Admin' }}</span>
-        <span class="user-role">{{ authService.currentUser()?.is_superuser ? 'Administrator' : 'Staff' }}</span>
-      </div>
+
+      <!-- User Profile Dropdown Menu -->
+      @if (showUserDropdown()) {
+        <div class="user-dropdown-menu">
+          <div class="user-dropdown-header">
+            <div class="user-avatar-large">
+              {{ (authService.currentUser()?.first_name || 'A').charAt(0).toUpperCase() }}
+            </div>
+            <div class="user-dropdown-info">
+              <span class="user-dropdown-name">{{ authService.currentUser()?.first_name }} {{ authService.currentUser()?.last_name || '' }}</span>
+              <span class="user-dropdown-email">{{ authService.currentUser()?.email }}</span>
+              <span class="badge badge-primary user-role-badge">
+                {{ authService.currentUser()?.is_superuser ? 'Super Administrator' : 'Staff Member' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="user-dropdown-divider"></div>
+
+          <div class="user-dropdown-items">
+            <button class="user-dropdown-item" (click)="openChangePasswordModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Change Password</span>
+            </button>
+
+            <button class="user-dropdown-item" (click)="navigateToSettings()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              <span>Security &amp; Settings</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown-divider"></div>
+
+          <div class="user-dropdown-footer">
+            <button class="user-dropdown-item text-danger" (click)="authService.logout()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      }
     </div>
   </div>
 </div>
+
+<!-- CHANGE PASSWORD MODAL -->
+@if (showChangePasswordModal()) {
+  <div class="modal-backdrop" (click)="closeChangePasswordModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <div>
+            <h3>Change Administrator Password</h3>
+            <p class="sub-text">Update your account credentials to keep the portal secure</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="closeChangePasswordModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (passwordError()) {
+          <div class="alert alert-danger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ passwordError() }}</span>
+          </div>
+        }
+
+        @if (passwordSuccess()) {
+          <div class="alert alert-success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"></path>
+            </svg>
+            <span>{{ passwordSuccess() }}</span>
+          </div>
+        }
+
+        <form (ngSubmit)="submitChangePassword()" class="modal-form">
+          <!-- Current Password -->
+          <div class="form-group">
+            <label class="form-label">Current Password <span class="text-danger">*</span></label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="showOldPassword() ? 'text' : 'password'"
+                [ngModel]="oldPassword()"
+                (ngModelChange)="oldPassword.set($event)"
+                name="oldPwd"
+                class="form-control"
+                placeholder="Enter current password"
+                required
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="btn-toggle-eye"
+                (click)="showOldPassword.set(!showOldPassword())"
+                tabindex="-1"
+              >
+                @if (showOldPassword()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <!-- New Password -->
+          <div class="form-group">
+            <label class="form-label">New Password <span class="text-danger">*</span></label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="showNewPassword() ? 'text' : 'password'"
+                [ngModel]="newPassword()"
+                (ngModelChange)="newPassword.set($event)"
+                name="newPwd"
+                class="form-control"
+                placeholder="Enter new password (min. 6 characters)"
+                required
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="btn-toggle-eye"
+                (click)="showNewPassword.set(!showNewPassword())"
+                tabindex="-1"
+              >
+                @if (showNewPassword()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirm New Password -->
+          <div class="form-group">
+            <label class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="showConfirmPassword() ? 'text' : 'password'"
+                [ngModel]="confirmPassword()"
+                (ngModelChange)="confirmPassword.set($event)"
+                name="confPwd"
+                class="form-control"
+                placeholder="Re-enter new password"
+                required
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="btn-toggle-eye"
+                (click)="showConfirmPassword.set(!showConfirmPassword())"
+                tabindex="-1"
+              >
+                @if (showConfirmPassword()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="password-requirements">
+            <span class="req-title">Password Requirements:</span>
+            <ul>
+              <li [class.valid]="newPassword().length >= 6">Minimum 6 characters</li>
+              <li [class.valid]="newPassword().length > 0 && newPassword() === confirmPassword()">Passwords must match</li>
+              <li [class.valid]="newPassword().length > 0 && newPassword() !== oldPassword()">Must differ from current password</li>
+            </ul>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeChangePasswordModal()" [disabled]="passwordSubmitting()">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="passwordSubmitting()">
+              @if (passwordSubmitting()) {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                </svg>
+                <span>Updating...</span>
+              } @else {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 6L9 17l-5-5"></path>
+                </svg>
+                <span>Update Password</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- GLOBAL COMMAND PALETTE (CMD+K) MODAL -->
 @if (showCommandPalette()) {

@@ -20,6 +20,8 @@ export const ADMIN_API_CONFIG = {
   },
   endpoints: {
     login: '/accounts/login/',
+    changePassword: '/accounts/change-password/',
+    adminChangePassword: '/admin/change-password',
     dashboardStats: '/admin/dashboard/stats',
     users: '/admin/users',
     verifications: '/admin/verifications',

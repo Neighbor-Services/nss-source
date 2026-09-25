@@ -516,6 +516,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			admin.POST("/verifications/batch/", deps.AdminHandler.BatchVerifications)
 			admin.POST("/notifications/broadcast", deps.AdminHandler.BroadcastNotification)
 			admin.POST("/notifications/broadcast/", deps.AdminHandler.BroadcastNotification)
+			admin.POST("/change-password", deps.AuthHandler.ChangePassword)
+			admin.POST("/change-password/", deps.AuthHandler.ChangePassword)
 
 			// Feature Flags & System Operations
 			admin.GET("/feature-flags", deps.AdminHandler.ListFeatureFlags)

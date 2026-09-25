@@ -77,6 +77,13 @@ export class AuthService {
     );
   }
 
+  changePassword(oldPassword: string, newPassword: string): Observable<any> {
+    return this.http.post<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.changePassword}`, {
+      old_password: oldPassword,
+      new_password: newPassword
+    });
+  }
+
   logout() {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_KEY);

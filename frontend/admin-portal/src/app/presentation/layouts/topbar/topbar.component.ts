@@ -34,6 +34,19 @@ export class TopbarComponent implements OnInit, OnDestroy {
   notificationCount = signal(0);
   notifications = signal<AdminNotificationItem[]>([]);
 
+  // User Dropdown & Change Password Modal State
+  showUserDropdown = signal(false);
+  showChangePasswordModal = signal(false);
+  oldPassword = signal('');
+  newPassword = signal('');
+  confirmPassword = signal('');
+  showOldPassword = signal(false);
+  showNewPassword = signal(false);
+  showConfirmPassword = signal(false);
+  passwordSubmitting = signal(false);
+  passwordError = signal('');
+  passwordSuccess = signal('');
+
   // Command Palette State
   showCommandPalette = signal(false);
   commandFilter = signal('');
@@ -41,6 +54,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   commandList: CommandItem[] = [
     { id: 'dash', title: 'Dashboard Overview', category: 'NAVIGATION', icon: 'DB', route: '/admin/dashboard' },
+    { id: 'pwd', title: 'Change Admin Password', category: 'SECURITY', icon: 'KEY', action: () => this.openChangePasswordModal(), badge: 'Security' },
     { id: 'users', title: 'User Management & Accounts', category: 'NAVIGATION', icon: 'USR', route: '/admin/users' },
     { id: 'book', title: 'Bookings & Orders Triage', category: 'NAVIGATION', icon: 'BKG', route: '/admin/appointments' },
     { id: 'id', title: 'Provider ID Verifications', category: 'NAVIGATION', icon: 'VRF', route: '/admin/verifications', badge: 'High Priority' },
@@ -252,5 +266,87 @@ export class TopbarComponent implements OnInit, OnDestroy {
     if (item.route) {
       this.router.navigateByUrl(item.route);
     }
+  }
+
+  toggleUserDropdown(): void {
+    this.showUserDropdown.update(v => !v);
+    if (this.showUserDropdown()) {
+      this.showNotifications.set(false);
+    }
+  }
+
+  closeUserDropdown(): void {
+    this.showUserDropdown.set(false);
+  }
+
+  openChangePasswordModal(): void {
+    this.showUserDropdown.set(false);
+    this.oldPassword.set('');
+    this.newPassword.set('');
+    this.confirmPassword.set('');
+    this.passwordError.set('');
+    this.passwordSuccess.set('');
+    this.showOldPassword.set(false);
+    this.showNewPassword.set(false);
+    this.showConfirmPassword.set(false);
+    this.showChangePasswordModal.set(true);
+  }
+
+  closeChangePasswordModal(): void {
+    this.showChangePasswordModal.set(false);
+    this.passwordError.set('');
+    this.passwordSuccess.set('');
+  }
+
+  submitChangePassword(): void {
+    const oldP = this.oldPassword().trim();
+    const newP = this.newPassword().trim();
+    const confP = this.confirmPassword().trim();
+
+    this.passwordError.set('');
+    this.passwordSuccess.set('');
+
+    if (!oldP) {
+      this.passwordError.set('Current password is required.');
+      return;
+    }
+    if (!newP) {
+      this.passwordError.set('New password is required.');
+      return;
+    }
+    if (newP.length < 6) {
+      this.passwordError.set('New password must be at least 6 characters long.');
+      return;
+    }
+    if (newP !== confP) {
+      this.passwordError.set('New password and confirmation do not match.');
+      return;
+    }
+    if (oldP === newP) {
+      this.passwordError.set('New password must be different from current password.');
+      return;
+    }
+
+    this.passwordSubmitting.set(true);
+
+    this.authService.changePassword(oldP, newP).subscribe({
+      next: (res: any) => {
+        this.passwordSubmitting.set(false);
+        this.passwordSuccess.set(res?.detail || 'Password changed successfully!');
+        setTimeout(() => {
+          this.closeChangePasswordModal();
+        }, 1600);
+      },
+      error: (err: any) => {
+        this.passwordSubmitting.set(false);
+        const msg = err?.error?.detail || err?.error?.message || err?.error?.error || err?.message || 'Failed to change password. Please check your current password.';
+        this.passwordError.set(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
+    });
+  }
+
+  navigateToSettings(): void {
+    this.closeUserDropdown();
+    this.router.navigate(['/admin/settings'], { queryParams: { tab: 'ADMIN_SECURITY' } });
   }
 }
