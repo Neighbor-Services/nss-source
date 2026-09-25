@@ -124,8 +124,17 @@ func TestInteractionUseCase_VerifyArrivalAndCompleteAppointment(t *testing.T) {
 	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, txRepo, userRepo, nil, nil, nil, nil)
 	ctx := context.Background()
 
-	// 1. Test Verify Arrival Code
-	_, err := interUC.VerifyArrivalCode(ctx, providerID, aptID, "123456")
+	// 1. Test Notify On The Way
+	notifiedApt, err := interUC.NotifyOnTheWay(ctx, providerID, aptID)
+	if err != nil {
+		t.Fatalf("Failed to notify on the way: %v", err)
+	}
+	if notifiedApt.ID != aptID {
+		t.Fatalf("Expected appointment ID %s, got %s", aptID, notifiedApt.ID)
+	}
+
+	// 2. Test Verify Arrival Code
+	_, err = interUC.VerifyArrivalCode(ctx, providerID, aptID, "123456")
 	if err != nil {
 		t.Fatalf("Failed to verify arrival code: %v", err)
 	}

@@ -12,6 +12,7 @@ import (
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
 	domainUsecase "backend-go/internal/domain/usecase"
+	"backend-go/internal/websocket"
 	"backend-go/pkg/email"
 	"backend-go/pkg/fcm"
 
@@ -64,6 +65,15 @@ func NewInteractionUseCase(
 }
 
 func (u *interactionUseCase) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
+	// Broadcast over WebSocket immediately to any active sessions
+	websocket.GlobalHub.SendToUser(userID.String(), map[string]interface{}{
+		"type":       "notification",
+		"title":      title,
+		"body":       body,
+		"data":       data,
+		"created_at": time.Now().UTC(),
+	})
+
 	if u.fcmClient == nil || u.tokenRepo == nil {
 		return
 	}
@@ -304,6 +314,60 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 	u.sendPush(apt.SeekerID, "Appointment Code Verified", "Your provider has verified the arrival code! Appointment started.", map[string]string{
 		"notification_type": "appointment",
 		"appointment_id":    apt.ID.String(),
+		"sender_id":         providerID.String(),
+	})
+
+	return apt, nil
+}
+
+func (u *interactionUseCase) NotifyOnTheWay(ctx context.Context, providerID, appointmentID uuid.UUID) (*entity.Appointment, error) {
+	apt, err := u.aptRepo.GetByID(ctx, appointmentID)
+	if err != nil {
+		return nil, errors.New("appointment not found")
+	}
+
+	if apt.ProviderID != providerID {
+		return nil, errors.New("only the provider can send on-the-way notification")
+	}
+
+	if apt.Status == "COMPLETED" || apt.Status == "CANCELLED" {
+		return nil, fmt.Errorf("appointment is already %s", strings.ToLower(apt.Status))
+	}
+
+	providerName := "Your service provider"
+	if pProfile, err := u.profileRepo.GetByID(ctx, providerID); err == nil && pProfile != nil && pProfile.FirstName != "" {
+		if pProfile.LastName != "" {
+			providerName = fmt.Sprintf("%s %s", pProfile.FirstName, pProfile.LastName)
+		} else {
+			providerName = pProfile.FirstName
+		}
+	}
+
+	title := "Provider is on the way!"
+	msg := fmt.Sprintf("%s is on the way for '%s'. Tap to track live location.", providerName, apt.Title)
+
+	if u.notifRepo != nil {
+		notif := entity.Notification{
+			ID:               uuid.New(),
+			UserID:           apt.SeekerID,
+			SenderID:         &providerID,
+			NotificationType: "TRACKING",
+			Title:            title,
+			Message:          msg,
+			Data: entity.JSONMap{
+				"notification_type": "provider_on_the_way",
+				"appointment_id":    apt.ID.String(),
+				"request_id":        apt.ID.String(),
+			},
+			CreatedAt: time.Now(),
+		}
+		_ = u.notifRepo.Create(ctx, &notif)
+	}
+
+	u.sendPush(apt.SeekerID, title, msg, map[string]string{
+		"notification_type": "provider_on_the_way",
+		"appointment_id":    apt.ID.String(),
+		"request_id":        apt.ID.String(),
 		"sender_id":         providerID.String(),
 	})
 

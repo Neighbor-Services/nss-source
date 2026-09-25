@@ -181,10 +181,10 @@ echo -e "${YELLOW}Phase 3: Environment Configuration${NC}"
 #     sed -i 's/^ENVIRONMENT=.*/ENVIRONMENT=staging/' "$APP_DIR/.env"
 # else
 #     echo "ENVIRONMENT=staging" >> "$APP_DIR/.env"
-# fi
+# # fi
 
-chown $USER:$GROUP "$APP_DIR/.env"
-chmod 600 "$APP_DIR/.env"
+# chown $USER:$GROUP "$APP_DIR/.env"
+# chmod 600 "$APP_DIR/.env"
 
 echo -e "${YELLOW}Phase 4: Direct Compilation (Go Binary Build)${NC}"
 

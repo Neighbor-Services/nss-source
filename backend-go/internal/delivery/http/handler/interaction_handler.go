@@ -259,6 +259,31 @@ func (h *InteractionHandler) VerifyArrivalCode(c *gin.Context) {
 	response.JSON(c, http.StatusOK, gin.H{"status": "verified", "data": apt})
 }
 
+func (h *InteractionHandler) NotifyOnTheWay(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, _ := cleanUUID(userIDStr)
+
+	idStr := c.Param("id")
+	aptUUID, err := cleanUUID(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid appointment ID")
+		return
+	}
+
+	apt, err := h.interactionUC.NotifyOnTheWay(c.Request.Context(), userUUID, aptUUID)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	wrapped := h.wrapAppointments([]entity.Appointment{*apt}, userUUID)
+	if len(wrapped) > 0 {
+		response.JSON(c, http.StatusOK, gin.H{"status": "notified", "data": wrapped[0]})
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "notified", "data": apt})
+}
+
 func (h *InteractionHandler) CompleteAppointment(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 	userUUID, _ := cleanUUID(userIDStr)

@@ -222,6 +222,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			inter.POST("/appointments/", deps.InterHandler.CreateAppointment)
 			inter.POST("/appointments/:id/verify-code/", deps.InterHandler.VerifyArrivalCode)
 			inter.POST("/appointments/:id/verify_code/", deps.InterHandler.VerifyArrivalCode)
+			inter.POST("/appointments/:id/on-the-way/", deps.InterHandler.NotifyOnTheWay)
+			inter.POST("/appointments/:id/on_the_way/", deps.InterHandler.NotifyOnTheWay)
 			inter.POST("/appointments/:id/complete/", deps.InterHandler.CompleteAppointment)
 			inter.POST("/appointments/:id/cancel/", deps.InterHandler.CancelAppointment)
 			inter.DELETE("/appointments/:id/", deps.InterHandler.CancelAppointment)
