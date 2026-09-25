@@ -159,12 +159,12 @@ func (u *authUseCase) Register(ctx context.Context, input domainUsecase.Register
 func (u *authUseCase) Login(ctx context.Context, email, password string) (*domainUsecase.AuthResult, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	user, err := u.userRepo.GetByEmail(ctx, email)
-	if err != nil {
-		return nil, errors.New("invalid email or password")
+	if err != nil || user == nil {
+		return nil, errors.New("Invalid email or password.")
 	}
 
 	if !auth.CheckPassword(user.Password, password) {
-		return nil, errors.New("invalid email or password")
+		return nil, errors.New("Invalid email or password.")
 	}
 
 	if !user.IsVerified {
@@ -172,7 +172,7 @@ func (u *authUseCase) Login(ctx context.Context, email, password string) (*domai
 	}
 
 	profile, err := u.profileRepo.GetByUserID(ctx, user.ID)
-	if err != nil {
+	if err != nil || profile == nil {
 		profile = &entity.Profile{
 			ID:       uuid.New(),
 			UserID:   user.ID,
@@ -266,7 +266,7 @@ func (u *authUseCase) VerifyOTP(ctx context.Context, email, code string) (*domai
 func (u *authUseCase) ResendOTP(ctx context.Context, emailStr string) error {
 	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 	user, err := u.userRepo.GetByEmail(ctx, emailStr)
-	if err != nil {
+	if err != nil || user == nil {
 		return nil // Don't leak user existence per Django behavior
 	}
 
@@ -313,7 +313,7 @@ func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (st
 	}
 
 	user, err := u.userRepo.GetByID(ctx, uid)
-	if err != nil {
+	if err != nil || user == nil {
 		return "", errors.New("user not found")
 	}
 
@@ -337,7 +337,7 @@ func (u *authUseCase) RefreshToken(ctx context.Context, refreshToken string) (st
 
 func (u *authUseCase) ChangePassword(ctx context.Context, userID uuid.UUID, oldPassword, newPassword string) error {
 	user, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
+	if err != nil || user == nil {
 		return errors.New("user not found")
 	}
 
@@ -357,7 +357,7 @@ func (u *authUseCase) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 func (u *authUseCase) PasswordResetRequest(ctx context.Context, emailStr string) error {
 	emailStr = strings.ToLower(strings.TrimSpace(emailStr))
 	user, err := u.userRepo.GetByEmail(ctx, emailStr)
-	if err != nil {
+	if err != nil || user == nil {
 		log.Printf("[AUTH] PasswordResetRequest: user %s not found in DB (%v)", emailStr, err)
 		return nil
 	}
@@ -397,7 +397,7 @@ func (u *authUseCase) PasswordResetRequest(ctx context.Context, emailStr string)
 func (u *authUseCase) PasswordResetConfirm(ctx context.Context, email, otpCode, newPassword string) error {
 	email = strings.ToLower(strings.TrimSpace(email))
 	user, err := u.userRepo.GetByEmail(ctx, email)
-	if err != nil {
+	if err != nil || user == nil {
 		return errors.New("Invalid or expired OTP.")
 	}
 

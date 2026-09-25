@@ -2,7 +2,6 @@ package recovery
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
@@ -65,8 +64,9 @@ func Middleware() gin.HandlerFunc {
 
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 					"success": false,
-					"message": "An internal server error occurred. Our engineering team has been alerted.",
-					"error":   fmt.Sprintf("%v", r),
+					"message": "An unexpected server error occurred. Please try again later.",
+					"detail":  "An unexpected server error occurred. Please try again later.",
+					"error":   "An unexpected server error occurred. Please try again later.",
 				})
 			}
 		}()
