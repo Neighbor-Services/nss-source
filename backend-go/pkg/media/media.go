@@ -64,7 +64,16 @@ func FindMediaFile(baseDir, relPath string) (string, bool) {
 		return fullPath, true
 	}
 
-	// 2. Fuzzy match in subfolder (e.g. searching for original filename when prefixed by chat_timestamp_)
+	// 2. If cleanRel starts with "media/", try without "media/"
+	trimmedRel := strings.TrimPrefix(cleanRel, "media/")
+	if trimmedRel != cleanRel {
+		candidate := filepath.Join(baseDir, trimmedRel)
+		if fi, err := os.Stat(candidate); err == nil && !fi.IsDir() {
+			return candidate, true
+		}
+	}
+
+	// 3. Fuzzy match in subfolder (e.g. searching for original filename when prefixed by chat_timestamp_)
 	dir := filepath.Dir(fullPath)
 	targetBase := filepath.Base(fullPath)
 	if entries, err := os.ReadDir(dir); err == nil {
