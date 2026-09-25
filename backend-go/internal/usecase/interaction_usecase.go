@@ -189,9 +189,17 @@ func (u *interactionUseCase) GetAppointments(ctx context.Context, userID uuid.UU
 	normType := strings.ToUpper(strings.TrimSpace(userType))
 	switch normType {
 	case "CUSTOMER", "SEEKER":
-		return u.aptRepo.List(ctx, &userID, nil, status)
+		list, err := u.aptRepo.List(ctx, &userID, nil, status)
+		if err == nil && len(list) > 0 {
+			return list, nil
+		}
+		return u.aptRepo.List(ctx, &userID, &userID, status)
 	case "PROVIDER":
-		return u.aptRepo.List(ctx, nil, &userID, status)
+		list, err := u.aptRepo.List(ctx, nil, &userID, status)
+		if err == nil && len(list) > 0 {
+			return list, nil
+		}
+		return u.aptRepo.List(ctx, &userID, &userID, status)
 	default:
 		return u.aptRepo.List(ctx, &userID, &userID, status)
 	}

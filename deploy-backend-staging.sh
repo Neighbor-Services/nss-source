@@ -104,7 +104,18 @@ if [ -z "$SRC_DIR" ] || [ ! -f "$SRC_DIR/cmd/server/main.go" ]; then
 fi
 
 echo -e "${GREEN}✓ Found source at: $SRC_DIR${NC}"
-rsync -a --delete --exclude='bin' --exclude='.git' "$SRC_DIR/" "$APP_DIR/"
+# Preserve server-only files: .env, service account JSON credentials, media uploads, logs, and binaries
+rsync -a \
+    --exclude='bin' \
+    --exclude='.git' \
+    --exclude='.env*' \
+    --exclude='media' \
+    --exclude='logs' \
+    --exclude='*service*account*.json' \
+    --exclude='*serviceAccount*.json' \
+    --exclude='firebase*.json' \
+    --exclude='certs' \
+    "$SRC_DIR/" "$APP_DIR/"
 chown -R $USER:$GROUP "$APP_DIR"
 chmod -R u+rwX,g+rX,o+rX "$APP_DIR"
 

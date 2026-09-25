@@ -104,11 +104,11 @@ func (r *appointmentRepository) List(ctx context.Context, seekerID *uuid.UUID, p
 		Order("created_at DESC")
 
 	if seekerID != nil && providerID != nil {
-		query = query.Where("seeker_id = ? OR provider_id = ?", *seekerID, *providerID)
+		query = query.Where("seeker_id = ? OR provider_id = ? OR seeker_id IN (SELECT id FROM accounts_profile WHERE user_id = ?) OR provider_id IN (SELECT id FROM accounts_profile WHERE user_id = ?)", *seekerID, *providerID, *seekerID, *providerID)
 	} else if seekerID != nil {
-		query = query.Where("seeker_id = ?", *seekerID)
+		query = query.Where("seeker_id = ? OR seeker_id IN (SELECT id FROM accounts_profile WHERE user_id = ?)", *seekerID, *seekerID)
 	} else if providerID != nil {
-		query = query.Where("provider_id = ?", *providerID)
+		query = query.Where("provider_id = ? OR provider_id IN (SELECT id FROM accounts_profile WHERE user_id = ?)", *providerID, *providerID)
 	}
 	if status != "" {
 		query = query.Where("status = ?", status)
