@@ -297,6 +297,21 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 	}
 
 	if strings.TrimSpace(code) != strings.TrimSpace(apt.SecretCode) {
+		// Real-time security alert to seeker that an invalid code was entered
+		websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+			"type":           "appointment_code_failed",
+			"appointment_id": apt.ID.String(),
+			"title":          "Security Alert: Invalid Code Attempt",
+			"message":        "An incorrect arrival code was entered for your appointment.",
+			"created_at":     time.Now().UTC(),
+		})
+
+		u.sendPush(apt.SeekerID, "Security Alert: Invalid Code Attempt", "An incorrect arrival code was entered for your appointment.", map[string]string{
+			"notification_type": "appointment_code_failed",
+			"appointment_id":    apt.ID.String(),
+			"sender_id":         providerID.String(),
+		})
+
 		return nil, errors.New("invalid verification code. Please check with the seeker.")
 	}
 
@@ -306,6 +321,24 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 		return nil, err
 	}
 
+	// Real-time WebSocket broadcast to seeker and provider
+	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+		"type":           "appointment_code_verified",
+		"appointment_id": apt.ID.String(),
+		"status":         "IN_PROGRESS",
+		"title":          "Appointment Code Verified!",
+		"message":        "Your provider has verified the arrival code! Appointment is now in progress.",
+		"created_at":     time.Now().UTC(),
+	})
+	websocket.GlobalHub.SendToUser(providerID.String(), map[string]interface{}{
+		"type":           "appointment_code_verified",
+		"appointment_id": apt.ID.String(),
+		"status":         "IN_PROGRESS",
+		"title":          "Code Verified!",
+		"message":        "Arrival code verified. Appointment is now in progress.",
+		"created_at":     time.Now().UTC(),
+	})
+
 	if u.notifRepo != nil {
 		notif := entity.Notification{
 			ID:               uuid.New(),
@@ -314,14 +347,15 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 			NotificationType: "APPOINTMENT",
 			Title:            "Appointment Code Verified",
 			Message:          "Your provider has verified the arrival code! Appointment started.",
-			Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
+			Data:             entity.JSONMap{"appointment_id": apt.ID.String(), "status": "IN_PROGRESS"},
 			CreatedAt:        time.Now(),
 		}
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(apt.SeekerID, "Appointment Code Verified", "Your provider has verified the arrival code! Appointment started.", map[string]string{
-		"notification_type": "appointment",
+		"notification_type": "appointment_code_verified",
 		"appointment_id":    apt.ID.String(),
+		"status":            "IN_PROGRESS",
 		"sender_id":         providerID.String(),
 	})
 
