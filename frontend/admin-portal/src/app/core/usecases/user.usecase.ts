@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { UserRepository } from '../repositories/user.repository';
+import { UserRepository, ListUsersParams } from '../repositories/user.repository';
 import { AdminUser, ImpersonationResult } from '../domain/entities/user.model';
 
 @Injectable({
@@ -9,7 +9,7 @@ import { AdminUser, ImpersonationResult } from '../domain/entities/user.model';
 export class UserUseCase {
   constructor(private userRepo: UserRepository) {}
 
-  listUsers(params?: { search?: string; userType?: string; page?: number; pageSize?: number }): Observable<{ results: AdminUser[]; count: number }> {
+  listUsers(params?: ListUsersParams): Observable<{ results: AdminUser[]; count: number }> {
     return this.userRepo.listUsers(params);
   }
 

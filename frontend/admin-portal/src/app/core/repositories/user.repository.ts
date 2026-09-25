@@ -1,8 +1,20 @@
 import { Observable } from 'rxjs';
 import { AdminUser, ImpersonationResult, StaffNote, ProviderFunnelData, AdminNotificationItem } from '../domain/entities/user.model';
 
+export interface ListUsersParams {
+  search?: string;
+  userType?: string;
+  isStaff?: boolean;
+  isActive?: boolean;
+  isVerified?: boolean;
+  isIdentityVerified?: boolean;
+  subscriptionTier?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 export abstract class UserRepository {
-  abstract listUsers(params?: { search?: string; userType?: string; page?: number; pageSize?: number }): Observable<{ results: AdminUser[]; count: number }>;
+  abstract listUsers(params?: ListUsersParams): Observable<{ results: AdminUser[]; count: number }>;
   abstract getUserById(id: string): Observable<AdminUser>;
   abstract createUser(data: any): Observable<AdminUser>;
   abstract updateUser(id: string, data: any): Observable<AdminUser>;

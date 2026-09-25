@@ -13,6 +13,9 @@ export interface DashboardStats {
   totalUsers: number;
   activeProviders: number;
   activeSeekers: number;
+  totalStaff?: number;
+  totalVerified?: number;
+  totalSuspended?: number;
   openDisputes: number;
   pendingVerifications: number;
   pendingBackgroundChecks: number;

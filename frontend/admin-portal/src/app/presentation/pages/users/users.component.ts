@@ -5,10 +5,12 @@ import { RouterModule, Router } from '@angular/router';
 import { UserUseCase } from '../../../core/usecases/user.usecase';
 import { RoleUseCase } from '../../../core/usecases/role.usecase';
 import { SubscriptionUseCase } from '../../../core/usecases/subscription.usecase';
+import { DashboardUseCase } from '../../../core/usecases/dashboard.usecase';
 import { DialogService } from '../../../core/services/dialog.service';
 import { AdminUser, ImpersonationResult, ProviderFunnelData } from '../../../core/domain/entities/user.model';
 import { AdminRole } from '../../../core/domain/entities/role.model';
 import { SubscriptionPlan } from '../../../core/domain/entities/subscription.model';
+import { DashboardStats } from '../../../core/domain/entities/dashboard.model';
 
 export type UserTabFilter = 'ALL' | 'SEEKER' | 'PROVIDER' | 'STAFF' | 'VERIFIED' | 'SUSPENDED';
 
@@ -24,6 +26,7 @@ export class UsersComponent implements OnInit {
   roles = signal<AdminRole[]>([]);
   subscriptionPlans = signal<SubscriptionPlan[]>([]);
   funnel = signal<ProviderFunnelData | null>(null);
+  dashboardStats = signal<DashboardStats | null>(null);
   showFunnel = signal(true);
   totalCount = signal(0);
   
@@ -57,40 +60,40 @@ export class UsersComponent implements OnInit {
   });
   selectedCount = computed(() => this.selectedUserIds().length);
 
-  // Computed KPIs
-  totalUsers = computed(() => this.totalCount() || this.users().length);
-  seekersCount = computed(() => this.users().filter(u => u.userType === 'seeker').length);
-  providersCount = computed(() => this.users().filter(u => u.userType === 'provider').length);
-  staffCount = computed(() => this.users().filter(u => u.isStaff || !!u.roleId || (u.roleName && u.roleName !== 'Standard' && u.roleName !== 'Member')).length);
-  verifiedCount = computed(() => this.users().filter(u => u.isIdentityVerified || u.isVerified).length);
-  suspendedCount = computed(() => this.users().filter(u => !u.isActive).length);
+  // Global KPIs from Dashboard Telemetry (stable across filter changes)
+  totalUsers = computed(() => this.dashboardStats()?.totalUsers ?? this.totalCount() ?? this.users().length);
+  seekersCount = computed(() => this.dashboardStats()?.activeSeekers ?? 0);
+  providersCount = computed(() => this.dashboardStats()?.activeProviders ?? 0);
+  staffCount = computed(() => this.dashboardStats()?.totalStaff ?? 0);
+  verifiedCount = computed(() => this.dashboardStats()?.totalVerified ?? 0);
+  suspendedCount = computed(() => this.dashboardStats()?.totalSuspended ?? 0);
   
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize())));
 
-  // Filtered view according to activeTab if backend didn't narrow it
-  filteredUsers = computed(() => {
-    const list = this.users();
-    const tab = this.activeTab();
-    if (tab === 'SEEKER') return list.filter(u => u.userType === 'seeker');
-    if (tab === 'PROVIDER') return list.filter(u => u.userType === 'provider');
-    if (tab === 'STAFF') return list.filter(u => u.isStaff || !!u.roleId || (u.roleName && u.roleName !== 'Standard' && u.roleName !== 'Member'));
-    if (tab === 'VERIFIED') return list.filter(u => u.isIdentityVerified || u.isVerified);
-    if (tab === 'SUSPENDED') return list.filter(u => !u.isActive);
-    return list;
-  });
+  // Results loaded from server
+  filteredUsers = computed(() => this.users());
 
   constructor(
     private userUC: UserUseCase,
     private roleUC: RoleUseCase,
     private subUC: SubscriptionUseCase,
+    private dashboardUC: DashboardUseCase,
     private dialog: DialogService
   ) {}
 
   ngOnInit() {
+    this.loadStats();
     this.loadUsers();
     this.loadRoles();
     this.loadFunnel();
     this.loadSubscriptionPlans();
+  }
+
+  loadStats() {
+    this.dashboardUC.getDashboardStats().subscribe({
+      next: (stats) => this.dashboardStats.set(stats),
+      error: () => {}
+    });
   }
 
   loadSubscriptionPlans() {
@@ -141,9 +144,31 @@ export class UsersComponent implements OnInit {
 
   loadUsers() {
     this.isLoading.set(true);
+    const tab = this.activeTab();
+
+    let userType: string | undefined = this.selectedUserType || undefined;
+    let isStaff: boolean | undefined = undefined;
+    let isIdentityVerified: boolean | undefined = undefined;
+    let isActive: boolean | undefined = undefined;
+
+    if (tab === 'SEEKER') {
+      userType = 'seeker';
+    } else if (tab === 'PROVIDER') {
+      userType = 'provider';
+    } else if (tab === 'STAFF') {
+      isStaff = true;
+    } else if (tab === 'VERIFIED') {
+      isIdentityVerified = true;
+    } else if (tab === 'SUSPENDED') {
+      isActive = false;
+    }
+
     this.userUC.listUsers({
       search: this.searchQuery.trim() || undefined,
-      userType: this.selectedUserType || undefined,
+      userType,
+      isStaff,
+      isIdentityVerified,
+      isActive,
       page: this.currentPage(),
       pageSize: this.pageSize()
     }).subscribe({
@@ -212,6 +237,7 @@ export class UsersComponent implements OnInit {
       next: () => {
         this.actionMessage.set(makeActive ? `User ${user.email} has been activated successfully.` : `User ${user.email} has been suspended.`);
         this.isSuccess.set(true);
+        this.loadStats();
         this.loadUsers();
       },
       error: (err) => {
@@ -237,6 +263,7 @@ export class UsersComponent implements OnInit {
         this.isActioning.set(false);
         this.actionMessage.set(`User account ${user.email} has been deleted successfully.`);
         this.isSuccess.set(true);
+        this.loadStats();
         this.loadUsers();
       },
       error: (err) => {

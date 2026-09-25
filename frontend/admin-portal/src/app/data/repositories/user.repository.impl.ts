@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { UserRepository } from '../../core/repositories/user.repository';
+import { UserRepository, ListUsersParams } from '../../core/repositories/user.repository';
 import { AdminUser, ImpersonationResult } from '../../core/domain/entities/user.model';
 import { ADMIN_API_CONFIG } from '../datasources/admin-api.config';
 
@@ -11,10 +11,15 @@ import { ADMIN_API_CONFIG } from '../datasources/admin-api.config';
 export class UserRepositoryImpl implements UserRepository {
   constructor(private http: HttpClient) {}
 
-  listUsers(params?: { search?: string; userType?: string; page?: number; pageSize?: number }): Observable<{ results: AdminUser[]; count: number }> {
+  listUsers(params?: ListUsersParams): Observable<{ results: AdminUser[]; count: number }> {
     let url = `${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.users}?page=${params?.page || 1}&page_size=${params?.pageSize || 20}`;
     if (params?.search) url += `&search=${encodeURIComponent(params.search)}`;
-    if (params?.userType) url += `&user_type=${params.userType}`;
+    if (params?.userType) url += `&user_type=${encodeURIComponent(params.userType)}`;
+    if (params?.isStaff !== undefined) url += `&is_staff=${params.isStaff}`;
+    if (params?.isActive !== undefined) url += `&is_active=${params.isActive}`;
+    if (params?.isVerified !== undefined) url += `&is_verified=${params.isVerified}`;
+    if (params?.isIdentityVerified !== undefined) url += `&is_identity_verified=${params.isIdentityVerified}`;
+    if (params?.subscriptionTier) url += `&subscription_tier=${encodeURIComponent(params.subscriptionTier)}`;
 
     return this.http.get<any>(url).pipe(
       map(res => {

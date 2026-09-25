@@ -27,8 +27,11 @@ func (r *adminRepository) GetDashboardStats(ctx context.Context) (*entity.AdminD
 
 	// Counts
 	_ = r.db.WithContext(ctx).Model(&entity.User{}).Count(&stats.TotalUsers)
-	_ = r.db.WithContext(ctx).Model(&entity.Profile{}).Where("user_type = ?", "SEEKER").Count(&stats.TotalSeekers)
-	_ = r.db.WithContext(ctx).Model(&entity.Profile{}).Where("user_type = ?", "PROVIDER").Count(&stats.TotalProviders)
+	_ = r.db.WithContext(ctx).Model(&entity.Profile{}).Where("user_type ILIKE ?", "SEEKER").Count(&stats.TotalSeekers)
+	_ = r.db.WithContext(ctx).Model(&entity.Profile{}).Where("user_type ILIKE ?", "PROVIDER").Count(&stats.TotalProviders)
+	_ = r.db.WithContext(ctx).Model(&entity.User{}).Where("is_staff = ?", true).Count(&stats.TotalStaff)
+	_ = r.db.WithContext(ctx).Model(&entity.Profile{}).Where("is_identity_verified = ?", true).Count(&stats.TotalVerified)
+	_ = r.db.WithContext(ctx).Model(&entity.User{}).Where("is_active = ?", false).Count(&stats.TotalSuspended)
 	_ = r.db.WithContext(ctx).Model(&entity.Subscription{}).Where("is_active = ?", true).Count(&stats.ActiveSubscriptions)
 
 	// Wallet & Payout Stats
@@ -91,15 +94,18 @@ func (r *adminRepository) ListUsers(ctx context.Context, filter repository.Admin
 		Preload("BackgroundCheck").
 		Preload("AdminRole")
 
+	needProfileJoin := filter.Search != "" || filter.UserType != "" || filter.IsIdentityVerified != nil || filter.SubscriptionTier != ""
+	if needProfileJoin {
+		query = query.Joins("LEFT JOIN accounts_profile ON accounts_profile.user_id = accounts_user.id")
+	}
+
 	if filter.Search != "" {
 		s := "%" + filter.Search + "%"
-		query = query.Joins("LEFT JOIN accounts_profile ON accounts_profile.user_id = accounts_user.id").
-			Where("accounts_user.email ILIKE ? OR accounts_profile.first_name ILIKE ? OR accounts_profile.last_name ILIKE ?", s, s, s)
+		query = query.Where("accounts_user.email ILIKE ? OR accounts_profile.first_name ILIKE ? OR accounts_profile.last_name ILIKE ?", s, s, s)
 	}
 
 	if filter.UserType != "" {
-		query = query.Joins("JOIN accounts_profile ON accounts_profile.user_id = accounts_user.id").
-			Where("accounts_profile.user_type = ?", filter.UserType)
+		query = query.Where("accounts_profile.user_type ILIKE ?", filter.UserType)
 	}
 
 	if filter.IsStaff != nil {
@@ -112,12 +118,10 @@ func (r *adminRepository) ListUsers(ctx context.Context, filter repository.Admin
 		query = query.Where("accounts_user.is_verified = ?", *filter.IsVerified)
 	}
 	if filter.IsIdentityVerified != nil {
-		query = query.Joins("LEFT JOIN accounts_profile ON accounts_profile.user_id = accounts_user.id").
-			Where("accounts_profile.is_identity_verified = ?", *filter.IsIdentityVerified)
+		query = query.Where("accounts_profile.is_identity_verified = ?", *filter.IsIdentityVerified)
 	}
 	if filter.SubscriptionTier != "" {
-		query = query.Joins("LEFT JOIN accounts_profile ON accounts_profile.user_id = accounts_user.id").
-			Where("accounts_profile.subscription_tier = ?", filter.SubscriptionTier)
+		query = query.Where("accounts_profile.subscription_tier ILIKE ?", filter.SubscriptionTier)
 	}
 
 	err := query.Count(&total).Error
@@ -132,7 +136,7 @@ func (r *adminRepository) ListUsers(ctx context.Context, filter repository.Admin
 		query = query.Offset(filter.Offset)
 	}
 
-	err = query.Order("created_at DESC").Find(&users).Error
+	err = query.Order("accounts_user.created_at DESC").Find(&users).Error
 	return users, total, err
 }
 

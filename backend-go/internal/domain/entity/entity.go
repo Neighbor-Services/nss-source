@@ -836,6 +836,9 @@ type AdminDashboardStats struct {
 	TotalUsers            int64                  `json:"total_users"`
 	TotalSeekers          int64                  `json:"total_seekers"`
 	TotalProviders        int64                  `json:"total_providers"`
+	TotalStaff            int64                  `json:"total_staff"`
+	TotalVerified         int64                  `json:"total_verified"`
+	TotalSuspended        int64                  `json:"total_suspended"`
 	ActiveSubscriptions   int64                  `json:"active_subscriptions"`
 	TotalWalletBalance    float64                `json:"total_wallet_balance"`
 	PendingPayoutsCount   int64                  `json:"pending_payouts_count"`

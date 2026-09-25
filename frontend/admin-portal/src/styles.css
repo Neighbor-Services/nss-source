@@ -48,12 +48,20 @@
 
   --shadow-sm: 0 2px 8px rgba(17, 38, 146, 0.04);
   --shadow-md: 0 10px 30px 0 rgba(17, 38, 146, 0.05);
-  --shadow-lg: 0 15px 35px 0 rgba(17, 38, 146, 0.08);
-  --shadow-modal: 0 25px 60px -12px rgba(17, 38, 146, 0.25);
-  --shadow-primary: 0 10px 20px -8px rgba(58, 87, 232, 0.5);
-
   --sidebar-width: 260px;
   --topbar-height: 72px;
+
+  /* Aliases for Component Scopes */
+  --bg-card: var(--bg-surface);
+  --bg-body: var(--bg-app);
+  --bg-subtle: var(--bg-surface-elevated);
+  --border-color: var(--border);
+  --primary-soft: var(--primary-light);
+  --purple-soft: var(--purple-bg);
+  --warning-soft: var(--warning-bg);
+  --success-soft: var(--success-bg);
+  --danger-soft: var(--danger-bg);
+  --shadow-xl: var(--shadow-modal);
 }
 
 /* Dark Theme (Hope UI Dark) */
