@@ -70,13 +70,15 @@ func (u *profileUseCase) ListProfiles(ctx context.Context, params repository.Pro
 
 func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, updates map[string]interface{}) (*entity.Profile, error) {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		profile = &entity.Profile{
 			ID:       uuid.New(),
 			UserID:   userID,
 			UserType: "SEEKER",
 		}
-		_ = u.profileRepo.Create(ctx, profile)
+		if createErr := u.profileRepo.Create(ctx, profile); createErr != nil {
+			return nil, createErr
+		}
 	}
 
 	if fn, ok := updates["first_name"].(string); ok && fn != "" {
@@ -245,13 +247,15 @@ func (u *profileUseCase) UpdateAbout(ctx context.Context, userID uuid.UUID, upda
 
 func (u *profileUseCase) UpdateProfilePicture(ctx context.Context, userID uuid.UUID, imageURL string) (*entity.Profile, error) {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		profile = &entity.Profile{
 			ID:       uuid.New(),
 			UserID:   userID,
 			UserType: "SEEKER",
 		}
-		_ = u.profileRepo.Create(ctx, profile)
+		if createErr := u.profileRepo.Create(ctx, profile); createErr != nil {
+			return nil, createErr
+		}
 	}
 
 	profile.ProfilePicture = imageURL
@@ -264,7 +268,7 @@ func (u *profileUseCase) UpdateProfilePicture(ctx context.Context, userID uuid.U
 
 func (u *profileUseCase) GetPortfolios(ctx context.Context, userID uuid.UUID) ([]entity.Portfolio, error) {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		return nil, errors.New("profile not found")
 	}
 	return u.portfolioRepo.ListByProfileID(ctx, profile.ID)
@@ -272,7 +276,7 @@ func (u *profileUseCase) GetPortfolios(ctx context.Context, userID uuid.UUID) ([
 
 func (u *profileUseCase) CreatePortfolio(ctx context.Context, userID uuid.UUID, item *entity.Portfolio) (*entity.Portfolio, error) {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		return nil, errors.New("profile not found")
 	}
 	item.ID = uuid.New()
@@ -286,7 +290,7 @@ func (u *profileUseCase) CreatePortfolio(ctx context.Context, userID uuid.UUID, 
 
 func (u *profileUseCase) DeletePortfolio(ctx context.Context, userID uuid.UUID, itemID uuid.UUID) error {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		return errors.New("profile not found")
 	}
 	return u.portfolioRepo.Delete(ctx, itemID, profile.ID)
@@ -294,7 +298,7 @@ func (u *profileUseCase) DeletePortfolio(ctx context.Context, userID uuid.UUID, 
 
 func (u *profileUseCase) GetServicePackages(ctx context.Context, userID uuid.UUID) ([]entity.ServicePackage, error) {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		return nil, errors.New("profile not found")
 	}
 	return u.pkgRepo.ListByProfileID(ctx, profile.ID)
@@ -302,7 +306,7 @@ func (u *profileUseCase) GetServicePackages(ctx context.Context, userID uuid.UUI
 
 func (u *profileUseCase) CreateServicePackage(ctx context.Context, userID uuid.UUID, pkg *entity.ServicePackage) (*entity.ServicePackage, error) {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		return nil, errors.New("profile not found")
 	}
 
@@ -316,7 +320,7 @@ func (u *profileUseCase) CreateServicePackage(ctx context.Context, userID uuid.U
 
 func (u *profileUseCase) DeleteServicePackage(ctx context.Context, userID uuid.UUID, pkgID uuid.UUID) error {
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
-	if err != nil {
+	if err != nil || profile == nil {
 		return errors.New("profile not found")
 	}
 	return u.pkgRepo.Delete(ctx, pkgID, profile.ID)
