@@ -19,6 +19,7 @@ import { SubscriptionsComponent } from './presentation/pages/subscriptions/subsc
 import { FeatureFlagsComponent } from './presentation/pages/feature-flags/feature-flags.component';
 import { SystemComponent } from './presentation/pages/system/system.component';
 import { AppointmentsComponent } from './presentation/pages/appointments/appointments.component';
+import { EmergencyDispatchComponent } from './presentation/pages/emergency-dispatch/emergency-dispatch.component';
 import { ReviewsComponent } from './presentation/pages/reviews/reviews.component';
 import { PromosComponent } from './presentation/pages/promos/promos.component';
 import { LegalComponent } from './presentation/pages/legal/legal.component';
@@ -34,6 +35,8 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'dashboard', component: DashboardComponent },
+      { path: 'emergency-dispatch', component: EmergencyDispatchComponent },
+      { path: 'sos', redirectTo: 'emergency-dispatch' },
       { path: 'users', component: UsersComponent },
       { path: 'users/:id', component: UserDetailComponent },
       { path: 'appointments', component: AppointmentsComponent },

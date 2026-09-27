@@ -63,6 +63,16 @@
       }
     </a>
 
+    <a routerLink="/admin/emergency-dispatch" routerLinkActive="active" class="nav-link nav-link-sos" [attr.title]="layoutService.isDesktopCollapsed() ? 'Emergency SOS Command' : null">
+      <svg class="nav-icon text-danger" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      @if (!layoutService.isDesktopCollapsed()) {
+        <span class="nav-label text-danger font-bold">Emergency SOS Radar</span>
+        <span class="badge-live-sos">LIVE</span>
+      }
+    </a>
+
     @if (!layoutService.isDesktopCollapsed()) {
       <div class="nav-section-title">Core Operations</div>
     }

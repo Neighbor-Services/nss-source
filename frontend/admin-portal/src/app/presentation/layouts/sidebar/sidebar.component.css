@@ -20,6 +20,25 @@
   padding: 16px 8px;
 }
 
+.badge-live-sos {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: auto;
+  letter-spacing: 0.5px;
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
+
+.font-bold {
+  font-weight: 700 !important;
+}
+
 /* ─── HOPE UI BRAND HEADER ────────────────────────────────────────────────── */
 .sidebar-header {
   display: flex;

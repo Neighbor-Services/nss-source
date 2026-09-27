@@ -21,4 +21,34 @@
       <router-outlet></router-outlet>
     </main>
   </div>
+
+  <!-- Idle Timeout Security Modal -->
+  @if (idleService.showWarning()) {
+    <div class="idle-modal-backdrop">
+      <div class="idle-modal-card">
+        <div class="idle-icon-wrap">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <h3 class="idle-title">Session Inactivity Alert</h3>
+        <p class="idle-desc">
+          Your admin session has been inactive. For data security and SOC2 compliance, you will be automatically logged out in:
+        </p>
+        <div class="idle-countdown">
+          <span class="countdown-digits">{{ idleService.secondsRemaining() }}</span>
+          <span class="countdown-unit">seconds</span>
+        </div>
+        <div class="idle-actions">
+          <button class="btn-idle-extend" (click)="idleService.resetTimer()">
+            Keep Me Logged In
+          </button>
+          <button class="btn-idle-logout" (click)="idleService.lockSession()">
+            Log Out Now
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

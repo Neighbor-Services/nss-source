@@ -1,0 +1,226 @@
+<div class="dispatch-page">
+  <!-- Top Hero Header -->
+  <div class="dispatch-header">
+    <div class="header-left">
+      <div class="title-wrap">
+        <h1 class="page-title">Live Emergency SOS &amp; Flash Dispatch Command Center</h1>
+        <span class="pulse-tag">
+          <span class="dot-beacon"></span>
+          LIVE RADAR ACTIVE
+        </span>
+      </div>
+      <p class="subtitle">
+        Real-time geospatial incident oversight, broadcast telemetry, and manual dispatch override operations.
+      </p>
+    </div>
+
+    <div class="header-metrics">
+      <div class="metric-chip red">
+        <span class="chip-val">{{ broadcastingCount() }}</span>
+        <span class="chip-lbl">Active Broadcasts</span>
+      </div>
+      <div class="metric-chip amber">
+        <span class="chip-val">{{ enRouteCount() }}</span>
+        <span class="chip-lbl">En-Route / Responding</span>
+      </div>
+      <div class="metric-chip green">
+        <span class="chip-val">4.2 min</span>
+        <span class="chip-lbl">Avg Response Time</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Split Workbench -->
+  <div class="dispatch-grid">
+    <!-- Left Column: Incident List Feed -->
+    <div class="incident-feed-card">
+      <div class="card-header-row">
+        <div class="search-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search dispatch #, trade, seeker..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
+        </div>
+
+        <div class="filter-pills">
+          <button [class.active]="filterStatus() === 'ALL'" (click)="filterStatus.set('ALL')">All</button>
+          <button [class.active]="filterStatus() === 'BROADCASTING'" (click)="filterStatus.set('BROADCASTING')">SOS Live</button>
+          <button [class.active]="filterStatus() === 'EN_ROUTE'" (click)="filterStatus.set('EN_ROUTE')">En-Route</button>
+        </div>
+      </div>
+
+      <div class="incidents-list">
+        @for (inc of filteredIncidents(); track inc.id) {
+          <div
+            class="incident-item"
+            [class.selected]="selectedIncident()?.id === inc.id"
+            [class.status-broadcasting]="inc.status === 'BROADCASTING'"
+            [class.status-enroute]="inc.status === 'EN_ROUTE'"
+            [class.status-fraud]="inc.status === 'CANCELLED_FRAUD'"
+            (click)="selectIncident(inc)"
+          >
+            <div class="item-top">
+              <span class="dispatch-tag">{{ inc.dispatchNumber }}</span>
+              <span class="elapsed-badge" [class.urgent]="inc.status === 'BROADCASTING'">
+                ⏱ {{ formatElapsed(inc.elapsedSeconds) }}
+              </span>
+            </div>
+
+            <div class="item-title">{{ inc.title }}</div>
+
+            <div class="item-meta">
+              <span class="trade-pill">{{ inc.tradeConcept }}</span>
+              <span class="radius-pill">{{ inc.broadcastRadiusKm }} km radius</span>
+              <span class="status-pill" [attr.data-status]="inc.status">{{ inc.status }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-feed">
+            <p>No emergency incidents match current filters.</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Right Column: Incident Telemetry & Radar Detail View -->
+    <div class="incident-detail-card">
+      @if (selectedIncident(); as inc) {
+        <!-- Detail Header -->
+        <div class="detail-banner" [attr.data-status]="inc.status">
+          <div class="banner-info">
+            <div class="badge-row">
+              <span class="badge-status-lg">{{ inc.status }}</span>
+              <span class="badge-number">{{ inc.dispatchNumber }}</span>
+              <span class="badge-trade">{{ inc.tradeConcept }}</span>
+            </div>
+            <h2 class="banner-title">{{ inc.title }}</h2>
+            <p class="banner-desc">{{ inc.description }}</p>
+          </div>
+
+          <div class="banner-actions" *hasPermission="'emergency:manage'">
+            @if (inc.status === 'BROADCASTING') {
+              <button class="btn-action-extend" (click)="extendRadius(inc)" title="Expand search radius by 5km">
+                +5km Radius (Now {{ inc.broadcastRadiusKm }}km)
+              </button>
+            }
+            @if (inc.status !== 'CANCELLED_FRAUD' && inc.status !== 'COMPLETED') {
+              <button class="btn-action-fraud" (click)="cancelFraud(inc)">
+                Flag &amp; Cancel Fraud
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Radar Simulation Canvas / Map Placeholder -->
+        <div class="radar-viewport">
+          <div class="radar-scan-line"></div>
+          <div class="radar-concentric circle-1"></div>
+          <div class="radar-concentric circle-2"></div>
+          <div class="radar-concentric circle-3"></div>
+
+          <!-- Center Seeker Beacon -->
+          <div class="radar-center-beacon">
+            <span class="beacon-wave"></span>
+            <div class="beacon-pin">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <div class="beacon-label">{{ inc.seekerName }} (SOS Origin)</div>
+          </div>
+
+          <!-- Nearby Candidate Providers on Radar -->
+          @for (p of inc.candidateProviders; track p.id; let idx = $index) {
+            <div
+              class="provider-radar-blip"
+              [style.top]="(45 + (idx === 0 ? -25 : 22)) + '%'"
+              [style.left]="(50 + (idx === 0 ? 28 : -32)) + '%'"
+            >
+              <div class="blip-circle"></div>
+              <div class="blip-card">
+                <b>{{ p.name }}</b>
+                <span>{{ p.distanceKm }} km • {{ p.etaMins }} min ETA</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Metadata & Candidate Action Rows -->
+        <div class="detail-body-grid">
+          <!-- Seeker Info Card -->
+          <div class="info-card">
+            <h4 class="card-subtitle">Seeker Identity &amp; Location</h4>
+            <div class="info-row">
+              <span class="info-lbl">Seeker Name:</span>
+              <span class="info-val"><b>{{ inc.seekerName }}</b></span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Contact Phone:</span>
+              <span class="info-val">
+                <app-pii-mask [value]="inc.seekerPhone" type="PHONE" [entityId]="inc.dispatchNumber"></app-pii-mask>
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">GPS Address:</span>
+              <span class="info-val">{{ inc.address }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Coordinates:</span>
+              <span class="info-val monospace">{{ inc.latitude }}, {{ inc.longitude }}</span>
+            </div>
+          </div>
+
+          <!-- Active / Candidate Provider Card -->
+          <div class="info-card">
+            <h4 class="card-subtitle">
+              {{ inc.assignedProvider ? 'Assigned Responding Provider' : 'Candidate Provider Roster (' + inc.candidateProviders.length + ')' }}
+            </h4>
+
+            @if (inc.assignedProvider; as assigned) {
+              <div class="assigned-box">
+                <div class="assigned-header">
+                  <div class="avatar-ph">✓</div>
+                  <div>
+                    <h4 class="assigned-name">{{ assigned.name }}</h4>
+                    <span class="assigned-meta">{{ assigned.trade }} • Rating: ★ {{ assigned.rating }}</span>
+                  </div>
+                </div>
+                <div class="assigned-stats">
+                  <span><b>ETA:</b> {{ assigned.etaMins }} mins</span>
+                  <span><b>Distance:</b> {{ assigned.distanceKm }} km</span>
+                  <span>
+                    <app-pii-mask [value]="assigned.phone" type="PHONE" [entityId]="assigned.id"></app-pii-mask>
+                  </span>
+                </div>
+              </div>
+            } @else {
+              <div class="candidates-list">
+                @for (cand of inc.candidateProviders; track cand.id) {
+                  <div class="candidate-row">
+                    <div class="cand-info">
+                      <b>{{ cand.name }}</b>
+                      <span>{{ cand.distanceKm }} km away ({{ cand.etaMins }} min ETA) • ★ {{ cand.rating }}</span>
+                    </div>
+                    <button class="btn-assign-sm" (click)="reassignProvider(inc, cand)">
+                      Force Dispatch
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="no-selection">
+          <p>Select an emergency dispatch incident from the feed to view real-time telemetry.</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
