@@ -305,7 +305,24 @@ func normalizeToken(w string) string {
 func DetectConcepts(tokens []string, tf map[string]int) []string {
 	detected := make(map[string]int)
 
+	// Static base concept ontology
 	for concept, keywords := range conceptOntology {
+		for _, kw := range keywords {
+			kwNorm := normalizeToken(kw)
+			if tf[kw] > 0 || tf[kwNorm] > 0 {
+				detected[concept] += 5
+			}
+			for _, t := range tokens {
+				if t == kw || t == kwNorm {
+					detected[concept] += 3
+				}
+			}
+		}
+	}
+
+	// Dynamic learned concepts from PostgreSQL catalog knowledge base
+	learnedConcepts := GlobalKnowledge.GetAllLearnedConcepts()
+	for concept, keywords := range learnedConcepts {
 		for _, kw := range keywords {
 			kwNorm := normalizeToken(kw)
 			if tf[kw] > 0 || tf[kwNorm] > 0 {
@@ -354,6 +371,10 @@ func BuildQueryVector(queryText string) (map[string]float64, []string) {
 	for _, c := range concepts {
 		vec["concept:"+c] = 4.0
 		for _, kw := range conceptOntology[c] {
+			vec[normalizeToken(kw)] += 1.2
+		}
+		// Dynamic learned synonyms expansion
+		for _, kw := range GlobalKnowledge.GetConceptKeywords(c) {
 			vec[normalizeToken(kw)] += 1.2
 		}
 	}
@@ -588,6 +609,20 @@ func AnalyzeSentiment(text string) SentimentAnalysis {
 		if strings.Contains(textLower, kw) {
 			frustrationSum += weight
 			signals = append(signals, "Distress: "+kw)
+		}
+	}
+
+	// Dynamic learned praise & complaint terms from PostgreSQL database feedback
+	for kw, weight := range GlobalKnowledge.GetPraiseSignals() {
+		if strings.Contains(textLower, kw) {
+			qualitySum += weight * 0.8
+			signals = append(signals, "Praise Expectation: "+kw)
+		}
+	}
+	for kw, weight := range GlobalKnowledge.GetComplaintSignals() {
+		if strings.Contains(textLower, kw) {
+			frustrationSum += weight * 0.8
+			signals = append(signals, "Risk Concern: "+kw)
 		}
 	}
 
@@ -860,7 +895,7 @@ func generateMatchReason(p entity.Profile, matchPct int, queryConcepts []string,
 
 	if len(queryConcepts) > 0 {
 		tradeName := formatConceptName(queryConcepts[0])
-		sb.WriteString(" (" + tradeName + " Match)")
+		sb.WriteString(" (");sb.WriteString(tradeName);sb.WriteString(" Match)")
 	}
 
 	return sb.String()

@@ -39,4 +39,8 @@ type ServiceUseCase interface {
 	GetFlashDispatch(ctx context.Context, id uuid.UUID) (*entity.FlashDispatch, error)
 	AcceptFlashDispatch(ctx context.Context, providerID, dispatchID uuid.UUID) (*entity.FlashDispatch, *entity.Appointment, error)
 	CancelFlashDispatch(ctx context.Context, seekerID, dispatchID uuid.UUID) error
+
+	// AI Continuous Learning & Catalog Suggestions
+	GetAISuggestions(ctx context.Context) ([]entity.CatalogKnowledgeIndex, error)
+	TriggerCatalogReindex(ctx context.Context) error
 }

@@ -60,6 +60,129 @@ func NewProviderIndex() *ProviderIndex {
 	}
 }
 
+// DynamicOntologyStore holds dynamically learned keywords, query patterns, and sentiment associations from PostgreSQL.
+type DynamicOntologyStore struct {
+	mu             sync.RWMutex
+	concepts       map[string][]string
+	customKeywords map[string]float64
+	queryPatterns  []entity.CatalogKnowledgeIndex
+	praiseKeywords map[string]float64
+	complaintWords map[string]float64
+}
+
+var GlobalKnowledge = NewDynamicOntologyStore()
+
+func NewDynamicOntologyStore() *DynamicOntologyStore {
+	store := &DynamicOntologyStore{
+		concepts:       make(map[string][]string),
+		customKeywords: make(map[string]float64),
+		queryPatterns:  make([]entity.CatalogKnowledgeIndex, 0),
+		praiseKeywords: make(map[string]float64),
+		complaintWords: make(map[string]float64),
+	}
+	// Copy baseline reviews lexicons
+	for k, v := range reviewPraiseKeywords {
+		store.praiseKeywords[k] = v
+	}
+	for k, v := range reviewComplaintKeywords {
+		store.complaintWords[k] = v
+	}
+	return store
+}
+
+// LoadFromDatabase incorporates learned knowledge from database records into the in-memory AI engine.
+func (s *DynamicOntologyStore) LoadFromDatabase(items []entity.CatalogKnowledgeIndex) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.queryPatterns = items
+
+	for _, item := range items {
+		concept := strings.ToLower(strings.TrimSpace(item.TradeConcept))
+		kw := strings.ToLower(strings.TrimSpace(item.Keyword))
+
+		if concept != "" && kw != "" {
+			existing := s.concepts[concept]
+			found := false
+			for _, e := range existing {
+				if strings.EqualFold(e, kw) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				s.concepts[concept] = append(s.concepts[concept], kw)
+			}
+			s.customKeywords[kw] = item.ConfidenceScore
+		}
+
+		// Learn emergent praise/complaint signals
+		for _, p := range item.PraiseSignals {
+			pLower := strings.ToLower(strings.TrimSpace(p))
+			if pLower != "" {
+				s.praiseKeywords[pLower] = math.Max(s.praiseKeywords[pLower], item.ConfidenceScore)
+			}
+		}
+		for _, c := range item.ComplaintSignals {
+			cLower := strings.ToLower(strings.TrimSpace(c))
+			if cLower != "" {
+				s.complaintWords[cLower] = math.Max(s.complaintWords[cLower], item.ConfidenceScore)
+			}
+		}
+	}
+}
+
+// GetConceptKeywords returns all keywords associated with a trade concept (combining static and dynamic DB knowledge).
+func (s *DynamicOntologyStore) GetConceptKeywords(concept string) []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.concepts[strings.ToLower(concept)]
+}
+
+// GetAllLearnedConcepts returns a snapshot of all concepts in the knowledge store.
+func (s *DynamicOntologyStore) GetAllLearnedConcepts() map[string][]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make(map[string][]string, len(s.concepts))
+	for k, v := range s.concepts {
+		copied := make([]string, len(v))
+		copy(copied, v)
+		res[k] = copied
+	}
+	return res
+}
+
+// GetQueryPatterns returns all active search query patterns learned from the catalog.
+func (s *DynamicOntologyStore) GetQueryPatterns() []entity.CatalogKnowledgeIndex {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make([]entity.CatalogKnowledgeIndex, len(s.queryPatterns))
+	copy(res, s.queryPatterns)
+	return res
+}
+
+// GetPraiseSignals returns praise signals map.
+func (s *DynamicOntologyStore) GetPraiseSignals() map[string]float64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make(map[string]float64, len(s.praiseKeywords))
+	for k, v := range s.praiseKeywords {
+		res[k] = v
+	}
+	return res
+}
+
+// GetComplaintSignals returns complaint signals map.
+func (s *DynamicOntologyStore) GetComplaintSignals() map[string]float64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make(map[string]float64, len(s.complaintWords))
+	for k, v := range s.complaintWords {
+		res[k] = v
+	}
+	return res
+}
+
 // Praise & Complaint Lexicons for Review Sentiment Classification
 var reviewPraiseKeywords = map[string]float64{
 	"punctual": 1.0, "on time": 1.0, "clean": 0.8, "professional": 1.0,

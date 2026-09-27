@@ -230,6 +230,11 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			srv.POST("/flash-dispatch/:id/accept", middleware.AuthRequired(deps.Config), deps.ServiceHandler.AcceptFlashDispatch)
 			srv.POST("/flash-dispatch/:id/cancel/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.CancelFlashDispatch)
 			srv.POST("/flash-dispatch/:id/cancel", middleware.AuthRequired(deps.Config), deps.ServiceHandler.CancelFlashDispatch)
+
+			// AI Dynamic Suggestions & Catalog Knowledge
+			srv.GET("/ai-suggestions/", deps.ServiceHandler.GetAISuggestions)
+			srv.GET("/ai-suggestions", deps.ServiceHandler.GetAISuggestions)
+			srv.POST("/ai-catalog/reindex/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.TriggerCatalogReindex)
 		}
 
 		// ─── INTERACTIONS ────────────────────────────────────────────────────

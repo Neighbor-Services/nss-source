@@ -80,6 +80,7 @@ func main() {
 	requestRepo := gormRepo.NewServiceRequestRepository(db)
 	proposalRepo := gormRepo.NewProposalRepository(db)
 	dispatchRepo := gormRepo.NewFlashDispatchRepository(db)
+	knowledgeRepo := gormRepo.NewAIKnowledgeRepository(db)
 
 	favRepo := gormRepo.NewFavoriteRepository(db)
 	reviewRepo := gormRepo.NewReviewRepository(db)
@@ -110,7 +111,7 @@ func main() {
 	// Layer: UseCases (Application Business Rules)
 	authUC := usecase.NewAuthUseCase(userRepo, profileRepo, walletRepo, cfg)
 	profileUC := usecase.NewProfileUseCase(profileRepo, aboutRepo, portfolioRepo, servicePackageRepo, legalRepo)
-	serviceUC := usecase.NewServiceUseCase(categoryRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, userRepo, adminRepo, dispatchRepo, redisCache, cfg)
+	serviceUC := usecase.NewServiceUseCase(categoryRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, userRepo, adminRepo, dispatchRepo, knowledgeRepo, redisCache, cfg)
 	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, walletTxRepo, userRepo, notifRepo, tokenRepo, fcmClient, cfg)
 	chatUC := usecase.NewChatUseCase(convRepo, msgRepo, chatBlockRepo, tokenRepo, fcmClient)
 	notifUC := usecase.NewNotificationUseCase(notifRepo, tokenRepo, fcmClient)
@@ -205,6 +206,9 @@ func main() {
 
 	sentimentWorker := worker.NewProviderSentimentWorker(db, cfg)
 	sentimentWorker.Start()
+
+	aiCatalogWorker := worker.NewAICatalogKnowledgeWorker(db, cfg)
+	aiCatalogWorker.Start()
 
 	// 7. Start HTTP Server with Graceful Shutdown
 	srv := &http.Server{

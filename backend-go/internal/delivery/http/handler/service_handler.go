@@ -712,3 +712,54 @@ func (h *ServiceHandler) CancelFlashDispatch(c *gin.Context) {
 		"message": "Emergency flash dispatch cancelled",
 	})
 }
+
+// GetAISuggestions returns real-time dynamic search suggestions and prompt patterns learned from the database catalog.
+func (h *ServiceHandler) GetAISuggestions(c *gin.Context) {
+	suggestions, err := h.serviceUC.GetAISuggestions(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, "Failed to load AI suggestions")
+		return
+	}
+
+	type suggestionDTO struct {
+		Title           string   `json:"title"`
+		TradeConcept    string   `json:"trade_concept"`
+		CategoryName    string   `json:"category_name"`
+		QueryPattern    string   `json:"query_pattern"`
+		SentimentIntent string   `json:"sentiment_intent"`
+		PraiseSignals   []string `json:"praise_signals"`
+	}
+
+	var dtos []suggestionDTO
+	for _, s := range suggestions {
+		title := s.SearchQueryPattern
+		if title == "" {
+			title = s.Keyword
+		}
+		dtos = append(dtos, suggestionDTO{
+			Title:           title,
+			TradeConcept:    s.TradeConcept,
+			CategoryName:    s.CategoryName,
+			QueryPattern:    s.SearchQueryPattern,
+			SentimentIntent: s.SentimentIntent,
+			PraiseSignals:   s.PraiseSignals,
+		})
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"suggestions": dtos,
+		"total":       len(dtos),
+	})
+}
+
+// TriggerCatalogReindex triggers background knowledge reindexing from the database catalog.
+func (h *ServiceHandler) TriggerCatalogReindex(c *gin.Context) {
+	if err := h.serviceUC.TriggerCatalogReindex(c.Request.Context()); err != nil {
+		response.InternalError(c, "Failed to reindex catalog knowledge")
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"message": "AI catalog knowledge reindexed successfully",
+	})
+}
+

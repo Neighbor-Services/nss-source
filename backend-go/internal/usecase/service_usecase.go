@@ -31,10 +31,11 @@ type serviceUseCase struct {
 	tokenRepo    repository.DeviceTokenRepository
 	fcmClient    fcm.Client
 	userRepo     repository.UserRepository
-	adminRepo    repository.AdminRepository
-	dispatchRepo repository.FlashDispatchRepository
-	cache        cache.Cache
-	cfg          *config.Config
+	adminRepo     repository.AdminRepository
+	dispatchRepo  repository.FlashDispatchRepository
+	knowledgeRepo repository.AIKnowledgeRepository
+	cache         cache.Cache
+	cfg           *config.Config
 }
 
 func NewServiceUseCase(
@@ -50,24 +51,26 @@ func NewServiceUseCase(
 	userRepo repository.UserRepository,
 	adminRepo repository.AdminRepository,
 	dispatchRepo repository.FlashDispatchRepository,
+	knowledgeRepo repository.AIKnowledgeRepository,
 	cache cache.Cache,
 	cfg *config.Config,
 ) domainUsecase.ServiceUseCase {
 	return &serviceUseCase{
-		categoryRepo: categoryRepo,
-		catalogRepo:  catalogRepo,
-		requestRepo:  requestRepo,
-		proposalRepo: proposalRepo,
-		profileRepo:  profileRepo,
-		aptRepo:      aptRepo,
-		notifRepo:    notifRepo,
-		tokenRepo:    tokenRepo,
-		fcmClient:    fcmClient,
-		userRepo:     userRepo,
-		adminRepo:    adminRepo,
-		dispatchRepo: dispatchRepo,
-		cache:        cache,
-		cfg:          cfg,
+		categoryRepo:  categoryRepo,
+		catalogRepo:   catalogRepo,
+		requestRepo:   requestRepo,
+		proposalRepo:  proposalRepo,
+		profileRepo:   profileRepo,
+		aptRepo:       aptRepo,
+		notifRepo:     notifRepo,
+		tokenRepo:     tokenRepo,
+		fcmClient:     fcmClient,
+		userRepo:      userRepo,
+		adminRepo:     adminRepo,
+		dispatchRepo:  dispatchRepo,
+		knowledgeRepo: knowledgeRepo,
+		cache:         cache,
+		cfg:           cfg,
 	}
 }
 
@@ -182,6 +185,26 @@ func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase
 		}
 
 		results = append(results, p)
+	}
+
+	// Asynchronous Continuous Learning Feedback Loop
+	if u.knowledgeRepo != nil && query != "" {
+		go func(q string, count int) {
+			sentiment := aimatcher.AnalyzeSentiment(q)
+			matchedConcept := ""
+			if len(ranked) > 0 && len(ranked[0].MatchedConcepts) > 0 {
+				matchedConcept = ranked[0].MatchedConcepts[0]
+			}
+			_ = u.knowledgeRepo.RecordSearchLog(context.Background(), &entity.AISearchLog{
+				Query:             q,
+				MatchedConcept:    matchedConcept,
+				UrgencyScore:      sentiment.UrgencyScore,
+				SentimentPolarity: sentiment.Polarity,
+				PrimarySentiment:  sentiment.PrimarySentiment,
+				ResultCount:       count,
+			})
+			_ = u.knowledgeRepo.IncrementSearchUsage(context.Background(), q)
+		}(query, len(ranked))
 	}
 
 	return results, nil
@@ -1136,3 +1159,23 @@ func (u *serviceUseCase) CancelFlashDispatch(ctx context.Context, seekerID, disp
 	d.UpdatedAt = time.Now().UTC()
 	return u.dispatchRepo.Update(ctx, d)
 }
+
+func (u *serviceUseCase) GetAISuggestions(ctx context.Context) ([]entity.CatalogKnowledgeIndex, error) {
+	if u.knowledgeRepo == nil {
+		return []entity.CatalogKnowledgeIndex{}, nil
+	}
+	return u.knowledgeRepo.GetDynamicSuggestions(ctx, 15)
+}
+
+func (u *serviceUseCase) TriggerCatalogReindex(ctx context.Context) error {
+	if u.knowledgeRepo == nil {
+		return nil
+	}
+	allKnowledge, err := u.knowledgeRepo.GetAllKnowledge(ctx)
+	if err != nil {
+		return err
+	}
+	aimatcher.GlobalKnowledge.LoadFromDatabase(allKnowledge)
+	return nil
+}
+

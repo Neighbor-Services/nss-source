@@ -369,3 +369,87 @@ func (r *flashDispatchRepository) GetByID(ctx context.Context, id uuid.UUID) (*e
 func (r *flashDispatchRepository) Update(ctx context.Context, dispatch *entity.FlashDispatch) error {
 	return r.db.WithContext(ctx).Save(dispatch).Error
 }
+
+type aiKnowledgeRepository struct {
+	db *gorm.DB
+}
+
+func NewAIKnowledgeRepository(db *gorm.DB) repository.AIKnowledgeRepository {
+	return &aiKnowledgeRepository{db: db}
+}
+
+func (r *aiKnowledgeRepository) UpsertKnowledge(ctx context.Context, item *entity.CatalogKnowledgeIndex) error {
+	if item.ID == uuid.Nil {
+		item.ID = uuid.New()
+	}
+	var existing entity.CatalogKnowledgeIndex
+	err := r.db.WithContext(ctx).Where("trade_concept = ? AND keyword = ?", item.TradeConcept, item.Keyword).First(&existing).Error
+	if err == nil {
+		item.ID = existing.ID
+		return r.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
+			"category_name":        item.CategoryName,
+			"service_name":         item.ServiceName,
+			"service_id":           item.ServiceID,
+			"search_query_pattern": item.SearchQueryPattern,
+			"sentiment_intent":     item.SentimentIntent,
+			"praise_signals":       item.PraiseSignals,
+			"complaint_signals":    item.ComplaintSignals,
+			"confidence_score":     item.ConfidenceScore,
+			"updated_at":           time.Now(),
+		}).Error
+	}
+	return r.db.WithContext(ctx).Create(item).Error
+}
+
+func (r *aiKnowledgeRepository) BatchUpsertKnowledge(ctx context.Context, items []entity.CatalogKnowledgeIndex) error {
+	for i := range items {
+		if err := r.UpsertKnowledge(ctx, &items[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *aiKnowledgeRepository) GetAllKnowledge(ctx context.Context) ([]entity.CatalogKnowledgeIndex, error) {
+	var items []entity.CatalogKnowledgeIndex
+	err := r.db.WithContext(ctx).Order("confidence_score DESC, search_count DESC").Find(&items).Error
+	return items, err
+}
+
+func (r *aiKnowledgeRepository) GetKnowledgeByConcept(ctx context.Context, concept string) ([]entity.CatalogKnowledgeIndex, error) {
+	var items []entity.CatalogKnowledgeIndex
+	err := r.db.WithContext(ctx).Where("trade_concept = ?", concept).Order("confidence_score DESC").Find(&items).Error
+	return items, err
+}
+
+func (r *aiKnowledgeRepository) GetDynamicSuggestions(ctx context.Context, limit int) ([]entity.CatalogKnowledgeIndex, error) {
+	if limit <= 0 {
+		limit = 15
+	}
+	var items []entity.CatalogKnowledgeIndex
+	err := r.db.WithContext(ctx).
+		Where("search_query_pattern != ''").
+		Order("search_count DESC, confidence_score DESC").
+		Limit(limit).
+		Find(&items).Error
+	return items, err
+}
+
+func (r *aiKnowledgeRepository) RecordSearchLog(ctx context.Context, log *entity.AISearchLog) error {
+	if log.ID == uuid.Nil {
+		log.ID = uuid.New()
+	}
+	return r.db.WithContext(ctx).Create(log).Error
+}
+
+func (r *aiKnowledgeRepository) IncrementSearchUsage(ctx context.Context, queryOrKeyword string) error {
+	trimmed := strings.ToLower(strings.TrimSpace(queryOrKeyword))
+	if trimmed == "" {
+		return nil
+	}
+	return r.db.WithContext(ctx).
+		Model(&entity.CatalogKnowledgeIndex{}).
+		Where("LOWER(keyword) = ? OR LOWER(search_query_pattern) = ?", trimmed, trimmed).
+		UpdateColumn("search_count", gorm.Expr("search_count + 1")).Error
+}
+

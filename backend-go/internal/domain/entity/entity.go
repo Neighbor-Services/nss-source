@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -428,6 +429,41 @@ type FlashDispatch struct {
 }
 
 func (FlashDispatch) TableName() string { return "services_flashdispatch" }
+
+// CatalogKnowledgeIndex stores learned keyword mappings, service associations, search queries, and sentiment signals.
+type CatalogKnowledgeIndex struct {
+	ID                 uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	TradeConcept       string         `gorm:"size:100;index;not null" json:"trade_concept"`       // e.g. "plumbing", "auto_mobile_mechanic", "beauty_barber_hair"
+	Keyword            string         `gorm:"size:255;index;not null" json:"keyword"`             // e.g. "burst pipe", "lockout", "brake pad replacement"
+	CategoryName       string         `gorm:"size:100" json:"category_name"`                      // e.g. "Home Services", "Automotive"
+	ServiceID          *uuid.UUID     `gorm:"type:uuid;index" json:"service_id,omitempty"`
+	ServiceName        string         `gorm:"size:255" json:"service_name,omitempty"`
+	SearchQueryPattern string         `gorm:"size:500" json:"search_query_pattern"`               // Natural language search pattern
+	SentimentIntent    string         `gorm:"size:50;default:'STANDARD'" json:"sentiment_intent"` // URGENT, QUALITY, BUDGET, TRUST, DISTRESS, STANDARD
+	PraiseSignals      pq.StringArray `gorm:"type:text[]" json:"praise_signals"`                  // Learned positive signals
+	ComplaintSignals   pq.StringArray `gorm:"type:text[]" json:"complaint_signals"`               // Learned risk signals
+	ConfidenceScore    float64        `gorm:"default:1.0" json:"confidence_score"`                // Weight multiplier
+	SearchCount        int            `gorm:"default:0" json:"search_count"`                      // Popularity usage count
+	Source             string         `gorm:"size:50;default:'CATALOG_ANALYZER'" json:"source"`   // CATALOG_ANALYZER, USER_SEARCH, SENTIMENT_MINER
+	CreatedAt          time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+func (CatalogKnowledgeIndex) TableName() string { return "services_catalog_knowledge_index" }
+
+// AISearchLog records query logs and match feedback to drive continuous learning.
+type AISearchLog struct {
+	ID                uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Query             string    `gorm:"type:text;not null" json:"query"`
+	MatchedConcept    string    `gorm:"size:100" json:"matched_concept"`
+	UrgencyScore      float64   `gorm:"default:0" json:"urgency_score"`
+	SentimentPolarity string    `gorm:"size:20" json:"sentiment_polarity"`
+	PrimarySentiment  string    `gorm:"size:50" json:"primary_sentiment"`
+	ResultCount       int       `gorm:"default:0" json:"result_count"`
+	CreatedAt         time.Time `gorm:"autoCreateTime" json:"created_at"`
+}
+
+func (AISearchLog) TableName() string { return "services_ai_search_log" }
 
 type Favorite struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`

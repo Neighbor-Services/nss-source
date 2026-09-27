@@ -57,3 +57,14 @@ type FlashDispatchRepository interface {
 	Update(ctx context.Context, dispatch *entity.FlashDispatch) error
 }
 
+type AIKnowledgeRepository interface {
+	UpsertKnowledge(ctx context.Context, item *entity.CatalogKnowledgeIndex) error
+	BatchUpsertKnowledge(ctx context.Context, items []entity.CatalogKnowledgeIndex) error
+	GetAllKnowledge(ctx context.Context) ([]entity.CatalogKnowledgeIndex, error)
+	GetKnowledgeByConcept(ctx context.Context, concept string) ([]entity.CatalogKnowledgeIndex, error)
+	GetDynamicSuggestions(ctx context.Context, limit int) ([]entity.CatalogKnowledgeIndex, error)
+	RecordSearchLog(ctx context.Context, log *entity.AISearchLog) error
+	IncrementSearchUsage(ctx context.Context, queryOrKeyword string) error
+}
+
+
