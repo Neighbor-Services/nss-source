@@ -15,7 +15,7 @@ type ProfileUseCase interface {
 	UpdateProfilePicture(ctx context.Context, userID uuid.UUID, imageURL string) (*entity.Profile, error)
 	GetAbout(ctx context.Context, userID uuid.UUID) (*entity.About, error)
 	UpdateAbout(ctx context.Context, userID uuid.UUID, updates map[string]interface{}) (*entity.About, error)
-	GetPortfolios(ctx context.Context, userID uuid.UUID) ([]entity.Portfolio, error)
+	GetPortfolios(ctx context.Context, userID uuid.UUID, profileID *uuid.UUID) ([]entity.Portfolio, error)
 	CreatePortfolio(ctx context.Context, userID uuid.UUID, item *entity.Portfolio) (*entity.Portfolio, error)
 	DeletePortfolio(ctx context.Context, userID uuid.UUID, itemID uuid.UUID) error
 	GetServicePackages(ctx context.Context, userID uuid.UUID) ([]entity.ServicePackage, error)

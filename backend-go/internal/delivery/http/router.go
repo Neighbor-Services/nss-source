@@ -153,26 +153,47 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 
 			// About ViewSet — GET routes are public for guest browsing
 			acc.GET("/about/", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetAbout)
+			acc.GET("/about", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetAbout)
 			acc.GET("/about/user/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.GetAboutUser)
+			acc.GET("/about/user", middleware.AuthRequired(deps.Config), deps.ProfileHandler.GetAboutUser)
 			acc.POST("/about/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.UpdateAbout)
+			acc.POST("/about", middleware.AuthRequired(deps.Config), deps.ProfileHandler.UpdateAbout)
 			acc.GET("/about/:id/", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetAbout)
+			acc.GET("/about/:id", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetAbout)
 			acc.PATCH("/about/:id/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.UpdateAbout)
+			acc.PATCH("/about/:id", middleware.AuthRequired(deps.Config), deps.ProfileHandler.UpdateAbout)
 
 			// Portfolio ViewSet — GET routes are public for guest browsing
 			acc.GET("/portfolio/", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetPortfolios)
+			acc.GET("/portfolio", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetPortfolios)
 			acc.POST("/portfolio/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreatePortfolio)
+			acc.POST("/portfolio", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreatePortfolio)
 			acc.DELETE("/portfolio/:id/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeletePortfolio)
+			acc.DELETE("/portfolio/:id", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeletePortfolio)
 
 			// Service Packages ViewSet — GET routes are public for guest browsing
 			acc.GET("/service-packages/", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetServicePackages)
+			acc.GET("/service-packages", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetServicePackages)
 			acc.POST("/service-packages/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreateServicePackage)
+			acc.POST("/service-packages", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreateServicePackage)
 			acc.DELETE("/service-packages/:id/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeleteServicePackage)
+			acc.DELETE("/service-packages/:id", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeleteServicePackage)
 		}
 
 		// Also mount directly under v1 for mobile client route variants
+		v1.GET("/portfolio/", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetPortfolios)
+		v1.GET("/portfolio", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetPortfolios)
+		v1.POST("/portfolio/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreatePortfolio)
+		v1.POST("/portfolio", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreatePortfolio)
+		v1.DELETE("/portfolio/:id/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeletePortfolio)
+		v1.DELETE("/portfolio/:id", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeletePortfolio)
+
 		v1.GET("/service-packages/", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetServicePackages)
+		v1.GET("/service-packages", middleware.AuthOptional(deps.Config), deps.ProfileHandler.GetServicePackages)
 		v1.POST("/service-packages/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreateServicePackage)
+		v1.POST("/service-packages", middleware.AuthRequired(deps.Config), deps.ProfileHandler.CreateServicePackage)
 		v1.DELETE("/service-packages/:id/", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeleteServicePackage)
+		v1.DELETE("/service-packages/:id", middleware.AuthRequired(deps.Config), deps.ProfileHandler.DeleteServicePackage)
 
 		// ─── SERVICES ────────────────────────────────────────────────────────
 		srv := v1.Group("/services")

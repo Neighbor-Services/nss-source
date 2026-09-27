@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"backend-go/internal/domain/entity"
@@ -12,6 +13,7 @@ import (
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/pkg/media"
 	"backend-go/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -326,14 +328,26 @@ func (h *ProfileHandler) UpdateAbout(c *gin.Context) {
 }
 
 func (h *ProfileHandler) GetPortfolios(c *gin.Context) {
+	var profileUUID *uuid.UUID
+	profileIDStr := c.Query("profile_id")
+	if profileIDStr != "" {
+		if pID, err := uuid.Parse(profileIDStr); err == nil {
+			profileUUID = &pID
+		}
+	}
+
 	userIDStr := c.GetString("userID")
-	userUUID, err := uuid.Parse(userIDStr)
-	if err != nil {
+	var userUUID uuid.UUID
+	if userIDStr != "" {
+		userUUID, _ = uuid.Parse(userIDStr)
+	}
+
+	if userUUID == uuid.Nil && profileUUID == nil {
 		response.Unauthorized(c, "Authentication required")
 		return
 	}
 
-	portfolios, err := h.profileUC.GetPortfolios(c.Request.Context(), userUUID)
+	portfolios, err := h.profileUC.GetPortfolios(c.Request.Context(), userUUID, profileUUID)
 	if err != nil {
 		response.InternalError(c, "Failed to load portfolios")
 		return
@@ -353,12 +367,12 @@ func (h *ProfileHandler) CreatePortfolio(c *gin.Context) {
 	var item entity.Portfolio
 	file, err := c.FormFile("image")
 	if err == nil {
-		mediaDir := media.ResolveMediaDir("portfolio")
-		filename := fmt.Sprintf("portfolio_%d_%s", time.Now().UnixNano(), filepath.Base(file.Filename))
-		savePath := filepath.Join(mediaDir, filename)
-		if err := c.SaveUploadedFile(file, savePath); err == nil {
-			item.Image = "/media/portfolio/" + filename
+		savedRelPath, saveErr := media.ValidateAndSaveUploadedFile(file, "portfolio", 15*1024*1024)
+		if saveErr != nil {
+			response.BadRequest(c, saveErr.Error())
+			return
 		}
+		item.Image = "/media/" + strings.TrimPrefix(savedRelPath, "/")
 		item.Description = c.PostForm("description")
 	} else {
 		if err := c.ShouldBindJSON(&item); err != nil {

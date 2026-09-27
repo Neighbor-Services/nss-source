@@ -266,7 +266,10 @@ func (u *profileUseCase) UpdateProfilePicture(ctx context.Context, userID uuid.U
 	return profile, nil
 }
 
-func (u *profileUseCase) GetPortfolios(ctx context.Context, userID uuid.UUID) ([]entity.Portfolio, error) {
+func (u *profileUseCase) GetPortfolios(ctx context.Context, userID uuid.UUID, profileID *uuid.UUID) ([]entity.Portfolio, error) {
+	if profileID != nil && *profileID != uuid.Nil {
+		return u.portfolioRepo.ListByProfileID(ctx, *profileID)
+	}
 	profile, err := u.profileRepo.GetByUserID(ctx, userID)
 	if err != nil || profile == nil {
 		return nil, errors.New("profile not found")
@@ -279,6 +282,12 @@ func (u *profileUseCase) CreatePortfolio(ctx context.Context, userID uuid.UUID, 
 	if err != nil || profile == nil {
 		return nil, errors.New("profile not found")
 	}
+
+	existing, _ := u.portfolioRepo.ListByProfileID(ctx, profile.ID)
+	if len(existing) >= 10 {
+		return nil, errors.New("maximum limit of 10 portfolio photos reached")
+	}
+
 	item.ID = uuid.New()
 	item.ProfileID = profile.ID
 	item.CreatedAt = time.Now()
