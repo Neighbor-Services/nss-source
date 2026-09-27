@@ -267,7 +267,7 @@ func (r *serviceRequestRepository) Update(ctx context.Context, req *entity.Servi
 }
 
 func (r *serviceRequestRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.ServiceRequest{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.ServiceRequest{}, "id = ?", id).Error
 }
 
 type proposalRepository struct {
@@ -337,7 +337,7 @@ func (r *proposalRepository) Update(ctx context.Context, proposal *entity.Propos
 }
 
 func (r *proposalRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.Proposal{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.Proposal{}, "id = ?", id).Error
 }
 
 type flashDispatchRepository struct {

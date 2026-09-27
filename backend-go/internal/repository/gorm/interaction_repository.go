@@ -143,7 +143,7 @@ func (r *appointmentRepository) Update(ctx context.Context, apt *entity.Appointm
 }
 
 func (r *appointmentRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.Appointment{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.Appointment{}, "id = ?", id).Error
 }
 
 func (r *appointmentRepository) CheckConflict(ctx context.Context, providerID uuid.UUID, scheduledTime time.Time) (bool, error) {

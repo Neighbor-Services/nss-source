@@ -108,7 +108,7 @@ func (r *userSubscriptionRepository) Upsert(ctx context.Context, sub *entity.Use
 }
 
 func (r *userSubscriptionRepository) DeleteByUserID(ctx context.Context, userID uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&entity.UserSubscription{}).Error
+	return r.db.WithContext(ctx).Where("user_id = ?", userID).Unscoped().Delete(&entity.UserSubscription{}).Error
 }
 
 type walletRepository struct {

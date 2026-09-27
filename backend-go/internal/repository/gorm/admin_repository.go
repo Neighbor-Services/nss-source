@@ -162,7 +162,55 @@ func (r *adminRepository) UpdateUser(ctx context.Context, user *entity.User) err
 }
 
 func (r *adminRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.User{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 1. Hard delete profile and profile relations
+		var profileIDs []uuid.UUID
+		_ = tx.Table("accounts_profile").Where("user_id = ?", id).Pluck("id", &profileIDs).Error
+
+		if len(profileIDs) > 0 {
+			_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE profile_id IN ?", profileIDs).Error
+			_ = tx.Table("accounts_portfolio").Where("profile_id IN ?", profileIDs).Unscoped().Delete(&entity.Portfolio{}).Error
+			_ = tx.Table("accounts_servicepackage").Where("profile_id IN ?", profileIDs).Unscoped().Delete(&entity.ServicePackage{}).Error
+			_ = tx.Table("accounts_profile").Where("id IN ?", profileIDs).Unscoped().Delete(&entity.Profile{}).Error
+		}
+
+		// 2. Wallets & Transactions
+		var walletIDs []uuid.UUID
+		_ = tx.Table("wallets_wallet").Where("user_id = ?", id).Pluck("id", &walletIDs).Error
+		if len(walletIDs) > 0 {
+			_ = tx.Table("wallets_transaction").Where("wallet_id IN ?", walletIDs).Unscoped().Delete(&entity.WalletTransaction{}).Error
+			_ = tx.Table("wallets_wallet").Where("id IN ?", walletIDs).Unscoped().Delete(&entity.Wallet{}).Error
+		}
+
+		// 3. Subscriptions & Tokens
+		_ = tx.Table("subscriptions_usersubscription").Where("user_id = ?", id).Unscoped().Delete(&entity.UserSubscription{}).Error
+		_ = tx.Table("accounts_devicetoken").Where("user_id = ?", id).Unscoped().Delete(&entity.DeviceToken{}).Error
+
+		// 4. Verifications & Background Checks
+		_ = tx.Table("verifications_providerverification").Where("provider_id = ?", id).Unscoped().Delete(&entity.ProviderVerification{}).Error
+		_ = tx.Table("provider_verifications").Where("provider_id = ?", id).Unscoped().Delete(&entity.ProviderVerification{}).Error
+		_ = tx.Table("background_checks").Where("provider_id = ?", id).Unscoped().Delete(&entity.BackgroundCheck{}).Error
+
+		// 5. Staff Notes & Fraud Risk
+		_ = tx.Table("staff_notes").Where("user_id = ? OR author_id = ?", id, id).Unscoped().Delete(&entity.StaffNote{}).Error
+		_ = tx.Table("fraud_risk_alerts").Where("user_id = ?", id).Unscoped().Delete(&entity.FraudRiskAlert{}).Error
+
+		// 6. Set null or cascade audit logs / resolutions / disputes
+		_ = tx.Table("audit_logs").Where("user_id = ?", id).Update("user_id", nil).Error
+		_ = tx.Table("resolution_reports").Where("user_id = ? OR reporter_id = ? OR reported_user_id = ?", id, id, id).Unscoped().Delete(&entity.ResolutionReport{}).Error
+		_ = tx.Table("disputes").Where("raised_by_id = ? OR respondent_id = ?", id, id).Unscoped().Delete(&entity.Dispute{}).Error
+
+		// 7. Reviews
+		_ = tx.Table("reviews").Where("author_id = ? OR target_user_id = ?", id, id).Unscoped().Delete(&entity.Review{}).Error
+
+		// 8. Service requests, proposals, appointments
+		_ = tx.Table("service_proposals").Where("provider_id = ?", id).Unscoped().Delete(&entity.Proposal{}).Error
+		_ = tx.Table("appointments").Where("seeker_id = ? OR provider_id = ?", id, id).Unscoped().Delete(&entity.Appointment{}).Error
+		_ = tx.Table("service_requests").Where("user_id = ? OR target_provider_id = ?", id, id).Unscoped().Delete(&entity.ServiceRequest{}).Error
+
+		// 9. Finally hard-delete user
+		return tx.Unscoped().Delete(&entity.User{}, "id = ?", id).Error
+	})
 }
 
 func (r *adminRepository) ListVerifications(ctx context.Context, status string, limit, offset int) ([]entity.ProviderVerification, int64, error) {
@@ -414,7 +462,7 @@ func (r *adminRepository) UpdateSubscriptionPlan(ctx context.Context, plan *enti
 }
 
 func (r *adminRepository) DeleteSubscriptionPlan(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.SubscriptionPlan{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.SubscriptionPlan{}, "id = ?", id).Error
 }
 
 func (r *adminRepository) ListWallets(ctx context.Context, limit, offset int) ([]entity.Wallet, int64, error) {
@@ -459,11 +507,11 @@ func (r *adminRepository) DeleteCategory(ctx context.Context, id uuid.UUID) erro
 		if err := tx.Model(&entity.CatalogService{}).Where("category_id = ?", id).Pluck("id", &catalogServiceIDs).Error; err == nil && len(catalogServiceIDs) > 0 {
 			_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE catalog_service_id IN ?", catalogServiceIDs).Error
 			_ = tx.Model(&entity.ServiceRequest{}).Where("catalog_service_id IN ?", catalogServiceIDs).Update("catalog_service_id", nil).Error
-			if err := tx.Where("id IN ?", catalogServiceIDs).Delete(&entity.CatalogService{}).Error; err != nil {
+			if err := tx.Where("id IN ?", catalogServiceIDs).Unscoped().Delete(&entity.CatalogService{}).Error; err != nil {
 				return err
 			}
 		}
-		return tx.Delete(&entity.Category{}, "id = ?", id).Error
+		return tx.Unscoped().Delete(&entity.Category{}, "id = ?", id).Error
 	})
 }
 
@@ -494,7 +542,7 @@ func (r *adminRepository) DeleteCatalogService(ctx context.Context, id uuid.UUID
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE catalog_service_id = ?", id).Error
 		_ = tx.Model(&entity.ServiceRequest{}).Where("catalog_service_id = ?", id).Update("catalog_service_id", nil).Error
-		return tx.Delete(&entity.CatalogService{}, "id = ?", id).Error
+		return tx.Unscoped().Delete(&entity.CatalogService{}, "id = ?", id).Error
 	})
 }
 
@@ -838,7 +886,10 @@ func (r *adminRepository) UpdateRole(ctx context.Context, role *entity.AdminRole
 }
 
 func (r *adminRepository) DeleteRole(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.AdminRole{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		_ = tx.Model(&entity.User{}).Where("admin_role_id = ?", id).Update("admin_role_id", nil).Error
+		return tx.Unscoped().Delete(&entity.AdminRole{}, "id = ?", id).Error
+	})
 }
 
 // ─── FRAUD & RISK DETECTION ─────────────────────────────────────────────────
@@ -1086,7 +1137,7 @@ func (r *adminRepository) CreateStaffNote(ctx context.Context, note *entity.Staf
 }
 
 func (r *adminRepository) DeleteStaffNote(ctx context.Context, noteID uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.StaffNote{}, "id = ?", noteID).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.StaffNote{}, "id = ?", noteID).Error
 }
 
 // ─── LIVE NOTIFICATION FEED ──────────────────────────────────────────────────
@@ -1304,7 +1355,7 @@ func (r *adminRepository) ToggleReviewVisibility(ctx context.Context, id uuid.UU
 }
 
 func (r *adminRepository) DeleteReview(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.Review{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.Review{}, "id = ?", id).Error
 }
 
 // ─── PROMO CODES & MARKETING CAMPAIGNS ───────────────────────────────────────
@@ -1331,7 +1382,7 @@ func (r *adminRepository) UpdatePromoCode(ctx context.Context, promo *entity.Pro
 
 func (r *adminRepository) DeletePromoCode(ctx context.Context, id uuid.UUID) error {
 	_ = r.db.AutoMigrate(&entity.PromoCode{})
-	return r.db.WithContext(ctx).Delete(&entity.PromoCode{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.PromoCode{}, "id = ?", id).Error
 }
 
 // ─── DISPUTE REFUND EXECUTION ────────────────────────────────────────────────
@@ -1450,7 +1501,7 @@ func (r *adminRepository) UpdateLegalDocument(ctx context.Context, doc *entity.L
 
 func (r *adminRepository) DeleteLegalDocument(ctx context.Context, id uuid.UUID) error {
 	_ = r.db.AutoMigrate(&entity.LegalDocument{})
-	return r.db.WithContext(ctx).Delete(&entity.LegalDocument{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.LegalDocument{}, "id = ?", id).Error
 }
 
 // ─── SUPPORT MESSAGES & INQUIRIES ───────────────────────────────────────────
@@ -1484,7 +1535,7 @@ func (r *adminRepository) ToggleContactMessageResolved(ctx context.Context, id u
 
 func (r *adminRepository) DeleteContactMessage(ctx context.Context, id uuid.UUID) error {
 	_ = r.db.AutoMigrate(&entity.ContactMessage{})
-	return r.db.WithContext(ctx).Delete(&entity.ContactMessage{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.ContactMessage{}, "id = ?", id).Error
 }
 
 // ─── RESOLUTION REPORTS ─────────────────────────────────────────────────────
@@ -1518,7 +1569,7 @@ func (r *adminRepository) ToggleResolutionReportReviewed(ctx context.Context, id
 
 func (r *adminRepository) DeleteResolutionReport(ctx context.Context, id uuid.UUID) error {
 	_ = r.db.AutoMigrate(&entity.ResolutionReport{})
-	return r.db.WithContext(ctx).Delete(&entity.ResolutionReport{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.ResolutionReport{}, "id = ?", id).Error
 }
 
 // ─── PUBLIC SITE CMS ────────────────────────────────────────────────────────
@@ -1556,7 +1607,7 @@ func (r *adminRepository) UpdateFAQ(ctx context.Context, faq *entity.FAQ) error 
 
 func (r *adminRepository) DeleteFAQ(ctx context.Context, id uuid.UUID) error {
 	_ = r.db.AutoMigrate(&entity.FAQ{})
-	return r.db.WithContext(ctx).Delete(&entity.FAQ{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.FAQ{}, "id = ?", id).Error
 }
 
 func (r *adminRepository) ListTestimonials(ctx context.Context, isActive *bool) ([]entity.Testimonial, error) {
@@ -1586,7 +1637,7 @@ func (r *adminRepository) UpdateTestimonial(ctx context.Context, t *entity.Testi
 
 func (r *adminRepository) DeleteTestimonial(ctx context.Context, id uuid.UUID) error {
 	_ = r.db.AutoMigrate(&entity.Testimonial{})
-	return r.db.WithContext(ctx).Delete(&entity.Testimonial{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.Testimonial{}, "id = ?", id).Error
 }
 
 func (r *adminRepository) GetHeroSection(ctx context.Context) (*entity.HeroSection, error) {
@@ -1630,7 +1681,7 @@ func (r *adminRepository) UpdateSiteStat(ctx context.Context, stat *entity.SiteS
 
 func (r *adminRepository) DeleteSiteStat(ctx context.Context, id uuid.UUID) error {
 	_ = r.db.AutoMigrate(&entity.SiteStat{})
-	return r.db.WithContext(ctx).Delete(&entity.SiteStat{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&entity.SiteStat{}, "id = ?", id).Error
 }
 
 func (r *adminRepository) GetAboutContent(ctx context.Context) (*entity.AboutContent, error) {

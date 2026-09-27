@@ -83,5 +83,5 @@ func (r *deviceTokenRepository) ListByUser(ctx context.Context, userID uuid.UUID
 }
 
 func (r *deviceTokenRepository) DeleteByToken(ctx context.Context, token string) error {
-	return r.db.WithContext(ctx).Where("token = ?", token).Delete(&entity.DeviceToken{}).Error
+	return r.db.WithContext(ctx).Where("token = ?", token).Unscoped().Delete(&entity.DeviceToken{}).Error
 }

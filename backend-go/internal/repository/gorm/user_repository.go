@@ -54,7 +54,20 @@ func (r *userRepository) Update(ctx context.Context, user *entity.User) error {
 }
 
 func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&entity.User{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var profileIDs []uuid.UUID
+		_ = tx.Table("accounts_profile").Where("user_id = ?", id).Pluck("id", &profileIDs).Error
+		if len(profileIDs) > 0 {
+			_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE profile_id IN ?", profileIDs).Error
+			_ = tx.Table("accounts_portfolio").Where("profile_id IN ?", profileIDs).Unscoped().Delete(&entity.Portfolio{}).Error
+			_ = tx.Table("accounts_servicepackage").Where("profile_id IN ?", profileIDs).Unscoped().Delete(&entity.ServicePackage{}).Error
+			_ = tx.Table("accounts_profile").Where("id IN ?", profileIDs).Unscoped().Delete(&entity.Profile{}).Error
+		}
+		_ = tx.Table("subscriptions_usersubscription").Where("user_id = ?", id).Unscoped().Delete(&entity.UserSubscription{}).Error
+		_ = tx.Table("accounts_devicetoken").Where("user_id = ?", id).Unscoped().Delete(&entity.DeviceToken{}).Error
+		_ = tx.Table("wallets_wallet").Where("user_id = ?", id).Unscoped().Delete(&entity.Wallet{}).Error
+		return tx.Unscoped().Delete(&entity.User{}, "id = ?", id).Error
+	})
 }
 
 func (r *userRepository) CountByEmail(ctx context.Context, email string) (int64, error) {
@@ -344,7 +357,7 @@ func (r *portfolioRepository) Create(ctx context.Context, portfolio *entity.Port
 }
 
 func (r *portfolioRepository) Delete(ctx context.Context, id uuid.UUID, profileID uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("id = ? AND profile_id = ?", id, profileID).Delete(&entity.Portfolio{}).Error
+	return r.db.WithContext(ctx).Where("id = ? AND profile_id = ?", id, profileID).Unscoped().Delete(&entity.Portfolio{}).Error
 }
 
 // Service Package Repository Implementation
@@ -371,7 +384,7 @@ func (r *servicePackageRepository) Update(ctx context.Context, pkg *entity.Servi
 }
 
 func (r *servicePackageRepository) Delete(ctx context.Context, id uuid.UUID, profileID uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("id = ? AND profile_id = ?", id, profileID).Delete(&entity.ServicePackage{}).Error
+	return r.db.WithContext(ctx).Where("id = ? AND profile_id = ?", id, profileID).Unscoped().Delete(&entity.ServicePackage{}).Error
 }
 
 // Legal Document Repository
