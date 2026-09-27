@@ -549,6 +549,18 @@ func (m *mockAdminRepo) GetAboutContent(ctx context.Context) (*entity.AboutConte
 func (m *mockAdminRepo) UpdateAboutContent(ctx context.Context, about *entity.AboutContent) error {
 	return nil
 }
+func (m *mockAdminRepo) ListDispatchIncidents(ctx context.Context, status string) ([]entity.DispatchIncidentSummary, error) {
+	return []entity.DispatchIncidentSummary{}, nil
+}
+func (m *mockAdminRepo) OverrideDispatchIncident(ctx context.Context, incidentID uuid.UUID, action string, targetProviderID *uuid.UUID, extendRadiusKm float64, reason string, adminID uuid.UUID) error {
+	return nil
+}
+func (m *mockAdminRepo) GetGeospatialProviderFleet(ctx context.Context) ([]entity.ProviderFleetTelemetry, error) {
+	return []entity.ProviderFleetTelemetry{}, nil
+}
+func (m *mockAdminRepo) GetSystemMetrics(ctx context.Context) (*entity.SystemMetricsSummary, error) {
+	return &entity.SystemMetricsSummary{}, nil
+}
 
 func TestAdminUseCase_DashboardAndUserOperations(t *testing.T) {
 	adminID := uuid.New()

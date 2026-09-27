@@ -506,6 +506,22 @@ func (m *mockAdminUseCase) GetBackupSnapshot(ctx context.Context, adminID uuid.U
 	return &entity.BackupSnapshot{ID: uuid.New(), Filename: idOrFilename}, m.err
 }
 
+func (m *mockAdminUseCase) ListDispatchIncidents(ctx context.Context, adminID uuid.UUID, status string) ([]entity.DispatchIncidentSummary, error) {
+	return []entity.DispatchIncidentSummary{}, m.err
+}
+
+func (m *mockAdminUseCase) OverrideDispatchIncident(ctx context.Context, adminID, incidentID uuid.UUID, action string, targetProviderID *uuid.UUID, extendRadiusKm float64, reason string) error {
+	return m.err
+}
+
+func (m *mockAdminUseCase) GetGeospatialProviderFleet(ctx context.Context, adminID uuid.UUID) ([]entity.ProviderFleetTelemetry, error) {
+	return []entity.ProviderFleetTelemetry{}, m.err
+}
+
+func (m *mockAdminUseCase) GetSystemMetrics(ctx context.Context, adminID uuid.UUID) (*entity.SystemMetricsSummary, error) {
+	return &entity.SystemMetricsSummary{}, m.err
+}
+
 func setupAdminTestRouter(uc domainUsecase.AdminUseCase) (*gin.Engine, *handler.AdminHandler) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
