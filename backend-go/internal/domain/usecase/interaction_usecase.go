@@ -19,6 +19,7 @@ type InteractionUseCase interface {
 	CreateAppointment(ctx context.Context, customerID uuid.UUID, apt *entity.Appointment) (*entity.Appointment, error)
 	VerifyArrivalCode(ctx context.Context, providerID, appointmentID uuid.UUID, code string) (*entity.Appointment, error)
 	NotifyOnTheWay(ctx context.Context, providerID, appointmentID uuid.UUID) (*entity.Appointment, error)
+	NotifyArrived(ctx context.Context, providerID, appointmentID uuid.UUID, providerLat, providerLng *float64) (*entity.Appointment, error)
 	CompleteAppointment(ctx context.Context, userID, appointmentID uuid.UUID, amount float64) (fundsReleased float64, commission float64, err error)
 	CancelAppointment(ctx context.Context, userID, appointmentID uuid.UUID) error
 

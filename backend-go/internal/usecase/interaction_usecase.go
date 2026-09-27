@@ -416,6 +416,68 @@ func (u *interactionUseCase) NotifyOnTheWay(ctx context.Context, providerID, app
 	return apt, nil
 }
 
+func (u *interactionUseCase) NotifyArrived(ctx context.Context, providerID, appointmentID uuid.UUID, providerLat, providerLng *float64) (*entity.Appointment, error) {
+	apt, err := u.aptRepo.GetByID(ctx, appointmentID)
+	if err != nil {
+		return nil, errors.New("appointment not found")
+	}
+
+	if apt.ProviderID != providerID {
+		return nil, errors.New("only the provider can send arrival notification")
+	}
+
+	if apt.Status == "COMPLETED" || apt.Status == "CANCELLED" {
+		return nil, fmt.Errorf("appointment is already %s", strings.ToLower(apt.Status))
+	}
+
+	providerName := "Your service provider"
+	if pProfile, err := u.profileRepo.GetByID(ctx, providerID); err == nil && pProfile != nil && pProfile.FirstName != "" {
+		if pProfile.LastName != "" {
+			providerName = fmt.Sprintf("%s %s", pProfile.FirstName, pProfile.LastName)
+		} else {
+			providerName = pProfile.FirstName
+		}
+	}
+
+	now := time.Now().UTC()
+	apt.Status = "ARRIVED"
+	apt.UpdatedAt = now
+	_ = u.aptRepo.Update(ctx, apt)
+
+	title := "📍 Provider Has Arrived!"
+	msg := fmt.Sprintf("%s has arrived at your location for '%s'. Please meet them outside.", providerName, apt.Title)
+
+	if u.notifRepo != nil {
+		notif := entity.Notification{
+			ID:               uuid.New(),
+			UserID:           apt.SeekerID,
+			SenderID:         &providerID,
+			NotificationType: "TRACKING",
+			Title:            title,
+			Message:          msg,
+			Data: entity.JSONMap{
+				"notification_type": "provider_arrived",
+				"appointment_id":    apt.ID.String(),
+				"request_id":        apt.ID.String(),
+				"provider_lat":      providerLat,
+				"provider_lng":      providerLng,
+				"arrived_at":        now.Format(time.RFC3339),
+			},
+			CreatedAt: now,
+		}
+		_ = u.notifRepo.Create(ctx, &notif)
+	}
+
+	u.sendPush(apt.SeekerID, title, msg, map[string]string{
+		"notification_type": "provider_arrived",
+		"appointment_id":    apt.ID.String(),
+		"request_id":        apt.ID.String(),
+		"sender_id":         providerID.String(),
+	})
+
+	return apt, nil
+}
+
 func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, appointmentID uuid.UUID, amount float64) (float64, float64, error) {
 	apt, err := u.aptRepo.GetByID(ctx, appointmentID)
 	if err != nil {
