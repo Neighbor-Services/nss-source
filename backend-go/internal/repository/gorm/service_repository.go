@@ -357,11 +357,15 @@ func (r *flashDispatchRepository) GetByID(ctx context.Context, id uuid.UUID) (*e
 	err := r.db.WithContext(ctx).
 		Preload("Seeker").
 		Preload("Seeker.Profile").
-		Preload("AcceptedProvider").
-		Preload("AcceptedProvider.User").
 		First(&d, "id = ?", id).Error
 	if err != nil {
 		return nil, err
+	}
+	if d.AcceptedProviderID != nil {
+		var prof entity.Profile
+		if err := r.db.WithContext(ctx).Preload("User").First(&prof, "id = ?", *d.AcceptedProviderID).Error; err == nil {
+			d.AcceptedProvider = &prof
+		}
 	}
 	return &d, nil
 }

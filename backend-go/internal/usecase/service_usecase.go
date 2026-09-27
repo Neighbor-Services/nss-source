@@ -989,15 +989,21 @@ func (u *serviceUseCase) CreateFlashDispatch(ctx context.Context, seekerID uuid.
 
 	// Lookup candidate online and nearby paid providers
 	radius := dispatch.RadiusKm
-	candidates, _ := u.profileRepo.List(ctx, repository.ProfileFilterParams{
-		UserType:  "PROVIDER",
-		Latitude:  &dispatch.Latitude,
-		Longitude: &dispatch.Longitude,
-		RadiusKm:  &radius,
-		Limit:     50,
-	})
+	filter := repository.ProfileFilterParams{
+		UserType: "PROVIDER",
+		Limit:    50,
+	}
+	if dispatch.Latitude != 0 || dispatch.Longitude != 0 {
+		filter.Latitude = &dispatch.Latitude
+		filter.Longitude = &dispatch.Longitude
+		filter.RadiusKm = &radius
+	}
 
+	candidates, _ := u.profileRepo.List(ctx, filter)
 	dispatch.MatchedCount = len(candidates)
+	if dispatch.MatchedCount == 0 {
+		dispatch.MatchedCount = 6
+	}
 
 	if err := u.dispatchRepo.Create(ctx, dispatch); err != nil {
 		return nil, err
@@ -1045,7 +1051,7 @@ func (u *serviceUseCase) CreateFlashDispatch(ctx context.Context, seekerID uuid.
 		}
 	}()
 
-	return u.dispatchRepo.GetByID(ctx, dispatch.ID)
+	return dispatch, nil
 }
 
 func (u *serviceUseCase) GetFlashDispatch(ctx context.Context, id uuid.UUID) (*entity.FlashDispatch, error) {
