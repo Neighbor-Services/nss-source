@@ -388,6 +388,15 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 	if err != nil {
 		return nil, err
 	}
+	var filtered []entity.ServiceRequest
+	for _, req := range requests {
+		if normType == "PROVIDER" && req.UserID == userID {
+			continue // Prevent provider from seeing their own request
+		}
+		filtered = append(filtered, req)
+	}
+	requests = filtered
+
 	for i := range requests {
 		u.enrichServiceRequest(ctx, &requests[i])
 	}
