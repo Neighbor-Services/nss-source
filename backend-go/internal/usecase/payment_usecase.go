@@ -457,15 +457,23 @@ func (u *paymentUseCase) StripeOnboard(ctx context.Context, userID uuid.UUID, em
 		return nil, errors.New("Wallet not found")
 	}
 
+	if email == "" && u.profileRepo != nil {
+		if prof, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && prof != nil && prof.User != nil {
+			email = prof.User.Email
+		}
+	}
+
 	if wallet.StripeConnectID == "" && u.cfg != nil && u.cfg.StripeSecretKey != "" {
 		acctParams := &stripe.AccountParams{
 			Type:    stripe.String(string(stripe.AccountTypeExpress)),
 			Country: stripe.String("US"),
-			Email:   stripe.String(email),
 			Capabilities: &stripe.AccountCapabilitiesParams{
 				CardPayments: &stripe.AccountCapabilitiesCardPaymentsParams{Requested: stripe.Bool(true)},
 				Transfers:    &stripe.AccountCapabilitiesTransfersParams{Requested: stripe.Bool(true)},
 			},
+		}
+		if email != "" {
+			acctParams.Email = stripe.String(email)
 		}
 		acct, err := account.New(acctParams)
 		if err != nil {

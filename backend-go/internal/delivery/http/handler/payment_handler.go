@@ -265,7 +265,10 @@ func (h *PaymentHandler) RequestPayout(c *gin.Context) {
 func (h *PaymentHandler) Onboard(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 	userUUID, _ := uuid.Parse(userIDStr)
-	emailStr := c.GetString("userEmail")
+	emailStr := c.GetString("email")
+	if emailStr == "" {
+		emailStr = c.GetString("userEmail")
+	}
 
 	res, err := h.paymentUC.StripeOnboard(c.Request.Context(), userUUID, emailStr)
 	if err != nil {
