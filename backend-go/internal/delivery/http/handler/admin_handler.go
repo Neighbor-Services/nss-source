@@ -2520,3 +2520,62 @@ func (h *AdminHandler) ListWebhookEvents(c *gin.Context) {
 		"count":  len(events),
 	})
 }
+
+// ─── LIVE SOS COMMAND CENTER & GEOSPATIAL FLEET ───────────────────────────────
+
+func (h *AdminHandler) ListDispatchIncidents(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	status := c.Query("status")
+	list, err := h.adminUC.ListDispatchIncidents(c.Request.Context(), adminID, status)
+	if err != nil {
+		response.InternalError(c, "Failed to fetch dispatch incidents: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, list)
+}
+
+func (h *AdminHandler) OverrideDispatchIncident(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	idStr := c.Param("id")
+	incidentID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid incident ID")
+		return
+	}
+
+	var req entity.DispatchOverrideRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid override request payload")
+		return
+	}
+
+	if err := h.adminUC.OverrideDispatchIncident(c.Request.Context(), adminID, incidentID, req.Action, req.TargetProviderID, req.ExtendRadiusKm, req.Reason); err != nil {
+		response.InternalError(c, "Failed to apply override: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":  "SUCCESS",
+		"message": fmt.Sprintf("Incident override %s applied successfully", req.Action),
+	})
+}
+
+func (h *AdminHandler) GetGeospatialProviderFleet(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	fleet, err := h.adminUC.GetGeospatialProviderFleet(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to fetch provider fleet telemetry: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, fleet)
+}
+
+func (h *AdminHandler) GetSystemMetrics(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	metrics, err := h.adminUC.GetSystemMetrics(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to compute system metrics: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, metrics)
+}

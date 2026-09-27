@@ -207,5 +207,11 @@ type AdminRepository interface {
 
 	GetAboutContent(ctx context.Context) (*entity.AboutContent, error)
 	UpdateAboutContent(ctx context.Context, about *entity.AboutContent) error
+
+	// Live Dispatch Incident Command Center & Geospatial Fleet
+	ListDispatchIncidents(ctx context.Context, status string) ([]entity.DispatchIncidentSummary, error)
+	OverrideDispatchIncident(ctx context.Context, incidentID uuid.UUID, action string, targetProviderID *uuid.UUID, extendRadiusKm float64, reason string, adminID uuid.UUID) error
+	GetGeospatialProviderFleet(ctx context.Context) ([]entity.ProviderFleetTelemetry, error)
+	GetSystemMetrics(ctx context.Context) (*entity.SystemMetricsSummary, error)
 }
 

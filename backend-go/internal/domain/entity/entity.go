@@ -1197,6 +1197,76 @@ type EmailCampaignLog struct {
 
 func (EmailCampaignLog) TableName() string { return "email_campaign_logs" }
 
+// ─── LIVE SOS COMMAND CENTER & GEOSPATIAL TELEMETRY ───────────────────────────
+type DispatchIncidentSummary struct {
+	ID                 uuid.UUID  `json:"id"`
+	SeekerID           uuid.UUID  `json:"seeker_id"`
+	SeekerName         string     `json:"seeker_name"`
+	SeekerPhone        string     `json:"seeker_phone"`
+	SeekerAvatar       string     `json:"seeker_avatar"`
+	Title              string     `json:"title"`
+	Description        string     `json:"description"`
+	Status             string     `json:"status"` // BROADCASTING, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED, EXPIRED
+	Latitude           float64    `json:"latitude"`
+	Longitude          float64    `json:"longitude"`
+	Address            string     `json:"address"`
+	BroadcastRadiusKm  float64    `json:"broadcast_radius_km"`
+	MaxBudget          float64    `json:"max_budget"`
+	CandidateCount     int        `json:"candidate_count"`
+	AcceptedProviderID *uuid.UUID `json:"accepted_provider_id,omitempty"`
+	ProviderName       string     `json:"provider_name,omitempty"`
+	ProviderPhone      string     `json:"provider_phone,omitempty"`
+	ProviderLatitude   *float64   `json:"provider_latitude,omitempty"`
+	ProviderLongitude  *float64   `json:"provider_longitude,omitempty"`
+	EstimatedETA       string     `json:"estimated_eta,omitempty"`
+	ExpiresAt          time.Time  `json:"expires_at"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
+type DispatchOverrideRequest struct {
+	Action           string     `json:"action" binding:"required"` // REASSIGN, CANCEL, EXTEND_RADIUS
+	TargetProviderID *uuid.UUID `json:"target_provider_id,omitempty"`
+	ExtendRadiusKm   float64    `json:"extend_radius_km,omitempty"`
+	Reason           string     `json:"reason,omitempty"`
+}
+
+type ProviderFleetTelemetry struct {
+	ID                uuid.UUID `json:"id"`
+	UserID            uuid.UUID `json:"user_id"`
+	Name              string    `json:"name"`
+	Email             string    `json:"email"`
+	Phone             string    `json:"phone"`
+	Avatar            string    `json:"avatar"`
+	IsOnline          bool      `json:"is_online"`
+	IsBusy            bool      `json:"is_busy"`
+	CurrentStatus     string    `json:"current_status"` // IDLE, EN_ROUTE, ON_JOB, OFFLINE
+	Latitude          float64   `json:"latitude"`
+	Longitude         float64   `json:"longitude"`
+	Rating            float64   `json:"rating"`
+	CompletedJobs     int       `json:"completed_jobs"`
+	IdentityVerified  bool      `json:"identity_verified"`
+	BackgroundChecked bool      `json:"background_checked"`
+	PrimaryService    string    `json:"primary_service"`
+	LastActiveAt      time.Time `json:"last_active_at"`
+}
+
+type SystemMetricsSummary struct {
+	ActiveWebSockets    int64   `json:"active_websockets"`
+	GoroutineCount      int     `json:"goroutine_count"`
+	MemoryAllocMB       float64 `json:"memory_alloc_mb"`
+	MemoryTotalMB       float64 `json:"memory_total_mb"`
+	CPUUsagePct         float64 `json:"cpu_usage_pct"`
+	DBOpenConnections   int     `json:"db_open_connections"`
+	DBInUseConnections  int     `json:"db_in_use_connections"`
+	DBIdleConnections   int     `json:"db_idle_connections"`
+	TotalRequestsToday  int64   `json:"total_requests_today"`
+	DispatchesToday     int64   `json:"dispatches_today"`
+	ActiveEmergencies   int64   `json:"active_emergencies"`
+	CacheHitRatePct     float64 `json:"cache_hit_rate_pct"`
+	UptimeSeconds       int64   `json:"uptime_seconds"`
+}
+
 
 
 

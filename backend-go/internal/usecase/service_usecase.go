@@ -674,6 +674,14 @@ func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID
 
 
 func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID, proposalID uuid.UUID) (*entity.ServiceRequest, error) {
+	if u.cache != nil {
+		locked, _ := u.cache.AcquireLock(ctx, "req_approve:"+requestID.String(), 10*time.Second)
+		if !locked {
+			return nil, errors.New("This request is currently being approved.")
+		}
+		defer u.cache.ReleaseLock(ctx, "req_approve:"+requestID.String())
+	}
+
 	req, err := u.requestRepo.GetByID(ctx, requestID)
 	if err != nil {
 		return nil, errors.New("request not found")
@@ -1076,6 +1084,15 @@ func (u *serviceUseCase) GetFlashDispatch(ctx context.Context, id uuid.UUID) (*e
 }
 
 func (u *serviceUseCase) AcceptFlashDispatch(ctx context.Context, providerID, dispatchID uuid.UUID) (*entity.FlashDispatch, *entity.Appointment, error) {
+	// Distributed / In-Memory Lock to prevent race conditions during concurrent acceptance
+	if u.cache != nil {
+		locked, _ := u.cache.AcquireLock(ctx, "dispatch:"+dispatchID.String(), 10*time.Second)
+		if !locked {
+			return nil, nil, errors.New("This emergency request is currently being processed by another provider.")
+		}
+		defer u.cache.ReleaseLock(ctx, "dispatch:"+dispatchID.String())
+	}
+
 	d, err := u.dispatchRepo.GetByID(ctx, dispatchID)
 	if err != nil || d == nil {
 		return nil, nil, errors.New("flash dispatch not found")

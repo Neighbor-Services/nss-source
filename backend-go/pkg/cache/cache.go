@@ -15,6 +15,8 @@ type Cache interface {
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
 	Delete(ctx context.Context, keys ...string) error
 	DeleteByPattern(ctx context.Context, pattern string) error
+	AcquireLock(ctx context.Context, key string, expiration time.Duration) (bool, error)
+	ReleaseLock(ctx context.Context, key string) error
 	Ping(ctx context.Context) error
 	Close() error
 }
@@ -115,6 +117,26 @@ func (r *redisCache) DeleteByPattern(ctx context.Context, pattern string) error 
 		return r.client.Del(ctx, allKeys...).Err()
 	}
 	return nil
+}
+
+func (r *redisCache) AcquireLock(ctx context.Context, key string, expiration time.Duration) (bool, error) {
+	if r.client == nil {
+		return true, nil
+	}
+	lockKey := "lock:" + key
+	ok, err := r.client.SetNX(ctx, lockKey, "1", expiration).Result()
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+
+func (r *redisCache) ReleaseLock(ctx context.Context, key string) error {
+	if r.client == nil {
+		return nil
+	}
+	lockKey := "lock:" + key
+	return r.client.Del(ctx, lockKey).Err()
 }
 
 func (r *redisCache) Ping(ctx context.Context) error {

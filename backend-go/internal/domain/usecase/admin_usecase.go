@@ -246,6 +246,12 @@ type AdminUseCase interface {
 
 	GetAboutContent(ctx context.Context, adminID uuid.UUID) (*entity.AboutContent, error)
 	UpdateAboutContent(ctx context.Context, adminID uuid.UUID, about *entity.AboutContent) (*entity.AboutContent, error)
+
+	// Live Dispatch Incident Command Center & Geospatial Telemetry
+	ListDispatchIncidents(ctx context.Context, adminID uuid.UUID, status string) ([]entity.DispatchIncidentSummary, error)
+	OverrideDispatchIncident(ctx context.Context, adminID, incidentID uuid.UUID, action string, targetProviderID *uuid.UUID, extendRadiusKm float64, reason string) error
+	GetGeospatialProviderFleet(ctx context.Context, adminID uuid.UUID) ([]entity.ProviderFleetTelemetry, error)
+	GetSystemMetrics(ctx context.Context, adminID uuid.UUID) (*entity.SystemMetricsSummary, error)
 }
 
 type AssignSubscriptionInput struct {

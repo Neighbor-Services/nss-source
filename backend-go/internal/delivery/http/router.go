@@ -73,6 +73,10 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.GET("/readyz", deps.PublicHandler.ReadyCheck)
 	r.GET("/api/health", deps.PublicHandler.HealthCheck)
 	r.GET("/api/health/", deps.PublicHandler.HealthCheck)
+	if deps.AdminHandler != nil {
+		r.GET("/metrics", deps.AdminHandler.GetSystemMetrics)
+		r.GET("/metrics/", deps.AdminHandler.GetSystemMetrics)
+	}
 
 	// Public Site Forms & CMS (Root Level Django Match)
 	r.POST("/contact", deps.PublicHandler.SubmitContactMessage)
@@ -570,6 +574,16 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			admin.PATCH("/feature-flags/:key/", deps.AdminHandler.SetFeatureFlag)
 			admin.POST("/cache/clear", deps.AdminHandler.ClearCache)
 			admin.POST("/cache/clear/", deps.AdminHandler.ClearCache)
+
+			// Live SOS Incident Command Center & Telemetry
+			admin.GET("/dispatch/incidents", deps.AdminHandler.ListDispatchIncidents)
+			admin.GET("/dispatch/incidents/", deps.AdminHandler.ListDispatchIncidents)
+			admin.POST("/dispatch/incidents/:id/override", deps.AdminHandler.OverrideDispatchIncident)
+			admin.POST("/dispatch/incidents/:id/override/", deps.AdminHandler.OverrideDispatchIncident)
+			admin.GET("/telemetry/providers", deps.AdminHandler.GetGeospatialProviderFleet)
+			admin.GET("/telemetry/providers/", deps.AdminHandler.GetGeospatialProviderFleet)
+			admin.GET("/metrics", deps.AdminHandler.GetSystemMetrics)
+			admin.GET("/metrics/", deps.AdminHandler.GetSystemMetrics)
 
 			// Reports, System Health & GDPR
 			admin.GET("/system/health", deps.AdminHandler.GetSystemHealth)

@@ -1893,3 +1893,31 @@ func (u *adminUseCase) UpdateAboutContent(ctx context.Context, adminID uuid.UUID
 	return about, nil
 }
 
+// ─── LIVE SOS COMMAND CENTER & GEOSPATIAL TELEMETRY ───────────────────────────
+
+func (u *adminUseCase) ListDispatchIncidents(ctx context.Context, adminID uuid.UUID, status string) ([]entity.DispatchIncidentSummary, error) {
+	return u.adminRepo.ListDispatchIncidents(ctx, status)
+}
+
+func (u *adminUseCase) OverrideDispatchIncident(ctx context.Context, adminID, incidentID uuid.UUID, action string, targetProviderID *uuid.UUID, extendRadiusKm float64, reason string) error {
+	err := u.adminRepo.OverrideDispatchIncident(ctx, incidentID, action, targetProviderID, extendRadiusKm, reason, adminID)
+	if err != nil {
+		return err
+	}
+	u.logAudit(ctx, &adminID, "ADMIN_OVERRIDE_DISPATCH_INCIDENT", "FlashDispatch", incidentID.String(), map[string]interface{}{
+		"action":             action,
+		"reason":             reason,
+		"target_provider_id": targetProviderID,
+		"extend_radius_km":   extendRadiusKm,
+	})
+	return nil
+}
+
+func (u *adminUseCase) GetGeospatialProviderFleet(ctx context.Context, adminID uuid.UUID) ([]entity.ProviderFleetTelemetry, error) {
+	return u.adminRepo.GetGeospatialProviderFleet(ctx)
+}
+
+func (u *adminUseCase) GetSystemMetrics(ctx context.Context, adminID uuid.UUID) (*entity.SystemMetricsSummary, error) {
+	return u.adminRepo.GetSystemMetrics(ctx)
+}
+
