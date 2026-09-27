@@ -15,5 +15,6 @@ func init() {
 	GlobalRegistry.RegisterWorker("Automated Email Marketing Worker", "Marketing", "24h", "Dispatches personalized weekly provider digest and neighborhood promotional campaigns.")
 	GlobalRegistry.RegisterWorker("Inactive User Worker", "User Lifecycle", "24h", "Sends re-engagement reminders to accounts with no activity in 45+ days.")
 	GlobalRegistry.RegisterWorker("Expired OTP Cleanup Worker", "Security", "1h", "Flushes expired SMS OTPs, password reset nonces, and unverified registration codes.")
+	GlobalRegistry.RegisterWorker("AI Provider Sentiment & Indexing Worker", "AI & Search", "15m", "Pre-computes sentiment analysis, praise ratios, and vector indices for all active paid providers.")
 	GlobalRegistry.RegisterWorker("Database Backup Worker", "Infrastructure", "24h", "Generates daily automated PostgreSQL database snapshots with 14-day retention rotation.")
 }

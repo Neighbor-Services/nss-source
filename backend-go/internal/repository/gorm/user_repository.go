@@ -139,6 +139,13 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 	if params.UserType != "" {
 		query = query.Where("accounts_profile.user_type = ?", params.UserType)
 	}
+
+	// Providers without an active paid subscription must be invisible across AI match, popular listings, and provider searches.
+	if params.UserType == "PROVIDER" || params.Popular {
+		query = query.Where("(accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))")
+	} else if params.UserType == "" {
+		query = query.Where("(accounts_profile.user_type != 'PROVIDER' OR accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))")
+	}
 	if params.Search != "" {
 		s := "%" + params.Search + "%"
 		query = query.Where("(accounts_profile.first_name ILIKE ? OR accounts_profile.last_name ILIKE ? OR accounts_profile.service ILIKE ? OR accounts_profile.city ILIKE ?)", s, s, s, s)
@@ -200,7 +207,7 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 	}
 
 	if params.Popular {
-		query = query.Order("accounts_profile.average_rating DESC, accounts_profile.total_reviews DESC")
+		query = query.Order("accounts_profile.neighbor_score DESC, accounts_profile.average_rating DESC, accounts_profile.total_reviews DESC")
 	} else if !hasLocation {
 		query = query.Order("accounts_profile.created_at DESC")
 	}

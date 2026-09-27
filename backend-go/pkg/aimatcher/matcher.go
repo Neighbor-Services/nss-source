@@ -1,22 +1,38 @@
 package aimatcher
 
 import (
+	"fmt"
 	"math"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"backend-go/internal/domain/entity"
 )
 
-// MatchResult encapsulates a matched provider with vector similarity analytics.
+// SentimentAnalysis captures user emotional tone, urgency level, quality expectations, and intent signals.
+type SentimentAnalysis struct {
+	UrgencyScore     float64  `json:"urgency_score"`     // 0.0 to 1.0 (Emergency / Immediate need)
+	QualityScore     float64  `json:"quality_score"`     // 0.0 to 1.0 (Demand for master / top rated / perfection)
+	BudgetScore      float64  `json:"budget_score"`      // 0.0 to 1.0 (Price sensitive / budget conscious)
+	TrustScore       float64  `json:"trust_score"`       // 0.0 to 1.0 (Safety, background check, families, elderly)
+	FrustrationScore float64  `json:"frustration_score"` // 0.0 to 1.0 (Customer distress, mess, disaster)
+	Polarity         string   `json:"polarity"`          // "POSITIVE", "NEGATIVE", "NEUTRAL"
+	PrimarySentiment string   `json:"primary_sentiment"` // "URGENT", "QUALITY", "BUDGET", "TRUST", "DISTRESS", "STANDARD"
+	SentimentSummary string   `json:"sentiment_summary"`
+	DetectedSignals  []string `json:"detected_signals"`
+}
+
+// MatchResult encapsulates a matched provider with vector similarity analytics and sentiment analysis.
 type MatchResult struct {
-	Profile         entity.Profile `json:"profile"`
-	Score           float64        `json:"score"`            // 0.0 to 1.0
-	MatchPercentage int            `json:"match_percentage"` // 0 to 100
-	MatchReason     string         `json:"match_reason"`     // Human readable AI justification
-	MatchedConcepts []string       `json:"matched_concepts"`
+	Profile           entity.Profile    `json:"profile"`
+	Score             float64           `json:"score"`            // 0.0 to 1.0
+	MatchPercentage   int               `json:"match_percentage"` // 0 to 100
+	MatchReason       string            `json:"match_reason"`     // Human readable AI justification
+	MatchedConcepts   []string          `json:"matched_concepts"`
+	SentimentAnalysis SentimentAnalysis `json:"sentiment_analysis"`
 }
 
 // Stop words to remove noise during tokenization
@@ -484,13 +500,173 @@ func normalizeVector(vec map[string]float64) {
 	}
 }
 
-// RankProviders matches candidate providers against the query using Vector Space Cosine Similarity and Multi-Signal quality scoring.
+// ─── SENTIMENT ANALYSIS LEXICONS & ENGINE ───
+
+var urgencyKeywords = map[string]float64{
+	"urgent": 1.0, "urgently": 1.0, "emergency": 1.0, "asap": 1.0, "immediately": 1.0,
+	"immediate": 0.9, "right now": 1.0, "today": 0.8, "tonight": 0.8, "stat": 1.0,
+	"hurry": 0.9, "critical": 0.9, "crisis": 1.0, "stranded": 1.0, "burst": 1.0,
+	"flooding": 1.0, "flood": 0.9, "power out": 1.0, "sparking": 1.0, "locked out": 1.0,
+	"leaking": 0.8, "leak everywhere": 1.0, "water damage": 0.9, "fire hazard": 1.0,
+	"smoke": 0.9, "short circuit": 0.9, "fast": 0.6, "speedy": 0.6, "quick": 0.6,
+	"swift": 0.6, "same day": 0.9, "broke down": 0.9, "breakdown": 0.9,
+}
+
+var qualityKeywords = map[string]float64{
+	"best": 0.8, "top notch": 1.0, "expert": 0.9, "master": 1.0, "luxury": 1.0,
+	"high end": 1.0, "perfection": 1.0, "flawless": 1.0, "experienced": 0.8,
+	"certified": 0.9, "licensed": 0.9, "detail oriented": 0.9, "meticulous": 1.0,
+	"top rated": 0.9, "premium": 0.9, "aesthetic": 0.8, "veteran": 0.8,
+	"specialist": 0.9, "craftsman": 1.0, "high quality": 0.9, "pro": 0.7,
+	"masterpiece": 1.0, "first class": 1.0, "precision": 0.9, "skilled": 0.8,
+}
+
+var budgetKeywords = map[string]float64{
+	"affordable": 1.0, "cheap": 0.9, "inexpensive": 1.0, "reasonable": 0.9,
+	"budget": 1.0, "low cost": 1.0, "fair price": 1.0, "economical": 1.0,
+	"tight budget": 1.0, "student": 0.7, "discount": 0.9, "deal": 0.8,
+	"best rate": 0.9, "quote": 0.6, "estimates": 0.6, "cost friendly": 1.0,
+	"pocket friendly": 1.0, "competitive price": 0.9, "save money": 0.9,
+}
+
+var trustKeywords = map[string]float64{
+	"trusted": 1.0, "trustworthy": 1.0, "safe": 0.9, "safety": 0.9,
+	"background checked": 1.0, "verified": 0.9, "honest": 1.0, "reliable": 0.9,
+	"dependable": 0.9, "family": 0.7, "kids": 0.7, "children": 0.7,
+	"baby": 0.7, "elderly": 0.8, "senior": 0.8, "peace of mind": 1.0,
+	"careful": 0.8, "clean record": 1.0, "insured": 0.9, "bonded": 0.9,
+	"respectful": 0.8, "polite": 0.7, "punctual": 0.8,
+}
+
+var frustrationKeywords = map[string]float64{
+	"nightmare": 1.0, "ruined": 1.0, "awful": 0.9, "desperate": 1.0,
+	"stressed": 0.9, "stressing": 0.9, "struggling": 0.8, "help me": 0.7,
+	"mess": 0.8, "terrible": 0.9, "disaster": 1.0, "botched": 1.0,
+	"headache": 0.8, "frustrated": 0.9, "failed": 0.8, "screwed up": 1.0,
+	"broken down": 0.8, "can't handle": 0.9, "panic": 1.0,
+}
+
+// AnalyzeSentiment extracts multi-dimensional emotion, urgency, quality, and intent signals from query text.
+func AnalyzeSentiment(text string) SentimentAnalysis {
+	textLower := strings.ToLower(text)
+	var signals []string
+
+	urgencySum := 0.0
+	for kw, weight := range urgencyKeywords {
+		if strings.Contains(textLower, kw) {
+			urgencySum += weight
+			signals = append(signals, "Urgency: "+kw)
+		}
+	}
+
+	qualitySum := 0.0
+	for kw, weight := range qualityKeywords {
+		if strings.Contains(textLower, kw) {
+			qualitySum += weight
+			signals = append(signals, "Quality: "+kw)
+		}
+	}
+
+	budgetSum := 0.0
+	for kw, weight := range budgetKeywords {
+		if strings.Contains(textLower, kw) {
+			budgetSum += weight
+			signals = append(signals, "Budget: "+kw)
+		}
+	}
+
+	trustSum := 0.0
+	for kw, weight := range trustKeywords {
+		if strings.Contains(textLower, kw) {
+			trustSum += weight
+			signals = append(signals, "Trust: "+kw)
+		}
+	}
+
+	frustrationSum := 0.0
+	for kw, weight := range frustrationKeywords {
+		if strings.Contains(textLower, kw) {
+			frustrationSum += weight
+			signals = append(signals, "Distress: "+kw)
+		}
+	}
+
+	urgencyScore := math.Min(urgencySum/2.0, 1.0)
+	qualityScore := math.Min(qualitySum/2.0, 1.0)
+	budgetScore := math.Min(budgetSum/2.0, 1.0)
+	trustScore := math.Min(trustSum/2.0, 1.0)
+	frustrationScore := math.Min(frustrationSum/2.0, 1.0)
+
+	polarity := "NEUTRAL"
+	if frustrationScore > 0.3 {
+		polarity = "NEGATIVE"
+	} else if qualityScore > 0.3 || trustScore > 0.3 {
+		polarity = "POSITIVE"
+	}
+
+	maxScore := 0.0
+	primary := "STANDARD"
+	if urgencyScore > maxScore && urgencyScore >= 0.30 {
+		maxScore = urgencyScore
+		primary = "URGENT"
+	}
+	if qualityScore > maxScore && qualityScore >= 0.30 {
+		maxScore = qualityScore
+		primary = "QUALITY"
+	}
+	if budgetScore > maxScore && budgetScore >= 0.30 {
+		maxScore = budgetScore
+		primary = "BUDGET"
+	}
+	if trustScore > maxScore && trustScore >= 0.30 {
+		maxScore = trustScore
+		primary = "TRUST"
+	}
+	if frustrationScore > maxScore && frustrationScore >= 0.30 {
+		maxScore = frustrationScore
+		primary = "DISTRESS"
+	}
+
+	summary := formatSentimentSummary(primary, urgencyScore, qualityScore, budgetScore, trustScore, frustrationScore)
+
+	return SentimentAnalysis{
+		UrgencyScore:     urgencyScore,
+		QualityScore:     qualityScore,
+		BudgetScore:      budgetScore,
+		TrustScore:       trustScore,
+		FrustrationScore: frustrationScore,
+		Polarity:         polarity,
+		PrimarySentiment: primary,
+		SentimentSummary: summary,
+		DetectedSignals:  signals,
+	}
+}
+
+func formatSentimentSummary(primary string, u, q, b, t, f float64) string {
+	switch primary {
+	case "URGENT":
+		return fmt.Sprintf("High Urgency (Score: %.0f%%) • Prioritizing Active Emergency Pros", u*100)
+	case "QUALITY":
+		return fmt.Sprintf("High Quality Expectation (Score: %.0f%%) • Prioritizing Master Certified Pros", q*100)
+	case "BUDGET":
+		return fmt.Sprintf("Value Conscious (Score: %.0f%%) • Prioritizing Competitive Transparent Pricing", b*100)
+	case "TRUST":
+		return fmt.Sprintf("High Safety & Trust (Score: %.0f%%) • Prioritizing Verified & Background Checked Pros", t*100)
+	case "DISTRESS":
+		return fmt.Sprintf("Customer Distress Detected (Score: %.0f%%) • Prioritizing Top Rated Reassuring Pros", f*100)
+	default:
+		return "Standard Service Match"
+	}
+}
+
+// RankProviders matches candidate providers against the query using Vector Space Cosine Similarity, Multi-Signal quality scoring, and Sentiment analysis.
 func RankProviders(queryText string, candidates []entity.Profile) []MatchResult {
 	if len(candidates) == 0 {
 		return nil
 	}
 
 	queryVec, queryConcepts := BuildQueryVector(queryText)
+	sentiment := AnalyzeSentiment(queryText)
 
 	var results []MatchResult
 
@@ -565,8 +741,54 @@ func RankProviders(queryText string, candidates []entity.Profile) []MatchResult 
 			verifiedBonus = 0.04
 		}
 
+		// Sentiment-driven multi-objective alignment adjustments
+		sentimentBonus := 0.0
+		if sentiment.UrgencyScore > 0 {
+			if p.IsOnline {
+				sentimentBonus += 0.06 * sentiment.UrgencyScore
+			}
+			if p.StreakCount > 3 {
+				sentimentBonus += 0.03 * sentiment.UrgencyScore
+			}
+			if p.LastSeen.After(time.Now().Add(-2 * time.Hour)) {
+				sentimentBonus += 0.03 * sentiment.UrgencyScore
+			}
+		}
+		if sentiment.QualityScore > 0 {
+			if p.AverageRating >= 4.7 {
+				sentimentBonus += 0.06 * sentiment.QualityScore
+			}
+			if p.TotalReviews >= 5 {
+				sentimentBonus += 0.04 * sentiment.QualityScore
+			}
+			if p.SubscriptionTier == "PLATINUM" || p.SubscriptionTier == "GOLD" {
+				sentimentBonus += 0.04 * sentiment.QualityScore
+			}
+		}
+		if sentiment.TrustScore > 0 {
+			if p.IsIdentityVerified {
+				sentimentBonus += 0.07 * sentiment.TrustScore
+			}
+			if p.NeighborScore >= 600 {
+				sentimentBonus += 0.05 * sentiment.TrustScore
+			}
+		}
+		if sentiment.BudgetScore > 0 {
+			if len(p.ServicePackages) > 0 {
+				sentimentBonus += 0.06 * sentiment.BudgetScore
+			}
+			if p.NeighborScore >= 500 {
+				sentimentBonus += 0.04 * sentiment.BudgetScore
+			}
+		}
+		if sentiment.FrustrationScore > 0 {
+			if p.AverageRating >= 4.5 && p.IsIdentityVerified {
+				sentimentBonus += 0.08 * sentiment.FrustrationScore
+			}
+		}
+
 		// Composite final match score (scaled smoothly to 60%-99% for real matches)
-		finalScore := (semanticScore * 0.70) + ratingBonus + reviewBonus + tierBonus + verifiedBonus
+		finalScore := (semanticScore * 0.65) + ratingBonus + reviewBonus + tierBonus + verifiedBonus + sentimentBonus
 		if finalScore > 0.99 {
 			finalScore = 0.99
 		}
@@ -580,15 +802,16 @@ func RankProviders(queryText string, candidates []entity.Profile) []MatchResult 
 			matchPct = 99
 		}
 
-		// Generate human-friendly reasoning
-		reason := generateMatchReason(p, matchPct, queryConcepts, cosineSim)
+		// Generate human-friendly reasoning enriched with sentiment context
+		reason := generateMatchReason(p, matchPct, queryConcepts, cosineSim, sentiment)
 
 		results = append(results, MatchResult{
-			Profile:         p,
-			Score:           finalScore,
-			MatchPercentage: matchPct,
-			MatchReason:     reason,
-			MatchedConcepts: queryConcepts,
+			Profile:           p,
+			Score:             finalScore,
+			MatchPercentage:   matchPct,
+			MatchReason:       reason,
+			MatchedConcepts:   queryConcepts,
+			SentimentAnalysis: sentiment,
 		})
 	}
 
@@ -600,7 +823,7 @@ func RankProviders(queryText string, candidates []entity.Profile) []MatchResult 
 	return results
 }
 
-func generateMatchReason(p entity.Profile, matchPct int, queryConcepts []string, cosineSim float64) string {
+func generateMatchReason(p entity.Profile, matchPct int, queryConcepts []string, cosineSim float64, sentiment SentimentAnalysis) string {
 	svcName := p.Service
 	if svcName == "" && len(p.CatalogServices) > 0 {
 		svcName = p.CatalogServices[0].Name
@@ -610,6 +833,21 @@ func generateMatchReason(p entity.Profile, matchPct int, queryConcepts []string,
 	}
 
 	var sb strings.Builder
+
+	// Add sentiment badge prefix if strongly present
+	switch sentiment.PrimarySentiment {
+	case "URGENT":
+		sb.WriteString("⚡ Emergency Response • ")
+	case "QUALITY":
+		sb.WriteString("⭐ Master Pro • ")
+	case "TRUST":
+		sb.WriteString("🛡️ Verified & Trusted • ")
+	case "BUDGET":
+		sb.WriteString("💰 High Value • ")
+	case "DISTRESS":
+		sb.WriteString("🤝 Reliable Distress Relief • ")
+	}
+
 	sb.WriteString(svcName)
 
 	if p.AverageRating >= 4.5 && p.TotalReviews >= 5 {

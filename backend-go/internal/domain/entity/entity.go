@@ -133,10 +133,13 @@ type Profile struct {
 	CatalogServiceNames []string `gorm:"-" json:"catalog_service_names,omitempty"`
 	CatalogServiceIDs   []string `gorm:"-" json:"catalog_service_ids,omitempty"`
 	ProfilePictureURL   string   `gorm:"-" json:"profile_picture_url,omitempty"`
-	ReviewsReceived     []Review `gorm:"-" json:"reviews_received,omitempty"`
-	MatchScore          float64  `gorm:"-" json:"match_score,omitempty"`
-	MatchPercentage     int      `gorm:"-" json:"match_percentage,omitempty"`
-	MatchReason         string   `gorm:"-" json:"match_reason,omitempty"`
+	ReviewsReceived      []Review `gorm:"-" json:"reviews_received,omitempty"`
+	MatchScore           float64  `gorm:"-" json:"match_score,omitempty"`
+	MatchPercentage      int      `gorm:"-" json:"match_percentage,omitempty"`
+	MatchReason          string   `gorm:"-" json:"match_reason,omitempty"`
+	PositiveReviewRatio  float64  `gorm:"-" json:"positive_review_ratio,omitempty"`
+	ReviewSentimentBadge string   `gorm:"-" json:"review_sentiment_badge,omitempty"`
+	PraiseBadges         []string `gorm:"-" json:"praise_badges,omitempty"`
 }
 
 func (Profile) TableName() string { return "accounts_profile" }
@@ -399,6 +402,32 @@ type Proposal struct {
 }
 
 func (Proposal) TableName() string { return "services_proposal" }
+
+type FlashDispatch struct {
+	ID                 uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	SeekerID           uuid.UUID  `gorm:"type:uuid;index;not null" json:"seeker_id"`
+	TradeConcept       string     `gorm:"size:100;not null" json:"trade_concept"` // plumbing, locksmith, auto_mobile_mechanic, electrical, hvac, etc.
+	Title              string     `gorm:"size:255;not null" json:"title"`
+	Description        string     `gorm:"type:text" json:"description"`
+	Latitude           float64    `gorm:"type:numeric(100,50);default:0" json:"latitude"`
+	Longitude          float64    `gorm:"type:numeric(100,50);default:0" json:"longitude"`
+	RadiusKm           float64    `gorm:"default:10.0" json:"radius_km"`
+	MaxBudget          float64    `gorm:"default:0.00" json:"max_budget"`
+	Status             string     `gorm:"size:20;default:'DISPATCHED'" json:"status"` // DISPATCHED, ACCEPTED, EXPIRED, CANCELLED
+	AcceptedProviderID *uuid.UUID `gorm:"type:uuid;index" json:"accepted_provider_id,omitempty"`
+	AcceptedAt         *time.Time `json:"accepted_at,omitempty"`
+	ExpiresAt          time.Time  `json:"expires_at"`
+	CreatedAt          time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+
+	Seeker           *User    `gorm:"foreignKey:SeekerID" json:"seeker,omitempty"`
+	AcceptedProvider *Profile `gorm:"foreignKey:AcceptedProviderID" json:"accepted_provider,omitempty"`
+
+	// Serializer & Frontend Parity
+	MatchedCount int `gorm:"-" json:"matched_count,omitempty"`
+}
+
+func (FlashDispatch) TableName() string { return "services_flashdispatch" }
 
 type Favorite struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`

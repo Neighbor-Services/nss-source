@@ -10,6 +10,8 @@ import (
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
 	domainUsecase "backend-go/internal/domain/usecase"
+	"backend-go/pkg/aimatcher"
+
 	"github.com/google/uuid"
 )
 
@@ -64,6 +66,11 @@ func (u *profileUseCase) ListProfiles(ctx context.Context, params repository.Pro
 	}
 	for i := range profiles {
 		profiles[i].EnrichCatalogServices()
+		if summary, ok := aimatcher.GlobalIndex.GetSentimentSummary(profiles[i].ID); ok {
+			profiles[i].PositiveReviewRatio = summary.PositiveRatio
+			profiles[i].ReviewSentimentBadge = summary.SentimentBadge
+			profiles[i].PraiseBadges = summary.TopPraiseBadges
+		}
 	}
 	return profiles, nil
 }

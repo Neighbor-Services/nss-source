@@ -68,6 +68,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.CatalogService{},
 		&entity.ServiceRequest{},
 		&entity.Proposal{},
+		&entity.FlashDispatch{},
 
 		// Interactions & Appointments
 		&entity.Favorite{},

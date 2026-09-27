@@ -339,3 +339,33 @@ func (r *proposalRepository) Update(ctx context.Context, proposal *entity.Propos
 func (r *proposalRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Delete(&entity.Proposal{}, "id = ?", id).Error
 }
+
+type flashDispatchRepository struct {
+	db *gorm.DB
+}
+
+func NewFlashDispatchRepository(db *gorm.DB) repository.FlashDispatchRepository {
+	return &flashDispatchRepository{db: db}
+}
+
+func (r *flashDispatchRepository) Create(ctx context.Context, dispatch *entity.FlashDispatch) error {
+	return r.db.WithContext(ctx).Create(dispatch).Error
+}
+
+func (r *flashDispatchRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.FlashDispatch, error) {
+	var d entity.FlashDispatch
+	err := r.db.WithContext(ctx).
+		Preload("Seeker").
+		Preload("Seeker.Profile").
+		Preload("AcceptedProvider").
+		Preload("AcceptedProvider.User").
+		First(&d, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
+func (r *flashDispatchRepository) Update(ctx context.Context, dispatch *entity.FlashDispatch) error {
+	return r.db.WithContext(ctx).Save(dispatch).Error
+}

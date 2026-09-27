@@ -50,3 +50,10 @@ type ProposalRepository interface {
 	Update(ctx context.Context, proposal *entity.Proposal) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
+
+type FlashDispatchRepository interface {
+	Create(ctx context.Context, dispatch *entity.FlashDispatch) error
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.FlashDispatch, error)
+	Update(ctx context.Context, dispatch *entity.FlashDispatch) error
+}
+

@@ -170,7 +170,7 @@ func TestServiceUseCase_ProposalApprovalFlow(t *testing.T) {
 	}}
 	aptRepo := &mockAppointmentRepo{apts: make(map[uuid.UUID]*entity.Appointment)}
 
-	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 
@@ -242,7 +242,7 @@ func TestServiceUseCase_ImageUploadAndProposalDeletion(t *testing.T) {
 		providerID: {ID: uuid.New(), UserID: providerID, Latitude: 51.5074, Longitude: -0.1278},
 	}}
 
-	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 

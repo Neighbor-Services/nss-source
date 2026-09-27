@@ -33,4 +33,10 @@ type ServiceUseCase interface {
 	GetProposals(ctx context.Context, userID uuid.UUID, userType string, requestID *uuid.UUID) ([]entity.Proposal, error)
 	CreateProposal(ctx context.Context, providerID uuid.UUID, prop *entity.Proposal) (*entity.Proposal, error)
 	DeleteProposal(ctx context.Context, providerID, idOrReqID uuid.UUID) error
+
+	// Emergency Flash Dispatch
+	CreateFlashDispatch(ctx context.Context, seekerID uuid.UUID, dispatch *entity.FlashDispatch) (*entity.FlashDispatch, error)
+	GetFlashDispatch(ctx context.Context, id uuid.UUID) (*entity.FlashDispatch, error)
+	AcceptFlashDispatch(ctx context.Context, providerID, dispatchID uuid.UUID) (*entity.FlashDispatch, *entity.Appointment, error)
+	CancelFlashDispatch(ctx context.Context, seekerID, dispatchID uuid.UUID) error
 }

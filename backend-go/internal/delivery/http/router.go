@@ -220,6 +220,16 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			srv.GET("/proposals/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.GetProposals)
 			srv.POST("/proposals/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.CreateProposal)
 			srv.DELETE("/proposals/:id/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.DeleteProposal)
+
+			// Emergency Flash Dispatch
+			srv.POST("/flash-dispatch/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.CreateFlashDispatch)
+			srv.POST("/flash-dispatch", middleware.AuthRequired(deps.Config), deps.ServiceHandler.CreateFlashDispatch)
+			srv.GET("/flash-dispatch/:id/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.GetFlashDispatch)
+			srv.GET("/flash-dispatch/:id", middleware.AuthRequired(deps.Config), deps.ServiceHandler.GetFlashDispatch)
+			srv.POST("/flash-dispatch/:id/accept/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.AcceptFlashDispatch)
+			srv.POST("/flash-dispatch/:id/accept", middleware.AuthRequired(deps.Config), deps.ServiceHandler.AcceptFlashDispatch)
+			srv.POST("/flash-dispatch/:id/cancel/", middleware.AuthRequired(deps.Config), deps.ServiceHandler.CancelFlashDispatch)
+			srv.POST("/flash-dispatch/:id/cancel", middleware.AuthRequired(deps.Config), deps.ServiceHandler.CancelFlashDispatch)
 		}
 
 		// ─── INTERACTIONS ────────────────────────────────────────────────────

@@ -617,3 +617,98 @@ func (h *ServiceHandler) DeleteProposal(c *gin.Context) {
 
 	response.JSON(c, http.StatusNoContent, nil)
 }
+
+// ─── EMERGENCY FLASH DISPATCH HANDLERS ───────────────────────────────────────
+
+func (h *ServiceHandler) CreateFlashDispatch(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	var dispatch entity.FlashDispatch
+	if err := c.ShouldBindJSON(&dispatch); err != nil {
+		response.BadRequest(c, "Invalid emergency flash dispatch payload")
+		return
+	}
+
+	created, err := h.serviceUC.CreateFlashDispatch(c.Request.Context(), userUUID, &dispatch)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Created(c, "Emergency flash dispatch broadcasted successfully", created)
+}
+
+func (h *ServiceHandler) GetFlashDispatch(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid dispatch ID")
+		return
+	}
+
+	dispatch, err := h.serviceUC.GetFlashDispatch(c.Request.Context(), id)
+	if err != nil {
+		response.NotFound(c, "Flash dispatch not found")
+		return
+	}
+
+	response.JSON(c, http.StatusOK, dispatch)
+}
+
+func (h *ServiceHandler) AcceptFlashDispatch(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid dispatch ID")
+		return
+	}
+
+	dispatch, apt, err := h.serviceUC.AcceptFlashDispatch(c.Request.Context(), userUUID, id)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"message":     "Emergency flash dispatch accepted successfully",
+		"dispatch":    dispatch,
+		"appointment": apt,
+	})
+}
+
+func (h *ServiceHandler) CancelFlashDispatch(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid dispatch ID")
+		return
+	}
+
+	if err := h.serviceUC.CancelFlashDispatch(c.Request.Context(), userUUID, id); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"message": "Emergency flash dispatch cancelled",
+	})
+}

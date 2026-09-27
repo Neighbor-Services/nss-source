@@ -32,6 +32,7 @@ type serviceUseCase struct {
 	fcmClient    fcm.Client
 	userRepo     repository.UserRepository
 	adminRepo    repository.AdminRepository
+	dispatchRepo repository.FlashDispatchRepository
 	cache        cache.Cache
 	cfg          *config.Config
 }
@@ -48,6 +49,7 @@ func NewServiceUseCase(
 	fcmClient fcm.Client,
 	userRepo repository.UserRepository,
 	adminRepo repository.AdminRepository,
+	dispatchRepo repository.FlashDispatchRepository,
 	cache cache.Cache,
 	cfg *config.Config,
 ) domainUsecase.ServiceUseCase {
@@ -63,6 +65,7 @@ func NewServiceUseCase(
 		fcmClient:    fcmClient,
 		userRepo:     userRepo,
 		adminRepo:    adminRepo,
+		dispatchRepo: dispatchRepo,
 		cache:        cache,
 		cfg:          cfg,
 	}
@@ -159,8 +162,8 @@ func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase
 		return candidates, nil
 	}
 
-	// Run In-Engine Vector Space Model & Semantic Ontology Matcher
-	ranked := aimatcher.RankProviders(query, candidates)
+	// Run High-Speed In-Engine Vector Space Model & Review Sentiment Matcher
+	ranked := aimatcher.GlobalIndex.FastRankProviders(query, candidates)
 	if len(ranked) == 0 {
 		return []entity.Profile{}, nil
 	}
@@ -171,6 +174,13 @@ func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase
 		p.MatchScore = r.Score
 		p.MatchPercentage = r.MatchPercentage
 		p.MatchReason = r.MatchReason
+
+		if summary, ok := aimatcher.GlobalIndex.GetSentimentSummary(p.ID); ok {
+			p.PositiveReviewRatio = summary.PositiveRatio
+			p.ReviewSentimentBadge = summary.SentimentBadge
+			p.PraiseBadges = summary.TopPraiseBadges
+		}
+
 		results = append(results, p)
 	}
 
@@ -925,4 +935,204 @@ func (u *serviceUseCase) DeleteProposal(ctx context.Context, providerID, idOrReq
 	}
 
 	return u.proposalRepo.Delete(ctx, prop.ID)
+}
+
+// ─── EMERGENCY FLASH DISPATCH ────────────────────────────────────────────────
+
+func (u *serviceUseCase) CreateFlashDispatch(ctx context.Context, seekerID uuid.UUID, dispatch *entity.FlashDispatch) (*entity.FlashDispatch, error) {
+	if dispatch.ID == uuid.Nil {
+		dispatch.ID = uuid.New()
+	}
+	dispatch.SeekerID = seekerID
+	dispatch.Status = "DISPATCHED"
+	dispatch.CreatedAt = time.Now().UTC()
+	dispatch.UpdatedAt = time.Now().UTC()
+	dispatch.ExpiresAt = time.Now().UTC().Add(5 * time.Minute)
+
+	if dispatch.RadiusKm <= 0 {
+		dispatch.RadiusKm = 10.0
+	}
+
+	// Detect trade concept if not directly specified
+	if dispatch.TradeConcept == "" {
+		tokens, tf := aimatcher.Tokenize(dispatch.Title + " " + dispatch.Description)
+		concepts := aimatcher.DetectConcepts(tokens, tf)
+		if len(concepts) > 0 {
+			dispatch.TradeConcept = concepts[0]
+		} else {
+			dispatch.TradeConcept = "handyman_mounting"
+		}
+	}
+
+	// Lookup candidate online and nearby paid providers
+	radius := dispatch.RadiusKm
+	candidates, _ := u.profileRepo.List(ctx, repository.ProfileFilterParams{
+		UserType:  "PROVIDER",
+		Latitude:  &dispatch.Latitude,
+		Longitude: &dispatch.Longitude,
+		RadiusKm:  &radius,
+		Limit:     50,
+	})
+
+	dispatch.MatchedCount = len(candidates)
+
+	if err := u.dispatchRepo.Create(ctx, dispatch); err != nil {
+		return nil, err
+	}
+
+	// Realtime broadcast to candidate providers via FCM
+	go func() {
+		seekerName := "A neighbor"
+		if sProf, err := u.profileRepo.GetByUserID(context.Background(), seekerID); err == nil && sProf != nil {
+			if sProf.FirstName != "" {
+				seekerName = sProf.FirstName
+			}
+		}
+
+		title := fmt.Sprintf("🚨 EMERGENCY FLASH DISPATCH: %s", strings.ToUpper(strings.ReplaceAll(dispatch.TradeConcept, "_", " ")))
+		body := fmt.Sprintf("%s has an urgent emergency nearby: '%s'. Tap to accept immediately!", seekerName, dispatch.Title)
+
+		for _, p := range candidates {
+			if p.UserID == seekerID {
+				continue
+			}
+			_ = u.notifRepo.Create(context.Background(), &entity.Notification{
+				ID:               uuid.New(),
+				UserID:           p.UserID,
+				NotificationType: "EMERGENCY_FLASH_DISPATCH",
+				Title:            title,
+				Message:          body,
+				Data: entity.JSONMap{
+					"dispatch_id":   dispatch.ID.String(),
+					"trade_concept": dispatch.TradeConcept,
+					"latitude":      dispatch.Latitude,
+					"longitude":     dispatch.Longitude,
+					"max_budget":    dispatch.MaxBudget,
+					"expires_at":    dispatch.ExpiresAt.Format(time.RFC3339),
+				},
+				CreatedAt: time.Now().UTC(),
+			})
+
+			u.sendPush(p.UserID, title, body, map[string]string{
+				"notification_type": "emergency_flash_dispatch",
+				"dispatch_id":       dispatch.ID.String(),
+				"trade_concept":     dispatch.TradeConcept,
+				"click_action":      "FLUTTER_NOTIFICATION_CLICK",
+			})
+		}
+	}()
+
+	return u.dispatchRepo.GetByID(ctx, dispatch.ID)
+}
+
+func (u *serviceUseCase) GetFlashDispatch(ctx context.Context, id uuid.UUID) (*entity.FlashDispatch, error) {
+	d, err := u.dispatchRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if d.Status == "DISPATCHED" && time.Now().UTC().After(d.ExpiresAt) {
+		d.Status = "EXPIRED"
+		_ = u.dispatchRepo.Update(ctx, d)
+	}
+	return d, nil
+}
+
+func (u *serviceUseCase) AcceptFlashDispatch(ctx context.Context, providerID, dispatchID uuid.UUID) (*entity.FlashDispatch, *entity.Appointment, error) {
+	d, err := u.dispatchRepo.GetByID(ctx, dispatchID)
+	if err != nil || d == nil {
+		return nil, nil, errors.New("flash dispatch not found")
+	}
+
+	if d.Status == "ACCEPTED" {
+		return nil, nil, errors.New("This emergency dispatch was already accepted by another provider.")
+	}
+	if d.Status == "CANCELLED" {
+		return nil, nil, errors.New("This emergency dispatch was cancelled by the client.")
+	}
+	if time.Now().UTC().After(d.ExpiresAt) {
+		d.Status = "EXPIRED"
+		_ = u.dispatchRepo.Update(ctx, d)
+		return nil, nil, errors.New("This emergency dispatch has expired.")
+	}
+
+	providerProf, err := u.profileRepo.GetByUserID(ctx, providerID)
+	if err != nil || providerProf == nil {
+		return nil, nil, errors.New("provider profile not found")
+	}
+
+	now := time.Now().UTC()
+	d.Status = "ACCEPTED"
+	d.AcceptedProviderID = &providerProf.ID
+	d.AcceptedAt = &now
+	d.UpdatedAt = now
+
+	if err := u.dispatchRepo.Update(ctx, d); err != nil {
+		return nil, nil, err
+	}
+
+	// Automatically create an emergency confirmed appointment
+	aptTime := now.Add(30 * time.Minute)
+	apt := &entity.Appointment{
+		ID:              uuid.New(),
+		SeekerID:        d.SeekerID,
+		ProviderID:      providerID,
+		Title:           fmt.Sprintf("⚡ Emergency: %s", d.Title),
+		Description:     d.Description,
+		AppointmentDate: &aptTime,
+		Status:          "CONFIRMED",
+		PaymentMode:     "ON_SITE",
+		TotalPrice:      d.MaxBudget,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	_ = u.aptRepo.Create(ctx, apt)
+
+	// Realtime notification to Seeker
+	go func() {
+		providerName := providerProf.FirstName + " " + providerProf.LastName
+		title := "⚡ Emergency Provider Dispatched!"
+		body := fmt.Sprintf("%s has accepted your emergency request and is responding right now.", providerName)
+
+		_ = u.notifRepo.Create(context.Background(), &entity.Notification{
+			ID:               uuid.New(),
+			UserID:           d.SeekerID,
+			NotificationType: "FLASH_DISPATCH_ACCEPTED",
+			Title:            title,
+			Message:          body,
+			Data: entity.JSONMap{
+				"dispatch_id":    d.ID.String(),
+				"appointment_id": apt.ID.String(),
+				"provider_id":    providerID.String(),
+				"provider_name":  providerName,
+			},
+			CreatedAt: time.Now().UTC(),
+		})
+
+		u.sendPush(d.SeekerID, title, body, map[string]string{
+			"notification_type": "flash_dispatch_accepted",
+			"dispatch_id":       d.ID.String(),
+			"appointment_id":    apt.ID.String(),
+			"provider_id":       providerID.String(),
+			"click_action":      "FLUTTER_NOTIFICATION_CLICK",
+		})
+	}()
+
+	return d, apt, nil
+}
+
+func (u *serviceUseCase) CancelFlashDispatch(ctx context.Context, seekerID, dispatchID uuid.UUID) error {
+	d, err := u.dispatchRepo.GetByID(ctx, dispatchID)
+	if err != nil || d == nil {
+		return errors.New("flash dispatch not found")
+	}
+	if d.SeekerID != seekerID {
+		return errors.New("not authorized to cancel this dispatch")
+	}
+	if d.Status == "ACCEPTED" {
+		return errors.New("Cannot cancel a dispatch that has already been accepted.")
+	}
+
+	d.Status = "CANCELLED"
+	d.UpdatedAt = time.Now().UTC()
+	return u.dispatchRepo.Update(ctx, d)
 }
