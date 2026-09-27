@@ -52,7 +52,11 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 // AutoMigrate migrates all models matching Django and Go database table schemas.
 func AutoMigrate(db *gorm.DB) error {
-	err := db.AutoMigrate(
+	// 1. Ensure required flash dispatch & AI index tables are created with explicit DDL first
+	ensureExplicitTables(db)
+
+	// 2. Resilient per-model AutoMigrate so that legacy table conflicts never abort new table creation
+	models := []interface{}{
 		// Accounts & Profiles
 		&entity.User{},
 		&entity.Profile{},
@@ -121,9 +125,12 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.ContactMessage{},
 		&entity.ResolutionReport{},
 		&entity.EmailCampaignLog{},
-	)
-	if err != nil {
-		return err
+	}
+
+	for _, m := range models {
+		if err := db.AutoMigrate(m); err != nil {
+			log.Printf("⚠️ AutoMigrate model (%T) note: %v", m, err)
+		}
 	}
 
 	createCompositeIndexes(db)
@@ -131,6 +138,60 @@ func AutoMigrate(db *gorm.DB) error {
 	seedDefaultCategoriesAndServices(db)
 	seedDefaultLegalDocuments(db)
 	return nil
+}
+
+func ensureExplicitTables(db *gorm.DB) {
+	ddls := []string{
+		`CREATE TABLE IF NOT EXISTS services_flashdispatch (
+			id UUID PRIMARY KEY,
+			seeker_id UUID NOT NULL,
+			trade_concept VARCHAR(100) NOT NULL,
+			title VARCHAR(255) NOT NULL,
+			description TEXT,
+			latitude NUMERIC(100, 50) DEFAULT 0,
+			longitude NUMERIC(100, 50) DEFAULT 0,
+			radius_km DOUBLE PRECISION DEFAULT 10.0,
+			max_budget DOUBLE PRECISION DEFAULT 0.00,
+			status VARCHAR(20) DEFAULT 'DISPATCHED',
+			accepted_provider_id UUID,
+			accepted_at TIMESTAMPTZ,
+			expires_at TIMESTAMPTZ,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS services_catalog_knowledge_index (
+			id UUID PRIMARY KEY,
+			trade_concept VARCHAR(100) NOT NULL,
+			keyword VARCHAR(255) NOT NULL,
+			category_name VARCHAR(100),
+			service_id UUID,
+			service_name VARCHAR(255),
+			search_query_pattern VARCHAR(500),
+			sentiment_intent VARCHAR(50) DEFAULT 'STANDARD',
+			praise_signals TEXT[],
+			complaint_signals TEXT[],
+			confidence_score DOUBLE PRECISION DEFAULT 1.0,
+			search_count INTEGER DEFAULT 0,
+			source VARCHAR(50) DEFAULT 'CATALOG_ANALYZER',
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS services_ai_search_log (
+			id UUID PRIMARY KEY,
+			query TEXT NOT NULL,
+			matched_concept VARCHAR(100),
+			urgency_score DOUBLE PRECISION DEFAULT 0,
+			sentiment_polarity VARCHAR(20),
+			primary_sentiment VARCHAR(50),
+			result_count INTEGER DEFAULT 0,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+		)`,
+	}
+	for _, ddl := range ddls {
+		if err := db.Exec(ddl).Error; err != nil {
+			log.Printf("⚠️ DDL table creation warning: %v", err)
+		}
+	}
 }
 
 func createCompositeIndexes(db *gorm.DB) {
@@ -142,6 +203,13 @@ func createCompositeIndexes(db *gorm.DB) {
 		"CREATE INDEX IF NOT EXISTS idx_wallettx_wallet_created ON payments_wallettransaction (wallet_id, created_at DESC)",
 		"CREATE INDEX IF NOT EXISTS idx_appointment_status_date ON interactions_appointment (status, appointment_date)",
 		"CREATE INDEX IF NOT EXISTS idx_otp_email_created ON accounts_otpverification (email, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_status_created ON services_flashdispatch (status, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_seeker ON services_flashdispatch (seeker_id)",
+		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_trade ON services_flashdispatch (trade_concept)",
+		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_expires ON services_flashdispatch (expires_at)",
+		"CREATE INDEX IF NOT EXISTS idx_catknowledge_trade ON services_catalog_knowledge_index (trade_concept)",
+		"CREATE INDEX IF NOT EXISTS idx_catknowledge_keyword ON services_catalog_knowledge_index (keyword)",
+		"CREATE INDEX IF NOT EXISTS idx_aisearchlog_created ON services_ai_search_log (created_at DESC)",
 	}
 	for _, idx := range indexes {
 		_ = db.Exec(idx).Error
