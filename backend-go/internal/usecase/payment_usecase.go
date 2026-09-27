@@ -839,6 +839,37 @@ func (u *paymentUseCase) ProcessGooglePubSubWebhook(ctx context.Context, payload
 	return nil
 }
 
+func (u *paymentUseCase) ensureStripeCustomer(ctx context.Context, cust *entity.Customer, forceNew bool) error {
+	if u.cfg == nil || u.cfg.StripeSecretKey == "" {
+		return nil
+	}
+	if cust.StripeCustomerID != "" && !forceNew && !strings.HasPrefix(cust.StripeCustomerID, "cus_test_") {
+		return nil
+	}
+
+	var email string
+	if u.profileRepo != nil {
+		if prof, err := u.profileRepo.GetByUserID(ctx, cust.UserID); err == nil && prof != nil && prof.User != nil {
+			email = prof.User.Email
+		}
+	}
+	params := &stripe.CustomerParams{
+		Params: stripe.Params{
+			Metadata: map[string]string{"user_id": cust.UserID.String()},
+		},
+	}
+	if email != "" {
+		params.Email = stripe.String(email)
+	}
+	sc, err := customer.New(params)
+	if err != nil {
+		return err
+	}
+	cust.StripeCustomerID = sc.ID
+	_ = u.customerRepo.Upsert(ctx, cust)
+	return nil
+}
+
 func (u *paymentUseCase) GetCustomer(ctx context.Context, userID uuid.UUID) (*entity.Customer, error) {
 	u.initStripe()
 	cust, err := u.customerRepo.GetByUserID(ctx, userID)
@@ -846,25 +877,8 @@ func (u *paymentUseCase) GetCustomer(ctx context.Context, userID uuid.UUID) (*en
 		return u.CreateCustomer(ctx, userID)
 	}
 
-	if (cust.StripeCustomerID == "" || strings.HasPrefix(cust.StripeCustomerID, "cus_test_")) && u.cfg != nil && u.cfg.StripeSecretKey != "" {
-		var email string
-		if u.profileRepo != nil {
-			if prof, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && prof != nil && prof.User != nil {
-				email = prof.User.Email
-			}
-		}
-		params := &stripe.CustomerParams{
-			Params: stripe.Params{
-				Metadata: map[string]string{"user_id": userID.String()},
-			},
-		}
-		if email != "" {
-			params.Email = stripe.String(email)
-		}
-		if sc, err := customer.New(params); err == nil && sc != nil {
-			cust.StripeCustomerID = sc.ID
-			_ = u.customerRepo.Upsert(ctx, cust)
-		}
+	if cust.StripeCustomerID == "" || strings.HasPrefix(cust.StripeCustomerID, "cus_test_") {
+		_ = u.ensureStripeCustomer(ctx, cust, false)
 	}
 
 	return cust, nil
@@ -880,24 +894,8 @@ func (u *paymentUseCase) CreateCustomer(ctx context.Context, userID uuid.UUID) (
 		}
 	}
 
-	if (cust.StripeCustomerID == "" || strings.HasPrefix(cust.StripeCustomerID, "cus_test_")) && u.cfg != nil && u.cfg.StripeSecretKey != "" {
-		var email string
-		if u.profileRepo != nil {
-			if prof, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && prof != nil && prof.User != nil {
-				email = prof.User.Email
-			}
-		}
-		params := &stripe.CustomerParams{
-			Params: stripe.Params{
-				Metadata: map[string]string{"user_id": userID.String()},
-			},
-		}
-		if email != "" {
-			params.Email = stripe.String(email)
-		}
-		if sc, err := customer.New(params); err == nil && sc != nil {
-			cust.StripeCustomerID = sc.ID
-		}
+	if cust.StripeCustomerID == "" || strings.HasPrefix(cust.StripeCustomerID, "cus_test_") {
+		_ = u.ensureStripeCustomer(ctx, cust, false)
 	}
 
 	_ = u.customerRepo.Upsert(ctx, cust)
@@ -911,16 +909,36 @@ func (u *paymentUseCase) CreateEphemeralKey(ctx context.Context, userID uuid.UUI
 		return "", err
 	}
 
-	if cust.StripeCustomerID != "" && u.cfg != nil && u.cfg.StripeSecretKey != "" {
-		params := &stripe.EphemeralKeyParams{
-			Customer:      stripe.String(cust.StripeCustomerID),
-			StripeVersion: stripe.String(stripe.APIVersion),
+	if u.cfg != nil && u.cfg.StripeSecretKey != "" {
+		if cust.StripeCustomerID == "" {
+			if err := u.ensureStripeCustomer(ctx, cust, true); err != nil {
+				return "", fmt.Errorf("Failed to create Stripe customer: %w", err)
+			}
 		}
-		ek, err := ephemeralkey.New(params)
+
+		createKey := func(custID string) (*stripe.EphemeralKey, error) {
+			params := &stripe.EphemeralKeyParams{
+				Customer:      stripe.String(custID),
+				StripeVersion: stripe.String(stripe.APIVersion),
+			}
+			ek, err := ephemeralkey.New(params)
+			if err != nil {
+				params.StripeVersion = stripe.String("2022-11-15")
+				ek, err = ephemeralkey.New(params)
+			}
+			return ek, err
+		}
+
+		ek, err := createKey(cust.StripeCustomerID)
 		if err != nil {
-			params.StripeVersion = stripe.String("2022-11-15")
-			ek, err = ephemeralkey.New(params)
+			// If customer does not exist in the current Stripe environment (e.g. test vs live mismatch or deleted)
+			if strings.Contains(err.Error(), "resource_missing") || strings.Contains(err.Error(), "No such customer") {
+				if errNew := u.ensureStripeCustomer(ctx, cust, true); errNew == nil {
+					ek, err = createKey(cust.StripeCustomerID)
+				}
+			}
 		}
+
 		if err == nil && ek != nil {
 			cust.EphemeralSecret = ek.Secret
 			_ = u.customerRepo.Upsert(ctx, cust)
