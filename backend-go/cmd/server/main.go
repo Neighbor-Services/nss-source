@@ -174,6 +174,9 @@ func main() {
 	subExpiryWorker := worker.NewSubscriptionExpiryWorker(db, cfg, fcmClient)
 	subExpiryWorker.Start()
 
+	unsubProviderWorker := worker.NewUnsubscribedProviderWorker(db, cfg, fcmClient)
+	unsubProviderWorker.Start()
+
 	disputeWorker := worker.NewDisputeEscalationWorker(db, cfg, fcmClient, redisCache)
 	disputeWorker.Start()
 

@@ -122,6 +122,7 @@ type Profile struct {
 	NeighborScore        int        `gorm:"default:500" json:"neighbor_score"`
 	MaxCatalogServices   int        `gorm:"default:1" json:"max_catalog_services"`
 	SearchRadiusKm       float64    `gorm:"default:25.0" json:"search_radius_km"`
+	DistanceUnit         string     `gorm:"size:10;default:'MILES'" json:"distance_unit"` // MILES, KM
 	CreatedAt            time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt            time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 

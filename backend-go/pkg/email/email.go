@@ -1146,7 +1146,80 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
+func SendUnsubscribedProviderReminderEmail(cfg *Config, toEmail, userName string, serviceCategory string) error {
+	subject := "🚀 Boost Your Client Bookings & Patronage on Neighbor Service"
+	serviceText := ""
+	if serviceCategory != "" {
+		serviceText = fmt.Sprintf("for %s services", serviceCategory)
+	}
+	plainText := fmt.Sprintf("Hi %s,\n\nClients in your neighborhood are actively searching for trusted service providers %s!\n\nTo start receiving live matching requests, submitting proposals, and boosting your business patronage, activate your Neighbor Service subscription today.\n\nBenefits of subscribing:\n- Direct access to Live Request Radar & nearby leads\n- Verified Provider badge to build trust\n- Unlimited client messaging & scheduling\n- Flash dispatch alerts right to your phone\n\nOpen the Neighbor Service app or visit https://neighborservice.com/subscription to choose your plan.\n\n— Neighbor Service Team", userName, serviceText)
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+.container{max-width:600px;margin:32px auto;background:#1e293b;border-radius:20px;overflow:hidden;box-shadow:0 12px 36px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,0.08);}
+.header{background:linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);padding:44px 32px;text-align:center;color:#fff;}
+.header h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-0.5px;}
+.header p{margin:8px 0 0;font-size:14px;opacity:0.92;}
+.body{padding:36px 32px;color:#cbd5e1;}
+.greeting{font-size:20px;font-weight:700;color:#f8fafc;margin-top:0;}
+.lead{font-size:15px;line-height:1.6;color:#94a3b8;margin-bottom:24px;}
+.perk-grid{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;margin:24px 0;}
+.perk-item{display:flex;align-items:flex-start;margin-bottom:16px;}
+.perk-item:last-child{margin-bottom:0;}
+.perk-icon{font-size:20px;margin-right:14px;line-height:1;}
+.perk-title{color:#f1f5f9;font-weight:700;font-size:14px;margin:0 0 2px;}
+.perk-desc{color:#94a3b8;font-size:12.5px;margin:0;line-height:1.4;}
+.cta-box{text-align:center;margin:32px 0 16px;}
+.btn{display:inline-block;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff!important;text-decoration:none;padding:16px 36px;border-radius:14px;font-weight:700;font-size:15px;box-shadow:0 6px 20px rgba(99,102,241,0.4);}
+.guarantee{text-align:center;font-size:12px;color:#64748b;margin-top:12px;}
+.footer{background:#0f172a;padding:24px 32px;text-align:center;color:#64748b;font-size:12px;border-top:1px solid rgba(255,255,255,0.05);}
+</style></head><body><div class="container">
+<div class="header">
+  <div style="font-size:36px;margin-bottom:8px;">💼 🚀</div>
+  <h1>Unlock Your Client Pipeline</h1>
+  <p>Local customers are waiting for verified professionals like you</p>
+</div>
+<div class="body">
+  <h2 class="greeting">Hi %s,</h2>
+  <p class="lead">Thank you for registering as a Service Provider on Neighbor Service! To start receiving client requests, submitting instant proposals, and maximizing your monthly earnings, activate your provider subscription today.</p>
+  
+  <div class="perk-grid">
+    <div class="perk-item">
+      <div class="perk-icon">📡</div>
+      <div>
+        <p class="perk-title">Live Request Radar</p>
+        <p class="perk-desc">Get instant notifications when clients post nearby jobs matching your skills.</p>
+      </div>
+    </div>
+    <div class="perk-item" style="margin-top:14px;">
+      <div class="perk-icon">⚡</div>
+      <div>
+        <p class="perk-title">Direct Proposal Submission</p>
+        <p class="perk-desc">Bid on client tasks with zero per-lead fees and keep 100%% of your earnings.</p>
+      </div>
+    </div>
+    <div class="perk-item" style="margin-top:14px;">
+      <div class="perk-icon">🛡️</div>
+      <div>
+        <p class="perk-title">Verified Pro Ranking & Trust</p>
+        <p class="perk-desc">Appear at the top of client search results with verified reputation and badges.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <a href="https://neighborservice.com/subscription" class="btn">Activate Subscription Now →</a>
+    <p class="guarantee">Cancel or change your plan anytime. Flexible monthly & annual options available.</p>
+  </div>
+</div>
+<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+</div></body></html>`, userName)
+
+	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
+}
+
 // ─── DISPUTE ESCALATION ───────────────────────────────────────────────────────
+
 
 func SendDisputeEscalatedEmail(cfg *Config, toEmail, recipientName, disputeID, reason string) error {
 	subject := "Your dispute has been escalated to our support team - Neighbor Service"
