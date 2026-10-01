@@ -239,6 +239,10 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			srv.GET("/ai-suggestions/", deps.ServiceHandler.GetAISuggestions)
 			srv.GET("/ai-suggestions", deps.ServiceHandler.GetAISuggestions)
 			srv.POST("/ai-catalog/reindex/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.TriggerCatalogReindex)
+
+			// AI Voice Speech Parsing & Assistant
+			srv.POST("/ai/parse-speech/", middleware.AuthOptional(deps.Config, deps.UserRepo), deps.ServiceHandler.ParseVoiceSpeech)
+			srv.POST("/ai/parse-speech", middleware.AuthOptional(deps.Config, deps.UserRepo), deps.ServiceHandler.ParseVoiceSpeech)
 		}
 
 		// ─── INTERACTIONS ────────────────────────────────────────────────────

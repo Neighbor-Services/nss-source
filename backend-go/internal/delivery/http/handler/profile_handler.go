@@ -123,11 +123,16 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 		radiusVal = &defaultRadius
 	}
 
+	userIDStr := c.GetString("userID")
+	var excludeUserID *uuid.UUID
+	if userUUID, err := uuid.Parse(userIDStr); err == nil && userUUID != uuid.Nil {
+		excludeUserID = &userUUID
+	}
+
 	// If seeker / user is logged in and didn't provide lat/lng in query, check their profile lat/lng!
 	if latVal == nil || lngVal == nil {
-		userIDStr := c.GetString("userID")
-		if userUUID, err := uuid.Parse(userIDStr); err == nil && userUUID != uuid.Nil {
-			if userProfile, err := h.profileUC.GetProfile(c.Request.Context(), userUUID, nil); err == nil && userProfile != nil {
+		if excludeUserID != nil {
+			if userProfile, err := h.profileUC.GetProfile(c.Request.Context(), *excludeUserID, nil); err == nil && userProfile != nil {
 				if userProfile.Latitude != 0 || userProfile.Longitude != 0 {
 					lat := userProfile.Latitude
 					lng := userProfile.Longitude
@@ -140,22 +145,23 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 
 	if popular || search != "" || userType != "" || categorySlug != "" || categoryName != "" || serviceName != "" || serviceID != "" || city != "" || ratingMinVal != nil || latVal != nil {
 		profiles, err := h.profileUC.ListProfiles(c.Request.Context(), repository.ProfileFilterParams{
-			UserType:     userType,
-			Popular:      popular,
-			Search:       search,
-			CategorySlug: categorySlug,
-			CategoryName: categoryName,
-			ServiceName:  serviceName,
-			ServiceID:    serviceID,
-			RatingMin:    ratingMinVal,
-			PriceMin:     priceMinVal,
-			PriceMax:     priceMaxVal,
-			City:         city,
-			Latitude:     latVal,
-			Longitude:    lngVal,
-			RadiusKm:     radiusVal,
-			Limit:        limit,
-			Offset:       offset,
+			UserType:      userType,
+			Popular:       popular,
+			Search:        search,
+			CategorySlug:  categorySlug,
+			CategoryName:  categoryName,
+			ServiceName:   serviceName,
+			ServiceID:     serviceID,
+			RatingMin:     ratingMinVal,
+			PriceMin:      priceMinVal,
+			PriceMax:      priceMaxVal,
+			City:          city,
+			Latitude:      latVal,
+			Longitude:     lngVal,
+			RadiusKm:      radiusVal,
+			ExcludeUserID: excludeUserID,
+			Limit:         limit,
+			Offset:        offset,
 		})
 		if err != nil {
 			response.InternalError(c, "Failed to load profiles")
@@ -170,7 +176,7 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	}
 
 	// Default: Current authenticated user profile
-	userIDStr := c.GetString("userID")
+	userIDStr = c.GetString("userID")
 	userUUID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		response.Unauthorized(c, "Authentication required")

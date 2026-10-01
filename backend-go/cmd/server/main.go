@@ -210,6 +210,9 @@ func main() {
 	aiCatalogWorker := worker.NewAICatalogKnowledgeWorker(db, cfg)
 	aiCatalogWorker.Start()
 
+	voiceSpeechWorker := worker.NewVoiceSpeechLearningWorker(db, cfg)
+	voiceSpeechWorker.Start()
+
 	// 7. Start HTTP Server with Graceful Shutdown
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
@@ -233,6 +236,7 @@ func main() {
 	log.Println("Shutting down server gracefully...")
 	marketingWorker.Stop()
 	nearbyWorker.Stop()
+	voiceSpeechWorker.Stop()
 	staleWorker.Stop()
 	payoutWorker.Stop()
 	subExpiryWorker.Stop()

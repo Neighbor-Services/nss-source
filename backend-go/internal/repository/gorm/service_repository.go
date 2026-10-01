@@ -457,3 +457,34 @@ func (r *aiKnowledgeRepository) IncrementSearchUsage(ctx context.Context, queryO
 		UpdateColumn("search_count", gorm.Expr("search_count + 1")).Error
 }
 
+func (r *aiKnowledgeRepository) RecordVoiceSpeechLog(ctx context.Context, log *entity.VoiceSpeechLog) error {
+	if log.ID == uuid.Nil {
+		log.ID = uuid.New()
+	}
+	return r.db.WithContext(ctx).Create(log).Error
+}
+
+func (r *aiKnowledgeRepository) GetRecentVoiceSpeechLogs(ctx context.Context, limit int) ([]entity.VoiceSpeechLog, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	var list []entity.VoiceSpeechLog
+	err := r.db.WithContext(ctx).
+		Preload("CatalogService").
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&list).Error
+	return list, err
+}
+
+func (r *aiKnowledgeRepository) MarkVoiceSpeechLogApplied(ctx context.Context, id uuid.UUID, requestID uuid.UUID) error {
+	return r.db.WithContext(ctx).
+		Model(&entity.VoiceSpeechLog{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"is_applied_to_request": true,
+			"linked_request_id":     requestID,
+			"updated_at":            time.Now(),
+		}).Error
+}
+

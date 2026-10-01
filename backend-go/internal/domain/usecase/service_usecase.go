@@ -44,4 +44,5 @@ type ServiceUseCase interface {
 	// AI Continuous Learning & Catalog Suggestions
 	GetAISuggestions(ctx context.Context) ([]entity.CatalogKnowledgeIndex, error)
 	TriggerCatalogReindex(ctx context.Context) error
+	ParseAndRefineVoiceSpeech(ctx context.Context, userID *uuid.UUID, rawSpeech string) (*entity.VoiceSpeechLog, error)
 }

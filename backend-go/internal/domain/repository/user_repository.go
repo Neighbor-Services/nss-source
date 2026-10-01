@@ -17,22 +17,23 @@ type UserRepository interface {
 }
 
 type ProfileFilterParams struct {
-	UserType     string
-	Popular      bool
-	Search       string
-	CategorySlug string
-	CategoryName string
-	ServiceName  string
-	ServiceID    string
-	RatingMin    *float64
-	PriceMin     *float64
-	PriceMax     *float64
-	City         string
-	Latitude     *float64
-	Longitude    *float64
-	RadiusKm     *float64
-	Limit        int
-	Offset       int
+	UserType      string
+	Popular       bool
+	Search        string
+	CategorySlug  string
+	CategoryName  string
+	ServiceName   string
+	ServiceID     string
+	RatingMin     *float64
+	PriceMin      *float64
+	PriceMax      *float64
+	City          string
+	Latitude      *float64
+	Longitude     *float64
+	RadiusKm      *float64
+	ExcludeUserID *uuid.UUID
+	Limit         int
+	Offset        int
 }
 
 type ProfileRepository interface {

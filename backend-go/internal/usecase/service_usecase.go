@@ -368,6 +368,7 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 
 	var requests []entity.ServiceRequest
 	var err error
+	var providerProfile *entity.Profile
 	if targetedOnly {
 		// Specific targeted/direct requests query
 		filterParams := repository.ServiceRequestFilterParams{
@@ -397,6 +398,7 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 
 		profile, pErr := u.profileRepo.GetByUserID(ctx, userID)
 		if pErr == nil && profile != nil {
+			providerProfile = profile
 			var offeredServices []string
 			if strings.TrimSpace(profile.Service) != "" {
 				offeredServices = append(offeredServices, strings.TrimSpace(profile.Service))
@@ -458,8 +460,13 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 	}
 	var filtered []entity.ServiceRequest
 	for _, req := range requests {
-		if normType == "PROVIDER" && req.UserID == userID {
-			continue // Prevent provider from seeing their own request
+		if normType == "PROVIDER" {
+			if req.UserID == userID {
+				continue // Prevent provider from seeing their own request
+			}
+			if providerProfile != nil && !IsProviderServiceMatch(providerProfile, &req) {
+				continue // Do not show requests outside of provider's offered services
+			}
 		}
 		filtered = append(filtered, req)
 	}
@@ -474,6 +481,83 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 	}
 
 	return requests, nil
+}
+
+// IsProviderServiceMatch checks if a provider's offered services match a service request
+func IsProviderServiceMatch(profile *entity.Profile, req *entity.ServiceRequest) bool {
+	if profile == nil || req == nil {
+		return false
+	}
+	// Direct request match
+	if req.TargetProviderID != nil && *req.TargetProviderID == profile.UserID {
+		return true
+	}
+
+	var offered []string
+	if s := strings.TrimSpace(profile.Service); s != "" {
+		offered = append(offered, strings.ToLower(s))
+	}
+	for _, cs := range profile.CatalogServices {
+		if s := strings.TrimSpace(cs.Name); s != "" {
+			offered = append(offered, strings.ToLower(s))
+		}
+	}
+	for _, s := range profile.CatalogServiceNames {
+		if s := strings.TrimSpace(s); s != "" {
+			offered = append(offered, strings.ToLower(s))
+		}
+	}
+
+	if len(offered) == 0 {
+		return false
+	}
+
+	var reqTerms []string
+	if s := strings.TrimSpace(req.ServiceType); s != "" {
+		reqTerms = append(reqTerms, strings.ToLower(s))
+	}
+	if s := strings.TrimSpace(req.Title); s != "" {
+		reqTerms = append(reqTerms, strings.ToLower(s))
+	}
+	if req.CatalogService != nil {
+		if s := strings.TrimSpace(req.CatalogService.Name); s != "" {
+			reqTerms = append(reqTerms, strings.ToLower(s))
+		}
+		if req.CatalogService.Category != nil {
+			if s := strings.TrimSpace(req.CatalogService.Category.Name); s != "" {
+				reqTerms = append(reqTerms, strings.ToLower(s))
+			}
+		}
+	}
+
+	for _, off := range offered {
+		for _, rt := range reqTerms {
+			if strings.Contains(rt, off) || strings.Contains(off, rt) {
+				return true
+			}
+			offWords := strings.FieldsFunc(off, func(r rune) bool {
+				return r == ' ' || r == '&' || r == '/' || r == ',' || r == '-'
+			})
+			rtWords := strings.FieldsFunc(rt, func(r rune) bool {
+				return r == ' ' || r == '&' || r == '/' || r == ',' || r == '-'
+			})
+			for _, ow := range offWords {
+				if len(ow) < 3 {
+					continue
+				}
+				for _, rw := range rtWords {
+					if len(rw) < 3 {
+						continue
+					}
+					if ow == rw || strings.Contains(rw, ow) || strings.Contains(ow, rw) {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 func (u *serviceUseCase) GetRequestByID(ctx context.Context, id uuid.UUID) (*entity.ServiceRequest, error) {
@@ -598,6 +682,11 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 			if err == nil {
 				for _, p := range nearbyProviders {
 					if p.UserID == customerID {
+						continue
+					}
+
+					// Only notify providers who actually offer services matching this request
+					if !IsProviderServiceMatch(&p, req) {
 						continue
 					}
 
@@ -1286,4 +1375,174 @@ func (u *serviceUseCase) TriggerCatalogReindex(ctx context.Context) error {
 	aimatcher.GlobalKnowledge.LoadFromDatabase(allKnowledge)
 	return nil
 }
+
+func (u *serviceUseCase) ParseAndRefineVoiceSpeech(ctx context.Context, userID *uuid.UUID, rawSpeech string) (*entity.VoiceSpeechLog, error) {
+	trimmedSpeech := strings.TrimSpace(rawSpeech)
+	if trimmedSpeech == "" {
+		return nil, errors.New("raw speech input cannot be empty")
+	}
+
+	lower := strings.ToLower(trimmedSpeech)
+
+	// 1. Detect Sentiment and Urgency
+	sentiment := "NEUTRAL"
+	sentimentScore := 0.0
+	urgency := "STANDARD"
+
+	urgentKeywords := []string{"emergency", "urgent", "asap", "flood", "flooding", "burst", "leak", "leaking", "smoke", "fire", "sparking", "overflow", "locked out", "lockout", "stranded", "no heat", "no power", "hazard", "dangerous"}
+	frustratedKeywords := []string{"frustrated", "annoyed", "mess", "ruined", "terrible", "awful", "unacceptable", "screwed up", "broken"}
+	positiveKeywords := []string{"upgrade", "remodel", "renovate", "custom", "beautify", "install new", "modernize", "paint", "design", "clean", "fresh"}
+
+	for _, kw := range urgentKeywords {
+		if strings.Contains(lower, kw) {
+			sentiment = "URGENT"
+			sentimentScore = -0.4
+			urgency = "HIGH"
+			break
+		}
+	}
+	if sentiment == "NEUTRAL" {
+		for _, kw := range frustratedKeywords {
+			if strings.Contains(lower, kw) {
+				sentiment = "FRUSTRATED"
+				sentimentScore = -0.6
+				urgency = "MEDIUM"
+				break
+			}
+		}
+	}
+	if sentiment == "NEUTRAL" {
+		for _, kw := range positiveKeywords {
+			if strings.Contains(lower, kw) {
+				sentiment = "POSITIVE"
+				sentimentScore = 0.7
+				urgency = "LOW"
+				break
+			}
+		}
+	}
+
+	// 2. Clean Speech & Remove Filler Phrases
+	fillers := []string{
+		"um", "uh", "er", "like", "you know", "basically", "actually",
+		"i need someone to", "i need a", "i want someone to", "i am looking for someone to",
+		"can someone please", "can you help me with", "please help me", "hey there", "hello",
+	}
+	cleaned := lower
+	for _, f := range fillers {
+		cleaned = strings.ReplaceAll(cleaned, f, "")
+	}
+	cleaned = strings.Join(strings.Fields(cleaned), " ")
+
+	// 3. Extract Keywords and Service Match
+	var matchedCatalog *entity.CatalogService
+	if u.catalogRepo != nil {
+		if allServices, err := u.catalogRepo.List(ctx, "", ""); err == nil && len(allServices) > 0 {
+			bestScore := 0
+			for i, cs := range allServices {
+				score := 0
+				sName := strings.ToLower(cs.Name)
+				if strings.Contains(lower, sName) || strings.Contains(sName, lower) {
+					score += 5
+				}
+				words := strings.Fields(sName)
+				for _, w := range words {
+					if len(w) > 3 && strings.Contains(lower, w) {
+						score += 2
+					}
+				}
+				if score > bestScore {
+					bestScore = score
+					matchedCatalog = &allServices[i]
+				}
+			}
+		}
+	}
+
+	// 4. Extract Keywords
+	var keywords []string
+	commonKeywords := []string{"sink", "pipe", "faucet", "toilet", "drain", "water", "ac", "hvac", "heater", "outlet", "switch", "breaker", "wiring", "drywall", "tv", "mount", "clean", "deep clean", "lawn", "mow", "trim", "paint", "roof", "gutter", "lock", "car", "battery", "oil"}
+	for _, kw := range commonKeywords {
+		if strings.Contains(lower, kw) {
+			keywords = append(keywords, kw)
+		}
+	}
+
+	// 5. Generate Professional Title
+	serviceTitleName := "Home & Trade Service"
+	if matchedCatalog != nil && matchedCatalog.Name != "" {
+		serviceTitleName = matchedCatalog.Name
+	}
+
+	// Capitalize words for title
+	titleWords := strings.Fields(trimmedSpeech)
+	var shortSubject string
+	if len(titleWords) > 8 {
+		shortSubject = strings.Join(titleWords[:8], " ") + "..."
+	} else {
+		shortSubject = trimmedSpeech
+	}
+
+	parsedTitle := fmt.Sprintf("%s: %s", serviceTitleName, strings.Title(strings.ToLower(shortSubject)))
+	if len(parsedTitle) > 120 {
+		parsedTitle = parsedTitle[:117] + "..."
+	}
+
+	// 6. Refined Structured Description
+	var descBuilder strings.Builder
+	descBuilder.WriteString(fmt.Sprintf("Project Objective: %s\n\n", strings.ToUpper(trimmedSpeech[:1])+trimmedSpeech[1:]))
+	descBuilder.WriteString("Scope of Work:\n")
+	descBuilder.WriteString("• Inspection and on-site assessment of the requested service.\n")
+	if len(keywords) > 0 {
+		descBuilder.WriteString(fmt.Sprintf("• Targeted work on: %s.\n", strings.Join(keywords, ", ")))
+	}
+	descBuilder.WriteString("• Professional tools, materials handling, and complete cleanup after service completion.\n")
+	if urgency == "HIGH" {
+		descBuilder.WriteString("• Urgency: Priority emergency service requested.\n")
+	}
+
+	parsedDescription := descBuilder.String()
+
+	// 7. Budget Calculation
+	suggestedBudget := 120.0
+	budgetType := "fixed"
+	if matchedCatalog != nil && matchedCatalog.BasePrice != nil && *matchedCatalog.BasePrice > 0 {
+		suggestedBudget = *matchedCatalog.BasePrice
+	}
+	if urgency == "HIGH" {
+		suggestedBudget = suggestedBudget * 1.25 // Emergency 25% surge
+	}
+
+	logRecord := entity.VoiceSpeechLog{
+		ID:                uuid.New(),
+		UserID:            userID,
+		RawTranscript:     trimmedSpeech,
+		RefinedTranscript: cleaned,
+		ParsedTitle:       parsedTitle,
+		ParsedDescription: parsedDescription,
+		ServiceType:       serviceTitleName,
+		SuggestedBudget:   suggestedBudget,
+		BudgetType:        budgetType,
+		Urgency:           urgency,
+		Sentiment:         sentiment,
+		SentimentScore:    sentimentScore,
+		Keywords:          keywords,
+		ConfidenceScore:   0.92,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+	}
+
+	if matchedCatalog != nil {
+		logRecord.CatalogServiceID = &matchedCatalog.ID
+		logRecord.CatalogService = matchedCatalog
+	}
+
+	// Persist to database
+	if u.knowledgeRepo != nil {
+		_ = u.knowledgeRepo.RecordVoiceSpeechLog(ctx, &logRecord)
+	}
+
+	return &logRecord, nil
+}
+
 

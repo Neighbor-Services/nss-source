@@ -152,6 +152,9 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 	if params.UserType != "" {
 		query = query.Where("accounts_profile.user_type = ?", params.UserType)
 	}
+	if params.ExcludeUserID != nil && *params.ExcludeUserID != uuid.Nil {
+		query = query.Where("accounts_profile.user_id != ?", *params.ExcludeUserID)
+	}
 
 	// Providers without an active paid subscription must be invisible across AI match, popular listings, and provider searches.
 	if params.UserType == "PROVIDER" || params.Popular {

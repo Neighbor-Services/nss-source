@@ -466,6 +466,34 @@ type AISearchLog struct {
 
 func (AISearchLog) TableName() string { return "services_ai_search_log" }
 
+// VoiceSpeechLog records spoken speech transcripts, AI-refined drafts, detected sentiment, and category mappings.
+type VoiceSpeechLog struct {
+	ID                 uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID             *uuid.UUID     `gorm:"type:uuid;index" json:"user_id,omitempty"`
+	RawTranscript      string         `gorm:"type:text;not null" json:"raw_transcript"`
+	RefinedTranscript  string         `gorm:"type:text" json:"refined_transcript"`
+	ParsedTitle        string         `gorm:"size:255" json:"parsed_title"`
+	ParsedDescription  string         `gorm:"type:text" json:"parsed_description"`
+	ServiceType        string         `gorm:"size:100" json:"service_type"`
+	CatalogServiceID   *uuid.UUID     `gorm:"type:uuid;index" json:"catalog_service_id,omitempty"`
+	SuggestedBudget    float64        `gorm:"default:0" json:"suggested_budget"`
+	BudgetType         string         `gorm:"size:20;default:'hourly'" json:"budget_type"`
+	Urgency            string         `gorm:"size:50;default:'STANDARD'" json:"urgency"`
+	Sentiment          string         `gorm:"size:50;default:'NEUTRAL'" json:"sentiment"` // POSITIVE, NEUTRAL, URGENT, FRUSTRATED, STRESSED
+	SentimentScore     float64        `gorm:"default:0" json:"sentiment_score"`           // -1.0 to 1.0
+	Keywords           pq.StringArray `gorm:"type:text[]" json:"keywords"`
+	ConfidenceScore    float64        `gorm:"default:0.85" json:"confidence_score"`
+	IsAppliedToRequest bool           `gorm:"default:false" json:"is_applied_to_request"`
+	LinkedRequestID    *uuid.UUID     `gorm:"type:uuid;index" json:"linked_request_id,omitempty"`
+	CreatedAt          time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+
+	User           *User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	CatalogService *CatalogService `gorm:"foreignKey:CatalogServiceID" json:"catalog_service,omitempty"`
+}
+
+func (VoiceSpeechLog) TableName() string { return "ai_voice_speech_logs" }
+
 type Favorite struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID         uuid.UUID `gorm:"type:uuid;index;not null" json:"user"`

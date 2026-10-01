@@ -10,6 +10,7 @@ import (
 
 	"backend-go/internal/config"
 	"backend-go/internal/domain/entity"
+	"backend-go/internal/usecase"
 	"backend-go/pkg/cache"
 	"backend-go/pkg/email"
 	"backend-go/pkg/fcm"
@@ -76,6 +77,8 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 	// 1. Fetch users and profiles that have coordinates registered
 	var profiles []entity.Profile
 	err := w.db.Preload("User").
+		Preload("CatalogServices").
+		Preload("CatalogServices.Category").
 		Where("(latitude != 0 OR longitude != 0)").
 		Find(&profiles).Error
 	if err != nil {
@@ -93,6 +96,7 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 	err = w.db.Preload("User").
 		Preload("User.Profile").
 		Preload("CatalogService").
+		Preload("CatalogService.Category").
 		Where("status = ? AND created_at >= ? AND latitude IS NOT NULL AND longitude IS NOT NULL AND (latitude != 0 OR longitude != 0)",
 			"OPEN", twoWeeksAgo).
 		Order("created_at DESC").
@@ -138,6 +142,13 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 			}
 			if req.Latitude == nil || req.Longitude == nil {
 				continue
+			}
+
+			// Ensure service matches provider's offered services/categories
+			if profile.UserType == "PROVIDER" {
+				if !usecase.IsProviderServiceMatch(&profile, &req) {
+					continue
+				}
 			}
 
 			dist := haversineDistanceMiles(userLat, userLon, *req.Latitude, *req.Longitude)

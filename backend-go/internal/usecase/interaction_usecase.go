@@ -149,6 +149,11 @@ func (u *interactionUseCase) CreateReview(ctx context.Context, reviewerID uuid.U
 		review.ProviderID = prof.UserID
 	}
 
+	// Prevent providers from reviewing their own profile
+	if review.ProviderID == reviewerID {
+		return nil, errors.New("you cannot review your own profile")
+	}
+
 	review.ID = uuid.New()
 	review.ReviewerID = reviewerID
 	review.CreatedAt = time.Now()

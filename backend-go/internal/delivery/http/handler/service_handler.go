@@ -809,3 +809,46 @@ func (h *ServiceHandler) TriggerCatalogReindex(c *gin.Context) {
 	})
 }
 
+// ParseVoiceSpeech parses spoken speech into an AI-refined request draft with sentiment, category match, and budget.
+func (h *ServiceHandler) ParseVoiceSpeech(c *gin.Context) {
+	var body struct {
+		Speech string `json:"speech" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.BadRequest(c, "speech field is required")
+		return
+	}
+
+	var userUUID *uuid.UUID
+	if userIDStr := c.GetString("userID"); userIDStr != "" {
+		if u, err := uuid.Parse(userIDStr); err == nil {
+			userUUID = &u
+		}
+	}
+
+	parsedLog, err := h.serviceUC.ParseAndRefineVoiceSpeech(c.Request.Context(), userUUID, body.Speech)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"id":                 parsedLog.ID,
+		"raw_transcript":     parsedLog.RawTranscript,
+		"refined_transcript": parsedLog.RefinedTranscript,
+		"parsed_title":       parsedLog.ParsedTitle,
+		"parsed_description": parsedLog.ParsedDescription,
+		"service_type":       parsedLog.ServiceType,
+		"catalog_service_id": parsedLog.CatalogServiceID,
+		"suggested_budget":   parsedLog.SuggestedBudget,
+		"budget_type":        parsedLog.BudgetType,
+		"urgency":            parsedLog.Urgency,
+		"sentiment":          parsedLog.Sentiment,
+		"sentiment_score":    parsedLog.SentimentScore,
+		"keywords":           parsedLog.Keywords,
+		"confidence_score":   parsedLog.ConfidenceScore,
+		"catalog_service":    parsedLog.CatalogService,
+	})
+}
+
+

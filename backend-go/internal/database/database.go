@@ -75,6 +75,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.FlashDispatch{},
 		&entity.CatalogKnowledgeIndex{},
 		&entity.AISearchLog{},
+		&entity.VoiceSpeechLog{},
 
 		// Interactions & Appointments
 		&entity.Favorite{},

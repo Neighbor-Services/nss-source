@@ -65,6 +65,9 @@ type AIKnowledgeRepository interface {
 	GetDynamicSuggestions(ctx context.Context, limit int) ([]entity.CatalogKnowledgeIndex, error)
 	RecordSearchLog(ctx context.Context, log *entity.AISearchLog) error
 	IncrementSearchUsage(ctx context.Context, queryOrKeyword string) error
+	RecordVoiceSpeechLog(ctx context.Context, log *entity.VoiceSpeechLog) error
+	GetRecentVoiceSpeechLogs(ctx context.Context, limit int) ([]entity.VoiceSpeechLog, error)
+	MarkVoiceSpeechLogApplied(ctx context.Context, id uuid.UUID, requestID uuid.UUID) error
 }
 
 
