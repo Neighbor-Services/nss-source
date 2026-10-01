@@ -44,7 +44,7 @@ func (r *favoriteRepository) Create(ctx context.Context, fav *entity.Favorite) e
 
 func (r *favoriteRepository) Delete(ctx context.Context, userID, favoriteUserID uuid.UUID) error {
 	return r.db.WithContext(ctx).
-		Where("user_id = ? AND (favorite_user_id = ? OR id = ? OR favorite_user_id IN (SELECT user_id FROM profiles WHERE id = ?))", userID, favoriteUserID, favoriteUserID, favoriteUserID).
+		Where("user_id = ? AND (favorite_user_id = ? OR id = ? OR favorite_user_id IN (SELECT user_id FROM accounts_profile WHERE id = ?))", userID, favoriteUserID, favoriteUserID, favoriteUserID).
 		Delete(&entity.Favorite{}).Error
 }
 

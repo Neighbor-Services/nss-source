@@ -119,6 +119,9 @@ func (u *interactionUseCase) CreateFavorite(ctx context.Context, userID, favorit
 }
 
 func (u *interactionUseCase) DeleteFavorite(ctx context.Context, userID, favoriteUserID uuid.UUID) error {
+	if prof, err := u.profileRepo.GetByID(ctx, favoriteUserID); err == nil && prof != nil && prof.UserID != uuid.Nil {
+		favoriteUserID = prof.UserID
+	}
 	return u.favRepo.Delete(ctx, userID, favoriteUserID)
 }
 
