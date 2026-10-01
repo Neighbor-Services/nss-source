@@ -19,7 +19,7 @@ type VerificationSubmitInput struct {
 }
 
 type ModerationUseCase interface {
-	SubmitReport(ctx context.Context, reporterID uuid.UUID, reportedUserID *uuid.UUID, contentType, objectID, reason, description string) (*entity.Report, error)
+	SubmitReport(ctx context.Context, reporterID uuid.UUID, reportedUserID *uuid.UUID, contentType, objectID, reason, description string, evidence []string) (*entity.Report, error)
 	GetReports(ctx context.Context, status string, limit, offset int) ([]entity.Report, error)
 	GetVerifications(ctx context.Context, providerID *uuid.UUID) ([]entity.ProviderVerification, error)
 	SubmitVerification(ctx context.Context, providerID uuid.UUID, input VerificationSubmitInput) (*entity.ProviderVerification, error)

@@ -300,6 +300,18 @@ func (h *AdminHandler) ListReports(c *gin.Context) {
 		return
 	}
 
+	for i := range reports {
+		if reports[i].Evidence != "" {
+			reports[i].EvidenceURL = formatMediaURL(reports[i].Evidence)
+		}
+		if len(reports[i].EvidenceList) > 0 {
+			reports[i].EvidenceURLs = make([]string, len(reports[i].EvidenceList))
+			for j, p := range reports[i].EvidenceList {
+				reports[i].EvidenceURLs[j] = formatMediaURL(p)
+			}
+		}
+	}
+
 	response.JSON(c, http.StatusOK, gin.H{
 		"results":   reports,
 		"count":     total,

@@ -121,37 +121,102 @@ func (h *ModerationHandler) SubmitReport(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ReportedUserID *string `json:"reported_user"`
-		ContentType    string  `json:"content_type"`
-		ResourceType   string  `json:"resource_type"`
-		ObjectID       string  `json:"object_id"`
-		ResourceID     string  `json:"resource_id"`
-		Reason         string  `json:"reason"`
-		Title          string  `json:"title"`
-		Description    string  `json:"description"`
+	contentTypeHeader := c.GetHeader("Content-Type")
+	var reportedUserIDStr, contentType, objectID, reason, title, description string
+	var evidenceList []string
+
+	if strings.HasPrefix(contentTypeHeader, "multipart/form-data") {
+		reportedUserIDStr = c.PostForm("reported_user")
+		contentType = c.PostForm("content_type")
+		if contentType == "" {
+			contentType = c.PostForm("resource_type")
+		}
+		objectID = c.PostForm("object_id")
+		if objectID == "" {
+			objectID = c.PostForm("resource_id")
+		}
+		reason = c.PostForm("reason")
+		title = c.PostForm("title")
+		description = c.PostForm("description")
+
+		// Process multipart uploaded files
+		form, formErr := c.MultipartForm()
+		if formErr == nil && form != nil {
+			fileFields := []string{"evidence", "images", "image", "file", "files", "evidence_files"}
+			for _, field := range fileFields {
+				if files, exists := form.File[field]; exists {
+					for _, f := range files {
+						if relPath, err := media.ValidateAndSaveUploadedFile(f, "reports", 15*1024*1024); err == nil && relPath != "" {
+							evidenceList = append(evidenceList, relPath)
+						}
+					}
+				}
+			}
+		}
+
+		// Also check single file fallback
+		if len(evidenceList) == 0 {
+			if f, err := c.FormFile("evidence"); err == nil && f != nil {
+				if relPath, err := media.ValidateAndSaveUploadedFile(f, "reports", 15*1024*1024); err == nil && relPath != "" {
+					evidenceList = append(evidenceList, relPath)
+				}
+			} else if f, err := c.FormFile("image"); err == nil && f != nil {
+				if relPath, err := media.ValidateAndSaveUploadedFile(f, "reports", 15*1024*1024); err == nil && relPath != "" {
+					evidenceList = append(evidenceList, relPath)
+				}
+			}
+		}
+	} else {
+		var req struct {
+			ReportedUserID *string  `json:"reported_user"`
+			ContentType    string   `json:"content_type"`
+			ResourceType   string   `json:"resource_type"`
+			ObjectID       string   `json:"object_id"`
+			ResourceID     string   `json:"resource_id"`
+			Reason         string   `json:"reason"`
+			Title          string   `json:"title"`
+			Description    string   `json:"description"`
+			Evidence       string   `json:"evidence"`
+			EvidenceList   []string `json:"evidence_list"`
+			Images         []string `json:"images"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			response.BadRequest(c, "Invalid report payload")
+			return
+		}
+
+		if req.ReportedUserID != nil {
+			reportedUserIDStr = *req.ReportedUserID
+		}
+		contentType = req.ContentType
+		if contentType == "" {
+			contentType = req.ResourceType
+		}
+		objectID = req.ObjectID
+		if objectID == "" {
+			objectID = req.ResourceID
+		}
+		reason = req.Reason
+		title = req.Title
+		description = req.Description
+
+		if req.Evidence != "" {
+			evidenceList = append(evidenceList, req.Evidence)
+		}
+		if len(req.EvidenceList) > 0 {
+			evidenceList = append(evidenceList, req.EvidenceList...)
+		}
+		if len(req.Images) > 0 {
+			evidenceList = append(evidenceList, req.Images...)
+		}
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid report payload")
-		return
-	}
-
-	contentType := req.ContentType
-	if contentType == "" {
-		contentType = req.ResourceType
-	}
-	objectID := req.ObjectID
-	if objectID == "" {
-		objectID = req.ResourceID
-	}
-
-	reason := req.Reason
 	if reason == "" {
-		if req.Title != "" {
-			reason = req.Title
-		} else if req.Description != "" {
-			reason = req.Description
+		if title != "" {
+			reason = title
+		} else if description != "" {
+			reason = description
 		} else {
 			response.BadRequest(c, "reason or description is required")
 			return
@@ -159,16 +224,28 @@ func (h *ModerationHandler) SubmitReport(c *gin.Context) {
 	}
 
 	var reportedUUID *uuid.UUID
-	if req.ReportedUserID != nil && *req.ReportedUserID != "" {
-		if uid, err := cleanUUID(*req.ReportedUserID); err == nil {
+	if reportedUserIDStr != "" {
+		if uid, err := cleanUUID(reportedUserIDStr); err == nil {
 			reportedUUID = &uid
 		}
 	}
 
-	report, err := h.moderationUC.SubmitReport(c.Request.Context(), userUUID, reportedUUID, contentType, objectID, reason, req.Description)
+	report, err := h.moderationUC.SubmitReport(c.Request.Context(), userUUID, reportedUUID, contentType, objectID, reason, description, evidenceList)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
+	}
+
+	if report != nil {
+		if report.Evidence != "" {
+			report.EvidenceURL = formatMediaURL(report.Evidence)
+		}
+		if len(report.EvidenceList) > 0 {
+			report.EvidenceURLs = make([]string, len(report.EvidenceList))
+			for i, p := range report.EvidenceList {
+				report.EvidenceURLs[i] = formatMediaURL(p)
+			}
+		}
 	}
 
 	response.Created(c, "Report submitted successfully", report)

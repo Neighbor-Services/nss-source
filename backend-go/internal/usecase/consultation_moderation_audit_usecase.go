@@ -112,10 +112,15 @@ func NewModerationUseCase(
 	}
 }
 
-func (u *moderationUseCase) SubmitReport(ctx context.Context, reporterID uuid.UUID, reportedUserID *uuid.UUID, contentType, objectID, reason, description string) (*entity.Report, error) {
+func (u *moderationUseCase) SubmitReport(ctx context.Context, reporterID uuid.UUID, reportedUserID *uuid.UUID, contentType, objectID, reason, description string, evidence []string) (*entity.Report, error) {
 	resourceType := contentType
 	if resourceType == "" {
 		resourceType = "General"
+	}
+
+	var primaryEvidence string
+	if len(evidence) > 0 {
+		primaryEvidence = evidence[0]
 	}
 
 	report := entity.Report{
@@ -125,6 +130,8 @@ func (u *moderationUseCase) SubmitReport(ctx context.Context, reporterID uuid.UU
 		ResourceType:   resourceType,
 		ResourceID:     objectID,
 		Reason:         reason,
+		Evidence:       primaryEvidence,
+		EvidenceList:   evidence,
 		Status:         "PENDING",
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),

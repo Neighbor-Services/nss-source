@@ -778,22 +778,26 @@ type UserSubscription = Subscription
 type PaymentTransaction = WalletTransaction
 
 type Report struct {
-	ID             uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	ReporterID     uuid.UUID  `gorm:"type:uuid;index;not null" json:"reporter"`
-	ReportedUserID *uuid.UUID `gorm:"type:uuid;index" json:"reported_user,omitempty"`
-	ResourceType   string     `gorm:"size:100" json:"resource_type"`
-	ResourceID     string     `gorm:"size:100" json:"resource_id"`
-	Reason         string     `gorm:"type:text;not null" json:"reason"`
-	Status         string     `gorm:"size:20;default:'PENDING'" json:"status"`
-	AdminNote      string     `gorm:"type:text" json:"admin_note,omitempty"`
-	CreatedAt      time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt      time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+	ID             uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	ReporterID     uuid.UUID      `gorm:"type:uuid;index;not null" json:"reporter"`
+	ReportedUserID *uuid.UUID     `gorm:"type:uuid;index" json:"reported_user,omitempty"`
+	ResourceType   string         `gorm:"size:100" json:"resource_type"`
+	ResourceID     string         `gorm:"size:100" json:"resource_id"`
+	Reason         string         `gorm:"type:text;not null" json:"reason"`
+	Evidence       string         `gorm:"size:1024" json:"evidence,omitempty"`
+	EvidenceList   pq.StringArray `gorm:"type:text[]" json:"evidence_list,omitempty"`
+	Status         string         `gorm:"size:20;default:'PENDING'" json:"status"`
+	AdminNote      string         `gorm:"type:text" json:"admin_note,omitempty"`
+	CreatedAt      time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt      time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 
 	Reporter     *User `gorm:"foreignKey:ReporterID" json:"reporter_details,omitempty"`
 	ReportedUser *User `gorm:"foreignKey:ReportedUserID" json:"reported_user_details,omitempty"`
 
 	// Serializer Parity
-	ReporterEmail string `gorm:"-" json:"reporter_email,omitempty"`
+	ReporterEmail string   `gorm:"-" json:"reporter_email,omitempty"`
+	EvidenceURL   string   `gorm:"-" json:"evidence_url,omitempty"`
+	EvidenceURLs  []string `gorm:"-" json:"evidence_urls,omitempty"`
 }
 
 func (Report) TableName() string { return "moderation_report" }
