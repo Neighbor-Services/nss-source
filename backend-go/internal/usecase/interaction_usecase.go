@@ -103,6 +103,9 @@ func (u *interactionUseCase) GetFavorites(ctx context.Context, userID uuid.UUID)
 }
 
 func (u *interactionUseCase) CreateFavorite(ctx context.Context, userID, favoriteUserID uuid.UUID) (*entity.Favorite, error) {
+	if prof, err := u.profileRepo.GetByID(ctx, favoriteUserID); err == nil && prof != nil && prof.UserID != uuid.Nil {
+		favoriteUserID = prof.UserID
+	}
 	fav := entity.Favorite{
 		ID:             uuid.New(),
 		UserID:         userID,

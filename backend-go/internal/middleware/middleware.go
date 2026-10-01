@@ -124,7 +124,7 @@ func Logger() gin.HandlerFunc {
 	}
 }
 
-func AuthRequired(cfg *config.Config) gin.HandlerFunc {
+func AuthRequired(cfg *config.Config, userRepo ...repository.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -148,6 +148,26 @@ func AuthRequired(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
+		if len(userRepo) > 0 && userRepo[0] != nil {
+			uid, err := uuid.Parse(claims.UserID)
+			if err != nil {
+				response.Unauthorized(c, "Invalid token subject")
+				c.Abort()
+				return
+			}
+			user, err := userRepo[0].GetByID(c.Request.Context(), uid)
+			if err != nil || user == nil {
+				response.Unauthorized(c, "User account no longer exists or has been deleted")
+				c.Abort()
+				return
+			}
+			if !user.IsActive {
+				response.Unauthorized(c, "User account is disabled or deactivated")
+				c.Abort()
+				return
+			}
+		}
+
 		c.Set("userID", claims.UserID)
 		c.Set("email", claims.Email)
 		c.Set("userType", claims.UserType)
@@ -160,7 +180,7 @@ func AuthRequired(cfg *config.Config) gin.HandlerFunc {
 // AuthOptional extracts JWT claims if an Authorization header is present and valid,
 // but does NOT reject the request if no token or an invalid token is provided.
 // Handlers can check c.Get("userID") to determine if a user is authenticated.
-func AuthOptional(cfg *config.Config) gin.HandlerFunc {
+func AuthOptional(cfg *config.Config, userRepo ...repository.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -178,6 +198,18 @@ func AuthOptional(cfg *config.Config) gin.HandlerFunc {
 		if err != nil {
 			c.Next()
 			return
+		}
+
+		if len(userRepo) > 0 && userRepo[0] != nil {
+			uid, err := uuid.Parse(claims.UserID)
+			if err == nil {
+				user, err := userRepo[0].GetByID(c.Request.Context(), uid)
+				if err != nil || user == nil || !user.IsActive {
+					// User not found or inactive, don't set auth context
+					c.Next()
+					return
+				}
+			}
 		}
 
 		c.Set("userID", claims.UserID)

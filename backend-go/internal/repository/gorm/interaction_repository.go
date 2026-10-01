@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"backend-go/internal/domain/entity"
@@ -81,7 +82,8 @@ func (r *reviewRepository) CalculateProviderRating(ctx context.Context, provider
 		Select("AVG(rating) as avg_rating, COUNT(id) as total_count").
 		Where("provider_id = ?", providerID).
 		Scan(&agg).Error
-	return agg.AvgRating, agg.Count, err
+	avg := math.Round(agg.AvgRating*10) / 10
+	return avg, agg.Count, err
 }
 
 type appointmentRepository struct {
