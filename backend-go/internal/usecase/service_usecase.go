@@ -329,10 +329,29 @@ func (u *serviceUseCase) enrichServiceRequest(ctx context.Context, req *entity.S
 	}
 }
 
-func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, userType string, status string, targetedOnly ...bool) ([]entity.ServiceRequest, error) {
+func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, userType string, status string, targetedOnly bool, optParams ...repository.ServiceRequestFilterParams) ([]entity.ServiceRequest, error) {
 	normType := strings.ToUpper(strings.TrimSpace(userType))
-	isTargetedOnly := len(targetedOnly) > 0 && targetedOnly[0]
-	cacheKey := fmt.Sprintf("cache:nearby_requests:user:%s:%s:%s:%t", userID.String(), normType, status, isTargetedOnly)
+	var extra repository.ServiceRequestFilterParams
+	if len(optParams) > 0 {
+		extra = optParams[0]
+	}
+
+	var radKey string
+	if extra.RadiusKm != nil {
+		radKey = fmt.Sprintf(":rad:%.1f", *extra.RadiusKm)
+	}
+	var latLngKey string
+	if extra.Latitude != nil && extra.Longitude != nil {
+		latLngKey = fmt.Sprintf(":lat:%.3f:lng:%.3f", *extra.Latitude, *extra.Longitude)
+	}
+	var catKey string
+	if extra.CatalogServiceID != nil {
+		catKey = fmt.Sprintf(":cat:%s", extra.CatalogServiceID.String())
+	} else if extra.CatalogServiceName != "" {
+		catKey = fmt.Sprintf(":cat:%s", extra.CatalogServiceName)
+	}
+
+	cacheKey := fmt.Sprintf("cache:nearby_requests:user:%s:%s:%s:%t%s%s%s", userID.String(), normType, status, targetedOnly, radKey, latLngKey, catKey)
 	if u.cache != nil {
 		var cached []entity.ServiceRequest
 		if found, _ := u.cache.Get(ctx, cacheKey, &cached); found && len(cached) > 0 {
@@ -342,23 +361,28 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 
 	var requests []entity.ServiceRequest
 	var err error
-	if isTargetedOnly {
+	if targetedOnly {
 		// Specific targeted/direct requests query
 		filterParams := repository.ServiceRequestFilterParams{
-			Status:           status,
-			TargetProviderID: &userID,
+			Status:             status,
+			TargetProviderID:   &userID,
+			CatalogServiceID:   extra.CatalogServiceID,
+			CatalogServiceName: extra.CatalogServiceName,
 		}
 		requests, err = u.requestRepo.List(ctx, filterParams)
 	} else if normType == "CUSTOMER" || normType == "SEEKER" || normType == "USER" || normType == "" {
 		requests, err = u.requestRepo.ListByUser(ctx, &userID, nil, status)
 	} else {
-		// Provider flow: Fetch provider profile to determine offered services and location
+		// Provider flow: Fetch provider profile to determine offered services, location, and search range
 		filterParams := repository.ServiceRequestFilterParams{
-			Status:           status,
-			TargetProviderID: &userID,
+			Status:             status,
+			TargetProviderID:   &userID,
+			CatalogServiceID:   extra.CatalogServiceID,
+			CatalogServiceName: extra.CatalogServiceName,
 		}
 
-		if profile, pErr := u.profileRepo.GetByUserID(ctx, userID); pErr == nil && profile != nil {
+		profile, pErr := u.profileRepo.GetByUserID(ctx, userID)
+		if pErr == nil && profile != nil {
 			var offeredServices []string
 			if strings.TrimSpace(profile.Service) != "" {
 				offeredServices = append(offeredServices, strings.TrimSpace(profile.Service))
@@ -375,11 +399,37 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 			}
 			filterParams.OfferedServices = offeredServices
 
-			if profile.Latitude != 0 || profile.Longitude != 0 {
+			// Latitude & Longitude
+			if extra.Latitude != nil && extra.Longitude != nil {
+				filterParams.Latitude = extra.Latitude
+				filterParams.Longitude = extra.Longitude
+			} else if profile.Latitude != 0 || profile.Longitude != 0 {
 				lat := profile.Latitude
 				lng := profile.Longitude
 				filterParams.Latitude = &lat
 				filterParams.Longitude = &lng
+			}
+
+			// Search Radius: query radius > profile search radius > default 25km
+			if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
+				filterParams.RadiusKm = extra.RadiusKm
+			} else if profile.SearchRadiusKm > 0 {
+				rad := profile.SearchRadiusKm
+				filterParams.RadiusKm = &rad
+			} else {
+				defaultRad := 25.0
+				filterParams.RadiusKm = &defaultRad
+			}
+		} else {
+			if extra.Latitude != nil && extra.Longitude != nil {
+				filterParams.Latitude = extra.Latitude
+				filterParams.Longitude = extra.Longitude
+			}
+			if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
+				filterParams.RadiusKm = extra.RadiusKm
+			} else {
+				defaultRad := 25.0
+				filterParams.RadiusKm = &defaultRad
 			}
 		}
 

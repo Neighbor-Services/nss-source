@@ -121,6 +121,7 @@ type Profile struct {
 	Level                int        `gorm:"default:1" json:"level"`
 	NeighborScore        int        `gorm:"default:500" json:"neighbor_score"`
 	MaxCatalogServices   int        `gorm:"default:1" json:"max_catalog_services"`
+	SearchRadiusKm       float64    `gorm:"default:25.0" json:"search_radius_km"`
 	CreatedAt            time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt            time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 

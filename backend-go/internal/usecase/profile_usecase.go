@@ -173,6 +173,31 @@ func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, up
 	if ut, ok := updates["user_type"].(string); ok && ut != "" {
 		profile.UserType = strings.ToUpper(strings.TrimSpace(ut))
 	}
+	if rad, ok := updates["search_radius_km"].(float64); ok && rad > 0 {
+		profile.SearchRadiusKm = rad
+	} else if radStr, ok := updates["search_radius_km"].(string); ok && radStr != "" {
+		if parsed, err := strconv.ParseFloat(radStr, 64); err == nil && parsed > 0 {
+			profile.SearchRadiusKm = parsed
+		}
+	} else if rad, ok := updates["search_radius"].(float64); ok && rad > 0 {
+		profile.SearchRadiusKm = rad
+	} else if radStr, ok := updates["search_radius"].(string); ok && radStr != "" {
+		if parsed, err := strconv.ParseFloat(radStr, 64); err == nil && parsed > 0 {
+			profile.SearchRadiusKm = parsed
+		}
+	} else if rad, ok := updates["radius_km"].(float64); ok && rad > 0 {
+		profile.SearchRadiusKm = rad
+	} else if radStr, ok := updates["radius_km"].(string); ok && radStr != "" {
+		if parsed, err := strconv.ParseFloat(radStr, 64); err == nil && parsed > 0 {
+			profile.SearchRadiusKm = parsed
+		}
+	} else if rad, ok := updates["radius"].(float64); ok && rad > 0 {
+		profile.SearchRadiusKm = rad
+	} else if radStr, ok := updates["radius"].(string); ok && radStr != "" {
+		if parsed, err := strconv.ParseFloat(radStr, 64); err == nil && parsed > 0 {
+			profile.SearchRadiusKm = parsed
+		}
+	}
 
 	profile.UpdatedAt = time.Now()
 	if err := u.profileRepo.Update(ctx, profile); err != nil {

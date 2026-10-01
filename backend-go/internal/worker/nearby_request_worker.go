@@ -118,8 +118,11 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 		userLon := profile.Longitude
 		userID := profile.UserID
 
-		// Calculate matching nearby requests within max 25 km (or custom radius)
+		// Calculate matching nearby requests within provider's search radius (or default 25 km)
 		maxRadiusKm := 25.0
+		if profile.SearchRadiusKm > 0 {
+			maxRadiusKm = profile.SearchRadiusKm
+		}
 		var nearbyList []entity.ServiceRequest
 
 		for _, req := range openRequests {

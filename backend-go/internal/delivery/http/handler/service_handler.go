@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"backend-go/internal/domain/entity"
+	"backend-go/internal/domain/repository"
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/pkg/media"
 	"backend-go/pkg/response"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -81,7 +83,51 @@ func (h *ServiceHandler) GetRequests(c *gin.Context) {
 		userType = queryUserType
 	}
 
-	requests, err := h.serviceUC.GetRequests(c.Request.Context(), userUUID, userType, status, targeted)
+	var optParams repository.ServiceRequestFilterParams
+	if latStr := c.Query("lat"); latStr != "" {
+		if lat, err := strconv.ParseFloat(latStr, 64); err == nil {
+			optParams.Latitude = &lat
+		}
+	} else if latStr := c.Query("latitude"); latStr != "" {
+		if lat, err := strconv.ParseFloat(latStr, 64); err == nil {
+			optParams.Latitude = &lat
+		}
+	}
+	if lngStr := c.Query("lng"); lngStr != "" {
+		if lng, err := strconv.ParseFloat(lngStr, 64); err == nil {
+			optParams.Longitude = &lng
+		}
+	} else if lngStr := c.Query("longitude"); lngStr != "" {
+		if lng, err := strconv.ParseFloat(lngStr, 64); err == nil {
+			optParams.Longitude = &lng
+		}
+	}
+	if radStr := c.Query("radius"); radStr != "" {
+		if rad, err := strconv.ParseFloat(radStr, 64); err == nil && rad > 0 {
+			optParams.RadiusKm = &rad
+		}
+	} else if radStr := c.Query("radius_km"); radStr != "" {
+		if rad, err := strconv.ParseFloat(radStr, 64); err == nil && rad > 0 {
+			optParams.RadiusKm = &rad
+		}
+	} else if radStr := c.Query("distance"); radStr != "" {
+		if rad, err := strconv.ParseFloat(radStr, 64); err == nil && rad > 0 {
+			optParams.RadiusKm = &rad
+		}
+	}
+	if catSrv := c.Query("catalog_service"); catSrv != "" {
+		if catUUID, err := uuid.Parse(catSrv); err == nil {
+			optParams.CatalogServiceID = &catUUID
+		} else {
+			optParams.CatalogServiceName = catSrv
+		}
+	} else if catSrv := c.Query("catalog_service_id"); catSrv != "" {
+		if catUUID, err := uuid.Parse(catSrv); err == nil {
+			optParams.CatalogServiceID = &catUUID
+		}
+	}
+
+	requests, err := h.serviceUC.GetRequests(c.Request.Context(), userUUID, userType, status, targeted, optParams)
 	if err != nil {
 		response.InternalError(c, "Failed to load requests")
 		return
