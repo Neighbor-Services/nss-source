@@ -144,20 +144,54 @@ func (u *moderationUseCase) GetVerifications(ctx context.Context, providerID *uu
 	return u.verificationRepo.List(ctx, providerID)
 }
 
-func (u *moderationUseCase) SubmitVerification(ctx context.Context, providerID uuid.UUID, frontURL, backURL string) (*entity.ProviderVerification, error) {
-	v := entity.ProviderVerification{
-		ID:            uuid.New(),
-		ProviderID:    providerID,
-		DocumentFront: frontURL,
-		DocumentBack:  backURL,
-		Status:        "PENDING",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+func (u *moderationUseCase) SubmitVerification(ctx context.Context, providerID uuid.UUID, input domainUsecase.VerificationSubmitInput) (*entity.ProviderVerification, error) {
+	existingList, _ := u.verificationRepo.List(ctx, &providerID)
+	var v *entity.ProviderVerification
+	if len(existingList) > 0 {
+		v = &existingList[0]
+	} else {
+		v = &entity.ProviderVerification{
+			ID:         uuid.New(),
+			ProviderID: providerID,
+			CreatedAt:  time.Now(),
+		}
 	}
-	if err := u.verificationRepo.Create(ctx, &v); err != nil {
-		return nil, err
+
+	if input.DocumentType != "" {
+		v.DocumentType = input.DocumentType
 	}
-	return &v, nil
+	if input.DocumentFront != "" {
+		v.DocumentFront = input.DocumentFront
+	}
+	if input.DocumentBack != "" {
+		v.DocumentBack = input.DocumentBack
+	}
+	if input.Selfie != "" {
+		v.Selfie = input.Selfie
+	}
+	if input.TradeLicense != "" {
+		v.TradeLicense = input.TradeLicense
+	}
+	if input.LicenseNumber != "" {
+		v.LicenseNumber = input.LicenseNumber
+	}
+	if input.LicenseExpiry != nil {
+		v.LicenseExpiry = input.LicenseExpiry
+	}
+	v.Status = "PENDING"
+	v.ReviewerNotes = ""
+	v.UpdatedAt = time.Now()
+
+	if len(existingList) > 0 {
+		if err := u.verificationRepo.Update(ctx, v); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := u.verificationRepo.Create(ctx, v); err != nil {
+			return nil, err
+		}
+	}
+	return v, nil
 }
 
 func (u *moderationUseCase) GetBackgroundChecks(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error) {

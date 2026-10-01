@@ -217,8 +217,8 @@ func (r *adminRepository) ListVerifications(ctx context.Context, status string, 
 	var list []entity.ProviderVerification
 	var total int64
 	query := r.db.WithContext(ctx).Model(&entity.ProviderVerification{}).Preload("Provider").Preload("Provider.Profile")
-	if status != "" {
-		query = query.Where("status = ?", status)
+	if status != "" && strings.ToUpper(status) != "ALL" {
+		query = query.Where("UPPER(status) = ?", strings.ToUpper(status))
 	}
 	_ = query.Count(&total)
 	if limit > 0 {
@@ -228,6 +228,38 @@ func (r *adminRepository) ListVerifications(ctx context.Context, status string, 
 		query = query.Offset(offset)
 	}
 	err := query.Order("created_at DESC").Find(&list).Error
+	if err == nil {
+		for i := range list {
+			if list[i].DocumentFront != "" {
+				if strings.HasPrefix(list[i].DocumentFront, "http") || strings.HasPrefix(list[i].DocumentFront, "/media/") {
+					list[i].DocumentFrontURL = list[i].DocumentFront
+				} else {
+					list[i].DocumentFrontURL = "/media/" + strings.TrimPrefix(list[i].DocumentFront, "/")
+				}
+			}
+			if list[i].DocumentBack != "" {
+				if strings.HasPrefix(list[i].DocumentBack, "http") || strings.HasPrefix(list[i].DocumentBack, "/media/") {
+					list[i].DocumentBackURL = list[i].DocumentBack
+				} else {
+					list[i].DocumentBackURL = "/media/" + strings.TrimPrefix(list[i].DocumentBack, "/")
+				}
+			}
+			if list[i].Selfie != "" {
+				if strings.HasPrefix(list[i].Selfie, "http") || strings.HasPrefix(list[i].Selfie, "/media/") {
+					list[i].SelfieURL = list[i].Selfie
+				} else {
+					list[i].SelfieURL = "/media/" + strings.TrimPrefix(list[i].Selfie, "/")
+				}
+			}
+			if list[i].TradeLicense != "" {
+				if strings.HasPrefix(list[i].TradeLicense, "http") || strings.HasPrefix(list[i].TradeLicense, "/media/") {
+					list[i].TradeLicenseURL = list[i].TradeLicense
+				} else {
+					list[i].TradeLicenseURL = "/media/" + strings.TrimPrefix(list[i].TradeLicense, "/")
+				}
+			}
+		}
+	}
 	return list, total, err
 }
 

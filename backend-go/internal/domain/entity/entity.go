@@ -769,20 +769,27 @@ type Report struct {
 func (Report) TableName() string { return "moderation_report" }
 
 type ProviderVerification struct {
-	ID            uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	ProviderID    uuid.UUID `gorm:"type:uuid;index;not null" json:"provider"`
-	DocumentFront string    `gorm:"size:500;not null" json:"document_front"`
-	DocumentBack  string    `gorm:"size:500" json:"document_back,omitempty"`
-	Status        string    `gorm:"size:20;default:'PENDING'" json:"status"`
-	ReviewerNotes string    `gorm:"type:text" json:"reviewer_notes,omitempty"`
-	CreatedAt     time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt     time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID            uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	ProviderID    uuid.UUID  `gorm:"type:uuid;index;not null" json:"provider"`
+	DocumentType  string     `gorm:"size:100;default:'Driver\'s License'" json:"document_type"`
+	DocumentFront string     `gorm:"size:500;not null" json:"document_front"`
+	DocumentBack  string     `gorm:"size:500" json:"document_back,omitempty"`
+	Selfie        string     `gorm:"size:500" json:"selfie,omitempty"`
+	TradeLicense  string     `gorm:"size:500" json:"trade_license,omitempty"`
+	LicenseNumber string     `gorm:"size:100" json:"license_number,omitempty"`
+	LicenseExpiry *time.Time `json:"license_expiry,omitempty"`
+	Status        string     `gorm:"size:20;default:'PENDING'" json:"status"`
+	ReviewerNotes string     `gorm:"type:text" json:"reviewer_notes,omitempty"`
+	CreatedAt     time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt     time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 
 	Provider *User `gorm:"foreignKey:ProviderID" json:"provider_details,omitempty"`
 
 	// Serializer Parity
 	DocumentFrontURL string `gorm:"-" json:"document_front_url,omitempty"`
 	DocumentBackURL  string `gorm:"-" json:"document_back_url,omitempty"`
+	SelfieURL        string `gorm:"-" json:"selfie_url,omitempty"`
+	TradeLicenseURL  string `gorm:"-" json:"trade_license_url,omitempty"`
 }
 
 func (ProviderVerification) TableName() string { return "moderation_providerverification" }

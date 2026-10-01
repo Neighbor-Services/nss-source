@@ -52,6 +52,19 @@ func (u *profileUseCase) GetProfile(ctx context.Context, userID uuid.UUID, targe
 	}
 	if profile != nil {
 		profile.EnrichCatalogServices()
+		if profile.Bio == "" || profile.Address == "" || profile.Service == "" {
+			if about, err := u.aboutRepo.GetByUserID(ctx, profile.UserID); err == nil && about != nil {
+				if profile.Bio == "" && about.Description != "" {
+					profile.Bio = about.Description
+				}
+				if profile.Address == "" && about.Address != "" {
+					profile.Address = about.Address
+				}
+				if profile.Service == "" && about.Specification != "" {
+					profile.Service = about.Specification
+				}
+			}
+		}
 		if profile.RecordActivity() {
 			_ = u.profileRepo.Update(ctx, profile)
 		}
@@ -247,6 +260,27 @@ func (u *profileUseCase) UpdateAbout(ctx context.Context, userID uuid.UUID, upda
 	about.UpdatedAt = time.Now()
 	if err := u.aboutRepo.Upsert(ctx, about); err != nil {
 		return nil, err
+	}
+
+	// Sync bio, address and service to user profile
+	if profile, pErr := u.profileRepo.GetByUserID(ctx, userID); pErr == nil && profile != nil {
+		updatedProfile := false
+		if about.Description != "" && profile.Bio != about.Description {
+			profile.Bio = about.Description
+			updatedProfile = true
+		}
+		if about.Address != "" && (profile.Address == "" || profile.Address != about.Address) {
+			profile.Address = about.Address
+			updatedProfile = true
+		}
+		if about.Specification != "" && profile.Service == "" {
+			profile.Service = about.Specification
+			updatedProfile = true
+		}
+		if updatedProfile {
+			profile.UpdatedAt = time.Now()
+			_ = u.profileRepo.Update(ctx, profile)
+		}
 	}
 
 	return about, nil

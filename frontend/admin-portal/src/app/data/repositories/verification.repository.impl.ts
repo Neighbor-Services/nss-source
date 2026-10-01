@@ -19,18 +19,38 @@ export class VerificationRepositoryImpl implements VerificationRepository {
     return this.http.get<any>(url).pipe(
       map(res => {
         const raw = Array.isArray(res) ? res : (res.results || []);
-        return raw.map((v: any) => ({
-          id: v.id?.toString() || '',
-          userId: v.user_id || v.userId || '',
-          userName: v.user_name || (v.user ? `${v.user.first_name || ''} ${v.user.last_name || ''}`.trim() : 'Provider User'),
-          userEmail: v.user_email || v.user?.email || '',
-          documentType: v.document_type || 'Government ID',
-          documentUrl: v.document_url || v.id_front || '',
-          selfieUrl: v.selfie_url || v.selfie || '',
-          status: v.status || 'pending',
-          submittedAt: v.created_at || new Date().toISOString(),
-          rejectionReason: v.rejection_reason || ''
-        }));
+        return raw.map((v: any) => {
+          const providerUser = v.provider_details || v.user;
+          const profile = providerUser?.profile;
+          let userName = v.user_name || '';
+          if (!userName && profile) {
+            userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+          }
+          if (!userName && providerUser) {
+            userName = `${providerUser.first_name || ''} ${providerUser.last_name || ''}`.trim();
+          }
+          if (!userName) {
+            userName = 'Provider User';
+          }
+
+          const userEmail = v.user_email || providerUser?.email || '';
+
+          return {
+            id: v.id?.toString() || '',
+            userId: v.provider || v.provider_id || v.user_id || v.userId || '',
+            userName,
+            userEmail,
+            documentType: v.document_type || 'Driver\'s License',
+            documentUrl: v.document_front_url || v.document_front || v.document_url || v.id_front || '',
+            documentBackUrl: v.document_back_url || v.document_back || '',
+            selfieUrl: v.selfie_url || v.selfie || '',
+            tradeLicenseUrl: v.trade_license_url || v.trade_license || '',
+            licenseNumber: v.license_number || '',
+            status: (v.status || 'pending').toLowerCase() as 'pending' | 'approved' | 'rejected',
+            submittedAt: v.created_at || new Date().toISOString(),
+            rejectionReason: v.reviewer_notes || v.rejection_reason || ''
+          };
+        });
       })
     );
   }

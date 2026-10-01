@@ -5,8 +5,11 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	domainUsecase "backend-go/internal/domain/usecase"
+	"backend-go/pkg/media"
 	"backend-go/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -171,6 +174,16 @@ func (h *ModerationHandler) SubmitReport(c *gin.Context) {
 	response.Created(c, "Report submitted successfully", report)
 }
 
+func formatMediaURL(path string) string {
+	if path == "" {
+		return ""
+	}
+	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "/media/") {
+		return path
+	}
+	return "/media/" + strings.TrimPrefix(path, "/")
+}
+
 func (h *ModerationHandler) GetVerifications(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 	var providerUUID *uuid.UUID
@@ -183,7 +196,140 @@ func (h *ModerationHandler) GetVerifications(c *gin.Context) {
 		response.InternalError(c, "Failed to load verifications")
 		return
 	}
+
+	for i := range verifications {
+		if verifications[i].DocumentFront != "" {
+			verifications[i].DocumentFrontURL = formatMediaURL(verifications[i].DocumentFront)
+		}
+		if verifications[i].DocumentBack != "" {
+			verifications[i].DocumentBackURL = formatMediaURL(verifications[i].DocumentBack)
+		}
+		if verifications[i].Selfie != "" {
+			verifications[i].SelfieURL = formatMediaURL(verifications[i].Selfie)
+		}
+		if verifications[i].TradeLicense != "" {
+			verifications[i].TradeLicenseURL = formatMediaURL(verifications[i].TradeLicense)
+		}
+	}
+
 	response.JSON(c, http.StatusOK, verifications)
+}
+
+func (h *ModerationHandler) SubmitVerification(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	input := domainUsecase.VerificationSubmitInput{}
+
+	// Handle multipart form-data or JSON payload
+	if strings.Contains(c.ContentType(), "multipart/form-data") {
+		input.DocumentType = c.PostForm("document_type")
+		if input.DocumentType == "" {
+			input.DocumentType = "Driver's License"
+		}
+		input.LicenseNumber = c.PostForm("license_number")
+		if expStr := c.PostForm("license_expiry"); expStr != "" {
+			if parsed, err := time.Parse(time.RFC3339, expStr); err == nil {
+				input.LicenseExpiry = &parsed
+			} else if parsed, err := time.Parse("2006-01-02", expStr); err == nil {
+				input.LicenseExpiry = &parsed
+			}
+		}
+
+		// Handle Front Image
+		if frontFile, err := c.FormFile("document_front"); err == nil && frontFile != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(frontFile, "verifications", 15*1024*1024); err == nil {
+				input.DocumentFront = relPath
+			}
+		} else if frontFile, err := c.FormFile("front"); err == nil && frontFile != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(frontFile, "verifications", 15*1024*1024); err == nil {
+				input.DocumentFront = relPath
+			}
+		}
+
+		// Handle Back Image
+		if backFile, err := c.FormFile("document_back"); err == nil && backFile != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(backFile, "verifications", 15*1024*1024); err == nil {
+				input.DocumentBack = relPath
+			}
+		} else if backFile, err := c.FormFile("back"); err == nil && backFile != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(backFile, "verifications", 15*1024*1024); err == nil {
+				input.DocumentBack = relPath
+			}
+		}
+
+		// Handle Selfie
+		if selfieFile, err := c.FormFile("selfie"); err == nil && selfieFile != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(selfieFile, "verifications", 15*1024*1024); err == nil {
+				input.Selfie = relPath
+			}
+		}
+
+		// Handle Trade License
+		if tradeFile, err := c.FormFile("trade_license"); err == nil && tradeFile != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(tradeFile, "verifications", 15*1024*1024); err == nil {
+				input.TradeLicense = relPath
+			}
+		} else if tradeFile, err := c.FormFile("trade"); err == nil && tradeFile != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(tradeFile, "verifications", 15*1024*1024); err == nil {
+				input.TradeLicense = relPath
+			}
+		}
+	} else {
+		var req struct {
+			DocumentType  string  `json:"document_type"`
+			DocumentFront string  `json:"document_front"`
+			DocumentBack  string  `json:"document_back"`
+			Selfie        string  `json:"selfie"`
+			TradeLicense  string  `json:"trade_license"`
+			LicenseNumber string  `json:"license_number"`
+			LicenseExpiry *string `json:"license_expiry"`
+		}
+		if err := c.ShouldBindJSON(&req); err == nil {
+			input.DocumentType = req.DocumentType
+			input.DocumentFront = req.DocumentFront
+			input.DocumentBack = req.DocumentBack
+			input.Selfie = req.Selfie
+			input.TradeLicense = req.TradeLicense
+			input.LicenseNumber = req.LicenseNumber
+			if req.LicenseExpiry != nil && *req.LicenseExpiry != "" {
+				if parsed, err := time.Parse(time.RFC3339, *req.LicenseExpiry); err == nil {
+					input.LicenseExpiry = &parsed
+				} else if parsed, err := time.Parse("2006-01-02", *req.LicenseExpiry); err == nil {
+					input.LicenseExpiry = &parsed
+				}
+			}
+		}
+	}
+
+	if input.DocumentType == "" {
+		input.DocumentType = "Driver's License"
+	}
+
+	verif, err := h.moderationUC.SubmitVerification(c.Request.Context(), userUUID, input)
+	if err != nil {
+		response.BadRequest(c, "Failed to submit verification: "+err.Error())
+		return
+	}
+
+	if verif.DocumentFront != "" {
+		verif.DocumentFrontURL = formatMediaURL(verif.DocumentFront)
+	}
+	if verif.DocumentBack != "" {
+		verif.DocumentBackURL = formatMediaURL(verif.DocumentBack)
+	}
+	if verif.Selfie != "" {
+		verif.SelfieURL = formatMediaURL(verif.Selfie)
+	}
+	if verif.TradeLicense != "" {
+		verif.TradeLicenseURL = formatMediaURL(verif.TradeLicense)
+	}
+
+	response.Created(c, "Verification documents submitted for review", verif)
 }
 
 func (h *ModerationHandler) GetBackgroundChecks(c *gin.Context) {

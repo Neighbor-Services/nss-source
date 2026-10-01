@@ -2,16 +2,27 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"backend-go/internal/domain/entity"
 	"github.com/google/uuid"
 )
 
+type VerificationSubmitInput struct {
+	DocumentType  string
+	DocumentFront string
+	DocumentBack  string
+	Selfie        string
+	TradeLicense  string
+	LicenseNumber string
+	LicenseExpiry *time.Time
+}
+
 type ModerationUseCase interface {
 	SubmitReport(ctx context.Context, reporterID uuid.UUID, reportedUserID *uuid.UUID, contentType, objectID, reason, description string) (*entity.Report, error)
 	GetReports(ctx context.Context, status string, limit, offset int) ([]entity.Report, error)
 	GetVerifications(ctx context.Context, providerID *uuid.UUID) ([]entity.ProviderVerification, error)
-	SubmitVerification(ctx context.Context, providerID uuid.UUID, frontURL, backURL string) (*entity.ProviderVerification, error)
+	SubmitVerification(ctx context.Context, providerID uuid.UUID, input VerificationSubmitInput) (*entity.ProviderVerification, error)
 	GetBackgroundChecks(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error)
 	GetBackgroundCheckConfig(ctx context.Context) (map[string]interface{}, error)
 	InitiateBackgroundCheck(ctx context.Context, userID uuid.UUID, paymentIntentID string) (*entity.BackgroundCheck, error)

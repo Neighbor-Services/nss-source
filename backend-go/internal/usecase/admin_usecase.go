@@ -336,6 +336,11 @@ func (u *adminUseCase) ApproveVerification(ctx context.Context, adminID, verific
 		_ = u.profileRepo.Update(ctx, profile)
 	}
 
+	if user, err := u.adminRepo.GetUserByID(ctx, v.ProviderID); err == nil && user != nil {
+		user.IsVerified = true
+		_ = u.adminRepo.UpdateUser(ctx, user)
+	}
+
 	u.logAudit(ctx, &adminID, "ADMIN_APPROVE_VERIFICATION", "ProviderVerification", verificationID.String(), map[string]interface{}{
 		"provider_id": v.ProviderID.String(),
 	})
@@ -353,6 +358,12 @@ func (u *adminUseCase) RejectVerification(ctx context.Context, adminID, verifica
 
 	if err := u.adminRepo.UpdateVerification(ctx, v); err != nil {
 		return err
+	}
+
+	if profile, err := u.profileRepo.GetByUserID(ctx, v.ProviderID); err == nil && profile != nil {
+		profile.IsIdentityVerified = false
+		profile.UpdatedAt = time.Now()
+		_ = u.profileRepo.Update(ctx, profile)
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_REJECT_VERIFICATION", "ProviderVerification", verificationID.String(), map[string]interface{}{
