@@ -21,7 +21,8 @@ export class SettingsComponent implements OnInit {
     backgroundCheckPaymentMode: 'PLATFORM_PAYS',
     backgroundCheckFee: 29.99,
     broadcastRadiusKm: 25.0,
-    matchRadiusKm: 15.0
+    matchRadiusKm: 15.0,
+    disableDistanceFilter: false
   });
 
   // Broadcast state

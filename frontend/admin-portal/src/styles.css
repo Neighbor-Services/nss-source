@@ -317,7 +317,8 @@ app-dashboard, app-users, app-user-detail, app-verifications,
 app-background-checks, app-disputes, app-payouts, app-subscriptions,
 app-reports, app-fraud, app-roles, app-catalog, app-templates,
 app-settings, app-feature-flags, app-system, app-legal, app-support,
-app-cms, app-appointments, app-reviews, app-promos {
+app-cms, app-appointments, app-reviews, app-promos, app-financial,
+app-emergency-dispatch {
   display: block;
   width: 100%;
 }

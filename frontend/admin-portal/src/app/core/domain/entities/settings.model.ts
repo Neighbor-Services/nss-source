@@ -3,4 +3,5 @@ export interface PlatformSettings {
   backgroundCheckFee: number;
   broadcastRadiusKm: number;
   matchRadiusKm: number;
+  disableDistanceFilter: boolean;
 }

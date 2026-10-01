@@ -116,12 +116,17 @@ func (u *serviceUseCase) GetCatalogServices(ctx context.Context, categorySlug st
 
 func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase.MatchProvidersInput) ([]entity.Profile, error) {
 	radius := 25.0
+	disableDistance := false
+	if u.adminRepo != nil {
+		if s, err := u.adminRepo.GetSettings(ctx); err == nil && s != nil {
+			disableDistance = s.DisableDistanceFilter
+			if s.MatchRadiusKm > 0 {
+				radius = s.MatchRadiusKm
+			}
+		}
+	}
 	if input.MaxDistance > 0 {
 		radius = input.MaxDistance
-	} else if u.adminRepo != nil {
-		if s, err := u.adminRepo.GetSettings(ctx); err == nil && s != nil && s.MatchRadiusKm > 0 {
-			radius = s.MatchRadiusKm
-		}
 	}
 
 	lat := input.Latitude
@@ -147,7 +152,9 @@ func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase
 	if lat != 0 || lng != 0 {
 		params.Latitude = &lat
 		params.Longitude = &lng
-		params.RadiusKm = &radius
+		if !disableDistance {
+			params.RadiusKm = &radius
+		}
 	}
 
 	candidates, err := u.profileRepo.List(ctx, params)
@@ -381,6 +388,13 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 			CatalogServiceName: extra.CatalogServiceName,
 		}
 
+		disableDistance := false
+		if u.adminRepo != nil {
+			if s, err := u.adminRepo.GetSettings(ctx); err == nil && s != nil {
+				disableDistance = s.DisableDistanceFilter
+			}
+		}
+
 		profile, pErr := u.profileRepo.GetByUserID(ctx, userID)
 		if pErr == nil && profile != nil {
 			var offeredServices []string
@@ -410,26 +424,30 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 				filterParams.Longitude = &lng
 			}
 
-			// Search Radius: query radius > profile search radius > default 25km
-			if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
-				filterParams.RadiusKm = extra.RadiusKm
-			} else if profile.SearchRadiusKm > 0 {
-				rad := profile.SearchRadiusKm
-				filterParams.RadiusKm = &rad
-			} else {
-				defaultRad := 25.0
-				filterParams.RadiusKm = &defaultRad
+			// Search Radius: if distance filter disabled globally, leave RadiusKm nil so all requests are visible
+			if !disableDistance {
+				if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
+					filterParams.RadiusKm = extra.RadiusKm
+				} else if profile.SearchRadiusKm > 0 {
+					rad := profile.SearchRadiusKm
+					filterParams.RadiusKm = &rad
+				} else {
+					defaultRad := 25.0
+					filterParams.RadiusKm = &defaultRad
+				}
 			}
 		} else {
 			if extra.Latitude != nil && extra.Longitude != nil {
 				filterParams.Latitude = extra.Latitude
 				filterParams.Longitude = extra.Longitude
 			}
-			if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
-				filterParams.RadiusKm = extra.RadiusKm
-			} else {
-				defaultRad := 25.0
-				filterParams.RadiusKm = &defaultRad
+			if !disableDistance {
+				if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
+					filterParams.RadiusKm = extra.RadiusKm
+				} else {
+					defaultRad := 25.0
+					filterParams.RadiusKm = &defaultRad
+				}
 			}
 		}
 
@@ -557,18 +575,26 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 		// If broadcast public request with coordinates, notify verified providers within the configured radius
 		go func() {
 			radius := 25.0
+			disableDistance := false
 			if u.adminRepo != nil {
-				if s, err := u.adminRepo.GetSettings(context.Background()); err == nil && s != nil && s.BroadcastRadiusKm > 0 {
-					radius = s.BroadcastRadiusKm
+				if s, err := u.adminRepo.GetSettings(context.Background()); err == nil && s != nil {
+					disableDistance = s.DisableDistanceFilter
+					if s.BroadcastRadiusKm > 0 {
+						radius = s.BroadcastRadiusKm
+					}
 				}
 			}
 
-			nearbyProviders, err := u.profileRepo.List(context.Background(), repository.ProfileFilterParams{
+			filterParams := repository.ProfileFilterParams{
 				UserType:  "PROVIDER",
 				Latitude:  req.Latitude,
 				Longitude: req.Longitude,
-				RadiusKm:  &radius,
-			})
+			}
+			if !disableDistance {
+				filterParams.RadiusKm = &radius
+			}
+
+			nearbyProviders, err := u.profileRepo.List(context.Background(), filterParams)
 			if err == nil {
 				for _, p := range nearbyProviders {
 					if p.UserID == customerID {
@@ -588,14 +614,14 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 							SenderID:         &customerID,
 							NotificationType: "BROADCAST_REQUEST",
 							Title:            "New Service Request Nearby",
-							Message:          fmt.Sprintf("A new request for '%s' was posted %.1f km away from your location.", req.Title, dist),
+							Message:          fmt.Sprintf("A new request for '%s' was posted %.1f mi away from your location.", req.Title, dist),
 							Data:             entity.JSONMap{"request_id": req.ID.String()},
 							CreatedAt:        time.Now(),
 						}
 						_ = u.notifRepo.Create(context.Background(), &notif)
 					}
 
-					u.sendPush(p.UserID, "New Service Request Nearby", fmt.Sprintf("A new request for '%s' was posted %.1f km away from your location.", req.Title, dist), map[string]string{
+					u.sendPush(p.UserID, "New Service Request Nearby", fmt.Sprintf("A new request for '%s' was posted %.1f mi away from your location.", req.Title, dist), map[string]string{
 						"notification_type": "broadcast_request",
 						"request_id":        req.ID.String(),
 						"sender_id":         customerID.String(),

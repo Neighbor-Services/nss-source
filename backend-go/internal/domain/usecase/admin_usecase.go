@@ -115,7 +115,7 @@ type AdminUseCase interface {
 
 	// Settings & Audit
 	GetSettings(ctx context.Context, adminID uuid.UUID) (*entity.ModerationSetting, error)
-	UpdateSettings(ctx context.Context, adminID uuid.UUID, paymentMode string, fee float64, broadcastRadiusKm, matchRadiusKm float64) (*entity.ModerationSetting, error)
+	UpdateSettings(ctx context.Context, adminID uuid.UUID, paymentMode string, fee float64, broadcastRadiusKm, matchRadiusKm float64, disableDistanceFilter *bool) (*entity.ModerationSetting, error)
 	ListAuditLogs(ctx context.Context, adminID uuid.UUID, filter repository.AdminAuditFilter) ([]entity.AuditLog, int64, error)
 
 	// User Restoration & Wallet Management

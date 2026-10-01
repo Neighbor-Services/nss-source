@@ -30,6 +30,24 @@
     </div>
   </div>
 
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
   <!-- Main Split Workbench -->
   <div class="dispatch-grid">
     <!-- Left Column: Incident List Feed -->
@@ -75,7 +93,7 @@
 
             <div class="item-meta">
               <span class="trade-pill">{{ inc.tradeConcept }}</span>
-              <span class="radius-pill">{{ inc.broadcastRadiusKm }} km radius</span>
+              <span class="radius-pill">{{ inc.broadcastRadiusKm }} mi radius</span>
               <span class="status-pill" [attr.data-status]="inc.status">{{ inc.status }}</span>
             </div>
           </div>
@@ -104,8 +122,8 @@
 
           <div class="banner-actions" *hasPermission="'emergency:manage'">
             @if (inc.status === 'BROADCASTING') {
-              <button class="btn-action-extend" (click)="extendRadius(inc)" title="Expand search radius by 5km">
-                +5km Radius (Now {{ inc.broadcastRadiusKm }}km)
+              <button class="btn-action-extend" (click)="extendRadius(inc)" title="Expand search radius by 5 miles">
+                +5mi Radius (Now {{ inc.broadcastRadiusKm }}mi)
               </button>
             }
             @if (inc.status !== 'CANCELLED_FRAUD' && inc.status !== 'COMPLETED') {
@@ -118,14 +136,22 @@
 
         <!-- Radar Simulation Canvas / Map Placeholder -->
         <div class="radar-viewport">
+          <div class="radar-grid-bg"></div>
+          <div class="radar-crosshair-x"></div>
+          <div class="radar-crosshair-y"></div>
           <div class="radar-scan-line"></div>
+          
+          <div class="radar-hud-coords">
+            <span>GRID: {{ inc.latitude | number:'1.4-4' }}°N, {{ inc.longitude | number:'1.4-4' }}°W</span>
+            <span>RADIUS: {{ inc.broadcastRadiusKm }} MILES ACTIVE</span>
+          </div>
+
           <div class="radar-concentric circle-1"></div>
           <div class="radar-concentric circle-2"></div>
           <div class="radar-concentric circle-3"></div>
 
           <!-- Center Seeker Beacon -->
           <div class="radar-center-beacon">
-            <span class="beacon-wave"></span>
             <div class="beacon-pin">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
@@ -139,13 +165,13 @@
           @for (p of inc.candidateProviders; track p.id; let idx = $index) {
             <div
               class="provider-radar-blip"
-              [style.top]="(45 + (idx === 0 ? -25 : 22)) + '%'"
-              [style.left]="(50 + (idx === 0 ? 28 : -32)) + '%'"
+              [style.top]="(46 + (idx === 0 ? -26 : 22)) + '%'"
+              [style.left]="(50 + (idx === 0 ? 30 : -34)) + '%'"
             >
               <div class="blip-circle"></div>
               <div class="blip-card">
                 <b>{{ p.name }}</b>
-                <span>{{ p.distanceKm }} km • {{ p.etaMins }} min ETA</span>
+                <span>{{ p.distanceKm }} mi • {{ p.etaMins }} min ETA</span>
               </div>
             </div>
           }
@@ -155,7 +181,13 @@
         <div class="detail-body-grid">
           <!-- Seeker Info Card -->
           <div class="info-card">
-            <h4 class="card-subtitle">Seeker Identity &amp; Location</h4>
+            <h4 class="card-subtitle">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Seeker Identity &amp; Location
+            </h4>
             <div class="info-row">
               <span class="info-lbl">Seeker Name:</span>
               <span class="info-val"><b>{{ inc.seekerName }}</b></span>
@@ -179,6 +211,12 @@
           <!-- Active / Candidate Provider Card -->
           <div class="info-card">
             <h4 class="card-subtitle">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
               {{ inc.assignedProvider ? 'Assigned Responding Provider' : 'Candidate Provider Roster (' + inc.candidateProviders.length + ')' }}
             </h4>
 
@@ -193,7 +231,7 @@
                 </div>
                 <div class="assigned-stats">
                   <span><b>ETA:</b> {{ assigned.etaMins }} mins</span>
-                  <span><b>Distance:</b> {{ assigned.distanceKm }} km</span>
+                  <span><b>Distance:</b> {{ assigned.distanceKm }} mi</span>
                   <span>
                     <app-pii-mask [value]="assigned.phone" type="PHONE" [entityId]="assigned.id"></app-pii-mask>
                   </span>
@@ -205,7 +243,7 @@
                   <div class="candidate-row">
                     <div class="cand-info">
                       <b>{{ cand.name }}</b>
-                      <span>{{ cand.distanceKm }} km away ({{ cand.etaMins }} min ETA) • ★ {{ cand.rating }}</span>
+                      <span>{{ cand.distanceKm }} mi away ({{ cand.etaMins }} min ETA) • ★ {{ cand.rating }}</span>
                     </div>
                     <button class="btn-assign-sm" (click)="reassignProvider(inc, cand)">
                       Force Dispatch

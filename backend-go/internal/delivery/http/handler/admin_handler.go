@@ -798,10 +798,11 @@ func (h *AdminHandler) GetSettings(c *gin.Context) {
 }
 
 type UpdateSettingsRequest struct {
-	BackgroundCheckPaymentMode string  `json:"background_check_payment_mode"`
-	BackgroundCheckFee         float64 `json:"background_check_fee"`
-	BroadcastRadiusKm          float64 `json:"broadcast_radius_km"`
-	MatchRadiusKm              float64 `json:"match_radius_km"`
+	BackgroundCheckPaymentMode string   `json:"background_check_payment_mode"`
+	BackgroundCheckFee         float64  `json:"background_check_fee"`
+	BroadcastRadiusKm          float64  `json:"broadcast_radius_km"`
+	MatchRadiusKm              float64  `json:"match_radius_km"`
+	DisableDistanceFilter      *bool    `json:"disable_distance_filter"`
 }
 
 func (h *AdminHandler) UpdateSettings(c *gin.Context) {
@@ -812,7 +813,7 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	s, err := h.adminUC.UpdateSettings(c.Request.Context(), adminID, req.BackgroundCheckPaymentMode, req.BackgroundCheckFee, req.BroadcastRadiusKm, req.MatchRadiusKm)
+	s, err := h.adminUC.UpdateSettings(c.Request.Context(), adminID, req.BackgroundCheckPaymentMode, req.BackgroundCheckFee, req.BroadcastRadiusKm, req.MatchRadiusKm, req.DisableDistanceFilter)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return

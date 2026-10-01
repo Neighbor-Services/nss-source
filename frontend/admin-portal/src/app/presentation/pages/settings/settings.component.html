@@ -107,16 +107,44 @@
 
           <div class="form-row-2">
             <div class="form-group">
-              <label class="form-label">Service Matching Radius (KM)</label>
-              <input type="number" step="1" [(ngModel)]="settings().matchRadiusKm" name="matchRadius" class="form-control" />
+              <label class="form-label">Service Matching Radius (Miles)</label>
+              <input type="number" step="1" [(ngModel)]="settings().matchRadiusKm" name="matchRadius" class="form-control" [disabled]="!!settings().disableDistanceFilter" />
               <span class="form-help">Radius around seeker for provider suggestion.</span>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Broadcast Alert Radius (KM)</label>
-              <input type="number" step="1" [(ngModel)]="settings().broadcastRadiusKm" name="broadcastRadius" class="form-control" />
+              <label class="form-label">Broadcast Alert Radius (Miles)</label>
+              <input type="number" step="1" [(ngModel)]="settings().broadcastRadiusKm" name="broadcastRadius" class="form-control" [disabled]="!!settings().disableDistanceFilter" />
               <span class="form-help">Instant lead alert push radius for new jobs.</span>
             </div>
+          </div>
+
+          <!-- GLOBAL DISTANCE RESTRICTION TOGGLE -->
+          <div class="toggle-setting-card" [class.enabled]="settings().disableDistanceFilter">
+            <div class="toggle-setting-left">
+              <div class="toggle-setting-icon" [class.active]="settings().disableDistanceFilter">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                  <path d="M2 12h20"></path>
+                </svg>
+              </div>
+              <div class="toggle-setting-info">
+                <div class="toggle-setting-title">
+                  <span>Disable Distance Restriction</span>
+                  <span class="status-pill" [class.active]="settings().disableDistanceFilter">
+                    {{ settings().disableDistanceFilter ? 'GLOBAL VISIBILITY (NO RESTRICTION)' : 'STANDARD RADIUS RESTRICTION' }}
+                  </span>
+                </div>
+                <p class="toggle-setting-desc">
+                  When enabled, all radial distance boundaries are bypassed. Providers will see all open requests and receive notifications regardless of geographic distance.
+                </p>
+              </div>
+            </div>
+            <label class="switch-control">
+              <input type="checkbox" [(ngModel)]="settings().disableDistanceFilter" name="disableDistanceFilter" />
+              <span class="switch-slider"></span>
+            </label>
           </div>
 
           <div class="panel-actions">

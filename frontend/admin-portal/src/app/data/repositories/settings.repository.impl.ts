@@ -17,7 +17,8 @@ export class SettingsRepositoryImpl implements SettingsRepository {
         backgroundCheckPaymentMode: s.background_check_payment_mode || 'PLATFORM_PAYS',
         backgroundCheckFee: s.background_check_fee ?? 29.99,
         broadcastRadiusKm: s.broadcast_radius_km ?? 25.0,
-        matchRadiusKm: s.match_radius_km ?? 15.0
+        matchRadiusKm: s.match_radius_km ?? 15.0,
+        disableDistanceFilter: s.disable_distance_filter ?? false
       }))
     );
   }
@@ -27,13 +28,15 @@ export class SettingsRepositoryImpl implements SettingsRepository {
       background_check_payment_mode: settings.backgroundCheckPaymentMode,
       background_check_fee: settings.backgroundCheckFee,
       broadcast_radius_km: settings.broadcastRadiusKm,
-      match_radius_km: settings.matchRadiusKm
+      match_radius_km: settings.matchRadiusKm,
+      disable_distance_filter: settings.disableDistanceFilter
     }).pipe(
       map(s => ({
         backgroundCheckPaymentMode: s.background_check_payment_mode || 'PLATFORM_PAYS',
         backgroundCheckFee: s.background_check_fee ?? 29.99,
         broadcastRadiusKm: s.broadcast_radius_km ?? 25.0,
-        matchRadiusKm: s.match_radius_km ?? 15.0
+        matchRadiusKm: s.match_radius_km ?? 15.0,
+        disableDistanceFilter: s.disable_distance_filter ?? false
       }))
     );
   }

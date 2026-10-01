@@ -23,10 +23,13 @@ export class DisputesComponent implements OnInit {
   mainSection = signal<DisputeSectionTab>('CASES');
 
   selectedDispute = signal<DisputeItem | null>(null);
+  selectedDisputeForDetail = signal<DisputeItem | null>(null);
   showResolveModal = signal(false);
   showRejectModal = signal(false);
+  showDetailModal = signal(false);
 
   resolutionNotes = '';
+  refundType: 'FULL' | 'PARTIAL' | 'RELEASE' = 'FULL';
   refundAmount = 0;
   rejectReason = '';
 
@@ -35,19 +38,32 @@ export class DisputesComponent implements OnInit {
 
   // Computed KPIs
   totalCount = computed(() => this.disputes().length);
-  openCount = computed(() => this.disputes().filter(d => d.status === 'open').length);
-  resolvedCount = computed(() => this.disputes().filter(d => d.status === 'resolved').length);
-  rejectedCount = computed(() => this.disputes().filter(d => d.status === 'rejected').length);
+  openCount = computed(() => this.disputes().filter(d => this.isOpen(d)).length);
+  resolvedCount = computed(() => this.disputes().filter(d => this.isResolved(d)).length);
+  rejectedCount = computed(() => this.disputes().filter(d => this.isRejected(d)).length);
   totalDisputedAmount = computed(() => this.disputes().reduce((sum, d) => sum + (d.amount || 0), 0));
 
   filteredDisputes = computed(() => {
     const tab = this.activeTab();
-    if (tab === 'OPEN') return this.disputes().filter(d => d.status === 'open');
-    if (tab === 'RESOLVED') return this.disputes().filter(d => d.status === 'resolved');
-    if (tab === 'REJECTED') return this.disputes().filter(d => d.status === 'rejected');
+    if (tab === 'OPEN') return this.disputes().filter(d => this.isOpen(d));
+    if (tab === 'RESOLVED') return this.disputes().filter(d => this.isResolved(d));
+    if (tab === 'REJECTED') return this.disputes().filter(d => this.isRejected(d));
     return this.disputes();
   });
 
+  isOpen(d: DisputeItem): boolean {
+    const s = (d.status || '').toUpperCase();
+    return s === 'OPEN' || s === 'UNDER_REVIEW' || s === 'ESCALATED' || s === 'PENDING';
+  }
+
+  isResolved(d: DisputeItem): boolean {
+    return (d.status || '').toUpperCase() === 'RESOLVED';
+  }
+
+  isRejected(d: DisputeItem): boolean {
+    const s = (d.status || '').toUpperCase();
+    return s === 'REJECTED' || s === 'DISMISSED';
+  }
 
   getEvidenceTimeRemaining(createdAt: string): { text: string; isExpired: boolean } {
     if (!createdAt) return { text: 'Awaiting submission', isExpired: false };
@@ -84,11 +100,32 @@ export class DisputesComponent implements OnInit {
     });
   }
 
+  openDetail(d: DisputeItem) {
+    this.selectedDisputeForDetail.set(d);
+    this.showDetailModal.set(true);
+  }
+
+  closeDetail() {
+    this.showDetailModal.set(false);
+    this.selectedDisputeForDetail.set(null);
+  }
+
   openResolve(d: DisputeItem) {
     this.selectedDispute.set(d);
+    this.refundType = 'FULL';
     this.refundAmount = d.amount;
-    this.resolutionNotes = 'Full escrow refund approved upon investigation';
+    this.resolutionNotes = `Escrow dispute #${d.appointmentId} resolved by platform arbitration. Refund granted to seeker.`;
     this.showResolveModal.set(true);
+  }
+
+  onRefundTypeChange() {
+    const d = this.selectedDispute();
+    if (!d) return;
+    if (this.refundType === 'FULL') {
+      this.refundAmount = d.amount;
+    } else if (this.refundType === 'RELEASE') {
+      this.refundAmount = 0;
+    }
   }
 
   closeResolve() {
@@ -104,11 +141,16 @@ export class DisputesComponent implements OnInit {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    this.disputeUC.resolveDispute(d.id, this.resolutionNotes, this.refundAmount).subscribe({
+    const notes = this.resolutionNotes || (this.refundAmount > 0 
+      ? `Refund of $${this.refundAmount.toFixed(2)} granted to customer.` 
+      : 'Dispute resolved in favor of provider. Escrow released.');
+
+    this.disputeUC.resolveDispute(d.id, notes, this.refundAmount).subscribe({
       next: () => {
         this.isResolving.set(false);
         this.showResolveModal.set(false);
-        this.successMessage.set(`Dispute #${d.appointmentId} resolved with $${this.refundAmount.toFixed(2)} refund.`);
+        if (this.showDetailModal()) this.closeDetail();
+        this.successMessage.set(`Dispute #${d.appointmentId} resolved successfully.`);
         this.loadDisputes();
         setTimeout(() => this.successMessage.set(null), 4000);
       },
@@ -121,7 +163,7 @@ export class DisputesComponent implements OnInit {
 
   openReject(d: DisputeItem) {
     this.selectedDispute.set(d);
-    this.rejectReason = 'Evidence provided is insufficient to justify escrow refund.';
+    this.rejectReason = 'Evidence provided is insufficient to justify claim. Dispute dismissed and funds settled.';
     this.showRejectModal.set(true);
   }
 
@@ -142,7 +184,8 @@ export class DisputesComponent implements OnInit {
       next: () => {
         this.isResolving.set(false);
         this.showRejectModal.set(false);
-        this.successMessage.set(`Dispute #${d.appointmentId} rejected/dismissed.`);
+        if (this.showDetailModal()) this.closeDetail();
+        this.successMessage.set(`Dispute #${d.appointmentId} dismissed.`);
         this.loadDisputes();
         setTimeout(() => this.successMessage.set(null), 4000);
       },

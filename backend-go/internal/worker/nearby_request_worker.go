@@ -106,6 +106,12 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 		return
 	}
 
+	var modSetting entity.ModerationSetting
+	disableDistance := false
+	if err := w.db.First(&modSetting).Error; err == nil {
+		disableDistance = modSetting.DisableDistanceFilter
+	}
+
 	for _, profile := range profiles {
 		if profile.User == nil {
 			continue
@@ -118,10 +124,10 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 		userLon := profile.Longitude
 		userID := profile.UserID
 
-		// Calculate matching nearby requests within provider's search radius (or default 25 km)
-		maxRadiusKm := 25.0
+		// Calculate matching nearby requests within provider's search radius (or default 25 miles)
+		maxRadiusMiles := 25.0
 		if profile.SearchRadiusKm > 0 {
-			maxRadiusKm = profile.SearchRadiusKm
+			maxRadiusMiles = profile.SearchRadiusKm
 		}
 		var nearbyList []entity.ServiceRequest
 
@@ -134,8 +140,8 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 				continue
 			}
 
-			dist := haversineDistanceKm(userLat, userLon, *req.Latitude, *req.Longitude)
-			if dist <= maxRadiusKm {
+			dist := haversineDistanceMiles(userLat, userLon, *req.Latitude, *req.Longitude)
+			if disableDistance || dist <= maxRadiusMiles {
 				reqCopy := req
 				reqCopy.Distance = &dist
 				nearbyList = append(nearbyList, reqCopy)
@@ -191,7 +197,7 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 				SenderID:         &matchedReq.UserID,
 				NotificationType: "NEARBY_REQUEST",
 				Title:            "New Job Opportunity Nearby",
-				Message:          fmt.Sprintf("A client nearby needs '%s' (~%.1f km away).", matchedReq.Title, distVal),
+				Message:          fmt.Sprintf("A client nearby needs '%s' (~%.1f mi away).", matchedReq.Title, distVal),
 				Data:             entity.JSONMap{"request_id": matchedReq.ID.String(), "distance": fmt.Sprintf("%.1f", distVal)},
 				CreatedAt:        time.Now(),
 			}
@@ -201,7 +207,7 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 			w.sendPush(
 				userID,
 				"New Job Nearby",
-				fmt.Sprintf("A client requested '%s' (~%.1f km away). Tap to view!", matchedReq.Title, distVal),
+				fmt.Sprintf("A client requested '%s' (~%.1f mi away). Tap to view!", matchedReq.Title, distVal),
 				map[string]string{
 					"notification_type": "nearby_request",
 					"request_id":        matchedReq.ID.String(),
@@ -271,8 +277,8 @@ func (w *NearbyRequestWorker) sendPush(userID uuid.UUID, title, body string, dat
 	}()
 }
 
-func haversineDistanceKm(lat1, lon1, lat2, lon2 float64) float64 {
-	const earthRadiusKm = 6371.0
+func haversineDistanceMiles(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadiusMiles = 3958.8
 
 	dLat := (lat2 - lat1) * math.Pi / 180.0
 	dLon := (lon2 - lon1) * math.Pi / 180.0
@@ -284,5 +290,5 @@ func haversineDistanceKm(lat1, lon1, lat2, lon2 float64) float64 {
 		math.Sin(dLon/2)*math.Sin(dLon/2)*math.Cos(rLat1)*math.Cos(rLat2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
-	return earthRadiusKm * c
+	return earthRadiusMiles * c
 }

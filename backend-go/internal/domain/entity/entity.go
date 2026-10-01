@@ -829,6 +829,7 @@ type ModerationSetting struct {
 	BackgroundCheckFee         float64   `gorm:"default:29.99" json:"background_check_fee"`
 	BroadcastRadiusKm          float64   `gorm:"default:25.0" json:"broadcast_radius_km"`
 	MatchRadiusKm              float64   `gorm:"default:25.0" json:"match_radius_km"`
+	DisableDistanceFilter      bool      `gorm:"default:false" json:"disable_distance_filter"`
 }
 
 func (ModerationSetting) TableName() string { return "moderation_moderationsetting" }

@@ -26,6 +26,7 @@ import { PromoRepository } from './core/repositories/promo.repository';
 import { LegalRepository } from './core/repositories/legal.repository';
 import { SupportRepository } from './core/repositories/support.repository';
 import { CmsRepository } from './core/repositories/cms.repository';
+import { DispatchRepository } from './core/repositories/dispatch.repository';
 
 // Feature Repository Implementations
 import { DashboardRepositoryImpl } from './data/repositories/dashboard.repository.impl';
@@ -49,6 +50,7 @@ import { PromoRepositoryImpl } from './data/repositories/promo.repository.impl';
 import { LegalRepositoryImpl } from './data/repositories/legal.repository.impl';
 import { SupportRepositoryImpl } from './data/repositories/support.repository.impl';
 import { CmsRepositoryImpl } from './data/repositories/cms.repository.impl';
+import { DispatchRepositoryImpl } from './data/repositories/dispatch.repository.impl';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -82,6 +84,7 @@ export const appConfig: ApplicationConfig = {
     { provide: PromoRepository, useClass: PromoRepositoryImpl },
     { provide: LegalRepository, useClass: LegalRepositoryImpl },
     { provide: SupportRepository, useClass: SupportRepositoryImpl },
-    { provide: CmsRepository, useClass: CmsRepositoryImpl }
+    { provide: CmsRepository, useClass: CmsRepositoryImpl },
+    { provide: DispatchRepository, useClass: DispatchRepositoryImpl }
   ]
 };

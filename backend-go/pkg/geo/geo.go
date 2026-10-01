@@ -4,10 +4,13 @@ import (
 	"math"
 )
 
-// EarthRadiusKm represents the mean radius of the Earth in kilometers.
+// EarthRadiusMiles represents the mean radius of the Earth in miles.
+const EarthRadiusMiles = 3958.8
+
+// EarthRadiusKm represents the mean radius of the Earth in kilometers (deprecated, retained for backwards compatibility).
 const EarthRadiusKm = 6371.0
 
-// HaversineDistance computes the great-circle distance between two geographic coordinates in kilometers.
+// HaversineDistance computes the great-circle distance between two geographic coordinates in miles.
 func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	dLat := (lat2 - lat1) * (math.Pi / 180.0)
 	dLon := (lon2 - lon1) * (math.Pi / 180.0)
@@ -20,11 +23,11 @@ func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 			math.Sin(dLon/2.0)*math.Sin(dLon/2.0)
 
 	c := 2.0 * math.Atan2(math.Sqrt(a), math.Sqrt(1.0-a))
-	return EarthRadiusKm * c
+	return EarthRadiusMiles * c
 }
 
-// IsWithinRadius checks if the target point (lat2, lon2) is within maxRadiusKm from the source point (lat1, lon1).
-func IsWithinRadius(lat1, lon1, lat2, lon2, maxRadiusKm float64) (bool, float64) {
+// IsWithinRadius checks if the target point (lat2, lon2) is within maxRadius from the source point (lat1, lon1) in miles.
+func IsWithinRadius(lat1, lon1, lat2, lon2, maxRadius float64) (bool, float64) {
 	dist := HaversineDistance(lat1, lon1, lat2, lon2)
-	return dist <= maxRadiusKm, dist
+	return dist <= maxRadius, dist
 }

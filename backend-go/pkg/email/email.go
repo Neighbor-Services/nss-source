@@ -219,7 +219,7 @@ func SendDirectRequestEmail(cfg *Config, toEmail, providerName, seekerName, requ
 
 func SendBroadcastRequestEmail(cfg *Config, toEmail, providerName, seekerName, requestTitle string, distance float64, price float64, scheduledTime, description string) error {
 	subject := fmt.Sprintf("New Service Request Nearby: %s", requestTitle)
-	plainText := fmt.Sprintf("Hello %s,\n\nA new service request for \"%s\" was posted %.1f km away from your location.\n\nCustomer: %s\nBudget: $%.2f\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to submit your proposal before another provider is selected!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, distance, seekerName, price, scheduledTime, description)
+	plainText := fmt.Sprintf("Hello %s,\n\nA new service request for \"%s\" was posted %.1f mi away from your location.\n\nCustomer: %s\nBudget: $%.2f\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to submit your proposal before another provider is selected!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, distance, seekerName, price, scheduledTime, description)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -238,7 +238,7 @@ func SendBroadcastRequestEmail(cfg *Config, toEmail, providerName, seekerName, r
     <div class="container">
         <span class="badge">Nearby Request</span>
         <h2 style="margin-top: 12px; color: #0f172a;">Hello %s,</h2>
-        <p>A new service request for <strong>"%s"</strong> was posted <strong>%.1f km</strong> away from your location.</p>
+        <p>A new service request for <strong>"%s"</strong> was posted <strong>%.1f mi</strong> away from your location.</p>
         <div class="card">
             <p style="margin:0 0 6px 0;"><strong>Customer:</strong> %s</p>
             <p style="margin:0 0 6px 0;"><strong>Budget:</strong> $%.2f</p>
@@ -972,14 +972,14 @@ func MaskEmail(email string) string {
 	return string(name[0]) + strings.Repeat("*", len(name)-2) + string(name[len(name)-1]) + "@" + domain
 }
 
-func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, serviceType string, distanceKm float64, price float64) error {
+func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, serviceType string, distanceMiles float64, price float64) error {
 	subject := fmt.Sprintf("New Job Opportunity Nearby: %s", requestTitle)
 	priceStr := "Negotiable"
 	if price > 0 {
 		priceStr = fmt.Sprintf("$%.2f", price)
 	}
 
-	plainText := fmt.Sprintf("Hello %s,\n\nA new job matching your location is now available:\n\nTitle: %s\nService: %s\nDistance: approx %.1f km away\nBudget: %s\n\nOpen the Neighbor Service app to view full details and send your proposal!\n\n---\nNeighbor Service Solutions LLC", recipientName, requestTitle, serviceType, distanceKm, priceStr)
+	plainText := fmt.Sprintf("Hello %s,\n\nA new job matching your location is now available:\n\nTitle: %s\nService: %s\nDistance: approx %.1f mi away\nBudget: %s\n\nOpen the Neighbor Service app to view full details and send your proposal!\n\n---\nNeighbor Service Solutions LLC", recipientName, requestTitle, serviceType, distanceMiles, priceStr)
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -1010,7 +1010,7 @@ func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, 
         <div class="card">
             <h3 style="margin-top: 0; color: #0f172a;">%s</h3>
             <p style="margin: 4px 0; color: #475569; font-size: 14px;"><strong>Service:</strong> %s</p>
-            <p style="margin: 4px 0; color: #475569; font-size: 14px;"><strong>Distance:</strong> ~%.1f km away</p>
+            <p style="margin: 4px 0; color: #475569; font-size: 14px;"><strong>Distance:</strong> ~%.1f mi away</p>
             <p style="margin: 4px 0; color: #475569; font-size: 14px;"><strong>Budget:</strong> %s</p>
         </div>
         <p style="text-align: center;">
@@ -1022,7 +1022,7 @@ func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, 
         </div>
     </div>
 </body>
-</html>`, recipientName, requestTitle, serviceType, distanceKm, priceStr)
+</html>`, recipientName, requestTitle, serviceType, distanceMiles, priceStr)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }

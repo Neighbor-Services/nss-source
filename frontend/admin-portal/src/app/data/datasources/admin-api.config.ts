@@ -75,7 +75,11 @@ export const ADMIN_API_CONFIG = {
     cmsAbout: '/admin/cms/about',
     stripeBalance: '/admin/financial/stripe-balance',
     maintenance: '/admin/maintenance',
-    webhookEvents: '/admin/webhooks/events'
+    webhookEvents: '/admin/webhooks/events',
+    dispatchIncidents: '/admin/dispatch/incidents',
+    dispatchOverride: '/admin/dispatch/incidents',
+    telemetryProviders: '/admin/telemetry/providers',
+    systemWorkers: '/admin/system/workers'
   }
 };
 

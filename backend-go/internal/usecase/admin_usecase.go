@@ -839,7 +839,7 @@ func (u *adminUseCase) GetSettings(ctx context.Context, adminID uuid.UUID) (*ent
 	return u.adminRepo.GetSettings(ctx)
 }
 
-func (u *adminUseCase) UpdateSettings(ctx context.Context, adminID uuid.UUID, paymentMode string, fee float64, broadcastRadiusKm, matchRadiusKm float64) (*entity.ModerationSetting, error) {
+func (u *adminUseCase) UpdateSettings(ctx context.Context, adminID uuid.UUID, paymentMode string, fee float64, broadcastRadiusKm, matchRadiusKm float64, disableDistanceFilter *bool) (*entity.ModerationSetting, error) {
 	s, err := u.adminRepo.GetSettings(ctx)
 	if err != nil {
 		return nil, err
@@ -856,14 +856,18 @@ func (u *adminUseCase) UpdateSettings(ctx context.Context, adminID uuid.UUID, pa
 	if matchRadiusKm > 0 {
 		s.MatchRadiusKm = matchRadiusKm
 	}
+	if disableDistanceFilter != nil {
+		s.DisableDistanceFilter = *disableDistanceFilter
+	}
 	if err := u.adminRepo.UpdateSettings(ctx, s); err != nil {
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_SETTINGS", "ModerationSetting", s.ID.String(), map[string]interface{}{
-		"fee":                 fee,
-		"payment_mode":        paymentMode,
-		"broadcast_radius_km": s.BroadcastRadiusKm,
-		"match_radius_km":     s.MatchRadiusKm,
+		"fee":                     fee,
+		"payment_mode":            paymentMode,
+		"broadcast_radius_km":     s.BroadcastRadiusKm,
+		"match_radius_km":         s.MatchRadiusKm,
+		"disable_distance_filter": s.DisableDistanceFilter,
 	})
 	return s, nil
 }

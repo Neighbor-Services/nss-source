@@ -162,7 +162,7 @@ func (m *mockAdminUseCase) GetSettings(ctx context.Context, adminID uuid.UUID) (
 	return m.settings, m.err
 }
 
-func (m *mockAdminUseCase) UpdateSettings(ctx context.Context, adminID uuid.UUID, paymentMode string, fee float64, broadcastRadiusKm, matchRadiusKm float64) (*entity.ModerationSetting, error) {
+func (m *mockAdminUseCase) UpdateSettings(ctx context.Context, adminID uuid.UUID, paymentMode string, fee float64, broadcastRadiusKm, matchRadiusKm float64, disableDistanceFilter *bool) (*entity.ModerationSetting, error) {
 	return m.settings, m.err
 }
 
