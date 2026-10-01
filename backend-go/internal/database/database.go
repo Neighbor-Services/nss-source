@@ -197,12 +197,44 @@ func ensureExplicitTables(db *gorm.DB) {
 
 func createCompositeIndexes(db *gorm.DB) {
 	indexes := []string{
+		// Geospatial & Profile query performance
+		"CREATE INDEX IF NOT EXISTS idx_profile_lat_lng ON accounts_profile (latitude, longitude)",
+		"CREATE INDEX IF NOT EXISTS idx_profile_user_type_sub ON accounts_profile (user_type, subscription_tier)",
+		"CREATE INDEX IF NOT EXISTS idx_profile_user_id ON accounts_profile (user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_profile_city ON accounts_profile (city)",
+		"CREATE INDEX IF NOT EXISTS idx_profile_rating_score ON accounts_profile (average_rating DESC, neighbor_score DESC)",
+
+		// Service requests & dispatch
+		"CREATE INDEX IF NOT EXISTS idx_servicerequest_lat_lng ON services_servicerequest (latitude, longitude)",
 		"CREATE INDEX IF NOT EXISTS idx_servicerequest_status_created ON services_servicerequest (status, created_at DESC)",
 		"CREATE INDEX IF NOT EXISTS idx_servicerequest_user_status ON services_servicerequest (user_id, status)",
-		"CREATE INDEX IF NOT EXISTS idx_payoutrequest_status_created ON payments_payoutrequest (status, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_dispute_status_created ON interactions_dispute (status, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_wallettx_wallet_created ON payments_wallettransaction (wallet_id, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_servicerequest_target_provider ON services_servicerequest (target_provider_id, status)",
+		"CREATE INDEX IF NOT EXISTS idx_servicerequest_catalog_status ON services_servicerequest (catalog_service_id, status)",
+		"CREATE INDEX IF NOT EXISTS idx_proposals_request_provider ON services_proposal (request_id, provider_id)",
+		"CREATE INDEX IF NOT EXISTS idx_proposals_provider_created ON services_proposal (provider_id, created_at DESC)",
+
+		// Appointments & Disputes
 		"CREATE INDEX IF NOT EXISTS idx_appointment_status_date ON interactions_appointment (status, appointment_date)",
+		"CREATE INDEX IF NOT EXISTS idx_appointment_provider_status ON interactions_appointment (provider_id, status, appointment_date)",
+		"CREATE INDEX IF NOT EXISTS idx_appointment_user_status ON interactions_appointment (user_id, status, appointment_date)",
+		"CREATE INDEX IF NOT EXISTS idx_dispute_status_created ON interactions_dispute (status, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_dispute_request_id ON interactions_dispute (request_id)",
+
+		// Chat & Messaging
+		"CREATE INDEX IF NOT EXISTS idx_chat_message_conv_created ON chat_message (conversation_id, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_chat_conv_user1 ON chat_conversation (user1_id)",
+		"CREATE INDEX IF NOT EXISTS idx_chat_conv_user2 ON chat_conversation (user2_id)",
+
+		// Notifications & Tokens
+		"CREATE INDEX IF NOT EXISTS idx_notification_user_unread ON notifications_notification (user_id, is_read, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_device_token_user_active ON notifications_devicetoken (user_id, is_active)",
+
+		// Wallets, Payouts & Subscriptions
+		"CREATE INDEX IF NOT EXISTS idx_wallettx_wallet_created ON payments_wallettransaction (wallet_id, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_payoutrequest_status_created ON payments_payoutrequest (status, created_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_subscription_user_active ON payments_subscription (user_id, is_active)",
+
+		// Auth & AI Search
 		"CREATE INDEX IF NOT EXISTS idx_otp_email_created ON accounts_otpverification (email, created_at DESC)",
 		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_status_created ON services_flashdispatch (status, created_at DESC)",
 		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_seeker ON services_flashdispatch (seeker_id)",

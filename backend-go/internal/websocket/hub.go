@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -8,7 +9,10 @@ import (
 	"strings"
 	"sync"
 
+	"backend-go/pkg/cache"
+
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -48,6 +52,13 @@ type Client struct {
 	Hub    *Hub
 }
 
+type RedisWSEvent struct {
+	InstanceID string          `json:"instance_id"`
+	Type       string          `json:"type"` // "broadcast", "room", "user"
+	Target     string          `json:"target"`
+	Payload    json.RawMessage `json:"payload"`
+}
+
 type Hub struct {
 	// Registered clients: map[userID]map[*Client]bool
 	clients     map[string]map[*Client]bool
@@ -56,6 +67,8 @@ type Hub struct {
 	register    chan *Client
 	unregister  chan *Client
 	mu          sync.RWMutex
+	cacheClient cache.Cache
+	instanceID  string
 	OnMessage   func(client *Client, message []byte) bool
 }
 
@@ -68,6 +81,50 @@ func NewHub() *Hub {
 		broadcast:   make(chan []byte),
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
+		instanceID:  uuid.New().String(),
+	}
+}
+
+// AttachCache enables distributed clustering across multiple server instances via Redis Pub/Sub
+func (h *Hub) AttachCache(c cache.Cache) {
+	if c == nil {
+		return
+	}
+	h.mu.Lock()
+	h.cacheClient = c
+	h.mu.Unlock()
+	go h.listenRedis()
+}
+
+func (h *Hub) listenRedis() {
+	if h.cacheClient == nil {
+		return
+	}
+	ctx := context.Background()
+	pubsub := h.cacheClient.Subscribe(ctx, "ns:ws:events")
+	if pubsub == nil {
+		return
+	}
+	defer pubsub.Close()
+	log.Printf("⚡ [WebSocket Hub] Redis Pub/Sub cluster listener active (Instance: %s)", h.instanceID)
+
+	ch := pubsub.Channel()
+	for msg := range ch {
+		var event RedisWSEvent
+		if err := json.Unmarshal([]byte(msg.Payload), &event); err != nil {
+			continue
+		}
+		if event.InstanceID == h.instanceID {
+			continue // Skip messages published by this instance
+		}
+		switch event.Type {
+		case "broadcast":
+			h.deliverLocalBroadcast(event.Payload)
+		case "room":
+			h.deliverLocalRoom(event.Target, event.Payload)
+		case "user":
+			h.deliverLocalUser(event.Target, event.Payload)
+		}
 	}
 }
 
@@ -214,14 +271,9 @@ func (c *Client) SendJSON(payload interface{}) {
 	}
 }
 
-func (h *Hub) SendToUser(userID string, payload interface{}) {
+func (h *Hub) deliverLocalUser(userID string, bytes []byte) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		return
-	}
 
 	if userConns, ok := h.clients[userID]; ok {
 		for client := range userConns {
@@ -234,14 +286,9 @@ func (h *Hub) SendToUser(userID string, payload interface{}) {
 	}
 }
 
-func (h *Hub) SendToRoom(roomID string, payload interface{}) {
+func (h *Hub) deliverLocalRoom(roomID string, bytes []byte) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		return
-	}
 
 	if roomConns, ok := h.roomClients[roomID]; ok {
 		for client := range roomConns {
@@ -251,6 +298,76 @@ func (h *Hub) SendToRoom(roomID string, payload interface{}) {
 				log.Printf("Failed to send message to room %s", roomID)
 			}
 		}
+	}
+}
+
+func (h *Hub) deliverLocalBroadcast(bytes []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for _, userConns := range h.clients {
+		for client := range userConns {
+			select {
+			case client.Send <- bytes:
+			default:
+			}
+		}
+	}
+}
+
+func (h *Hub) SendToUser(userID string, payload interface{}) {
+	var bytes []byte
+	switch v := payload.(type) {
+	case []byte:
+		bytes = v
+	case json.RawMessage:
+		bytes = []byte(v)
+	default:
+		var err error
+		bytes, err = json.Marshal(payload)
+		if err != nil {
+			return
+		}
+	}
+
+	h.deliverLocalUser(userID, bytes)
+
+	if h.cacheClient != nil {
+		event := RedisWSEvent{
+			InstanceID: h.instanceID,
+			Type:       "user",
+			Target:     userID,
+			Payload:    bytes,
+		}
+		_ = h.cacheClient.Publish(context.Background(), "ns:ws:events", event)
+	}
+}
+
+func (h *Hub) SendToRoom(roomID string, payload interface{}) {
+	var bytes []byte
+	switch v := payload.(type) {
+	case []byte:
+		bytes = v
+	case json.RawMessage:
+		bytes = []byte(v)
+	default:
+		var err error
+		bytes, err = json.Marshal(payload)
+		if err != nil {
+			return
+		}
+	}
+
+	h.deliverLocalRoom(roomID, bytes)
+
+	if h.cacheClient != nil {
+		event := RedisWSEvent{
+			InstanceID: h.instanceID,
+			Type:       "room",
+			Target:     roomID,
+			Payload:    bytes,
+		}
+		_ = h.cacheClient.Publish(context.Background(), "ns:ws:events", event)
 	}
 }
 

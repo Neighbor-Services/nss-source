@@ -107,11 +107,45 @@ func (u *serviceUseCase) sendPush(userID uuid.UUID, title, body string, data map
 }
 
 func (u *serviceUseCase) GetCategories(ctx context.Context) ([]entity.Category, error) {
-	return u.categoryRepo.ListActive(ctx)
+	cacheKey := "cache:categories:active"
+	if u.cache != nil {
+		var cached []entity.Category
+		if found, _ := u.cache.Get(ctx, cacheKey, &cached); found && len(cached) > 0 {
+			return cached, nil
+		}
+	}
+
+	categories, err := u.categoryRepo.ListActive(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.cache != nil && len(categories) > 0 {
+		_ = u.cache.Set(ctx, cacheKey, categories, 1*time.Hour)
+	}
+
+	return categories, nil
 }
 
 func (u *serviceUseCase) GetCatalogServices(ctx context.Context, categorySlug string, search string) ([]entity.CatalogService, error) {
-	return u.catalogRepo.List(ctx, categorySlug, search)
+	cacheKey := fmt.Sprintf("cache:catalog:%s:%s", categorySlug, strings.ToLower(strings.TrimSpace(search)))
+	if u.cache != nil {
+		var cached []entity.CatalogService
+		if found, _ := u.cache.Get(ctx, cacheKey, &cached); found && len(cached) > 0 {
+			return cached, nil
+		}
+	}
+
+	services, err := u.catalogRepo.List(ctx, categorySlug, search)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.cache != nil && len(services) > 0 {
+		_ = u.cache.Set(ctx, cacheKey, services, 30*time.Minute)
+	}
+
+	return services, nil
 }
 
 func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase.MatchProvidersInput) ([]entity.Profile, error) {

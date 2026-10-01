@@ -12,6 +12,8 @@ import (
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/pkg/aimatcher"
 
+	"backend-go/pkg/cache"
+
 	"github.com/google/uuid"
 )
 
@@ -21,6 +23,7 @@ type profileUseCase struct {
 	portfolioRepo repository.PortfolioRepository
 	pkgRepo       repository.ServicePackageRepository
 	legalRepo     repository.LegalDocumentRepository
+	cache         cache.Cache
 }
 
 func NewProfileUseCase(
@@ -29,6 +32,7 @@ func NewProfileUseCase(
 	portfolioRepo repository.PortfolioRepository,
 	pkgRepo repository.ServicePackageRepository,
 	legalRepo repository.LegalDocumentRepository,
+	cache cache.Cache,
 ) domainUsecase.ProfileUseCase {
 	return &profileUseCase{
 		profileRepo:   profileRepo,
@@ -36,6 +40,18 @@ func NewProfileUseCase(
 		portfolioRepo: portfolioRepo,
 		pkgRepo:       pkgRepo,
 		legalRepo:     legalRepo,
+		cache:         cache,
+	}
+}
+
+func (u *profileUseCase) invalidateProfileCache(ctx context.Context, userID uuid.UUID, profileID uuid.UUID) {
+	if u.cache != nil {
+		if userID != uuid.Nil {
+			_ = u.cache.Delete(ctx, "cache:profile:user:"+userID.String())
+		}
+		if profileID != uuid.Nil {
+			_ = u.cache.Delete(ctx, "cache:profile:id:"+profileID.String())
+		}
 	}
 }
 
@@ -237,6 +253,8 @@ func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, up
 		}
 	}
 
+	u.invalidateProfileCache(ctx, userID, profile.ID)
+
 	updated, err := u.profileRepo.GetByID(ctx, profile.ID)
 	if err == nil && updated != nil {
 		updated.EnrichCatalogServices()
@@ -305,6 +323,7 @@ func (u *profileUseCase) UpdateAbout(ctx context.Context, userID uuid.UUID, upda
 		if updatedProfile {
 			profile.UpdatedAt = time.Now()
 			_ = u.profileRepo.Update(ctx, profile)
+			u.invalidateProfileCache(ctx, userID, profile.ID)
 		}
 	}
 
@@ -329,6 +348,7 @@ func (u *profileUseCase) UpdateProfilePicture(ctx context.Context, userID uuid.U
 	if err := u.profileRepo.Update(ctx, profile); err != nil {
 		return nil, err
 	}
+	u.invalidateProfileCache(ctx, userID, profile.ID)
 	return profile, nil
 }
 
@@ -360,6 +380,7 @@ func (u *profileUseCase) CreatePortfolio(ctx context.Context, userID uuid.UUID, 
 	if err := u.portfolioRepo.Create(ctx, item); err != nil {
 		return nil, err
 	}
+	u.invalidateProfileCache(ctx, userID, profile.ID)
 	return item, nil
 }
 
@@ -368,7 +389,11 @@ func (u *profileUseCase) DeletePortfolio(ctx context.Context, userID uuid.UUID, 
 	if err != nil || profile == nil {
 		return errors.New("profile not found")
 	}
-	return u.portfolioRepo.Delete(ctx, itemID, profile.ID)
+	err = u.portfolioRepo.Delete(ctx, itemID, profile.ID)
+	if err == nil {
+		u.invalidateProfileCache(ctx, userID, profile.ID)
+	}
+	return err
 }
 
 func (u *profileUseCase) GetServicePackages(ctx context.Context, userID uuid.UUID) ([]entity.ServicePackage, error) {
@@ -390,6 +415,7 @@ func (u *profileUseCase) CreateServicePackage(ctx context.Context, userID uuid.U
 	if err := u.pkgRepo.Create(ctx, pkg); err != nil {
 		return nil, err
 	}
+	u.invalidateProfileCache(ctx, userID, profile.ID)
 	return pkg, nil
 }
 
@@ -398,7 +424,11 @@ func (u *profileUseCase) DeleteServicePackage(ctx context.Context, userID uuid.U
 	if err != nil || profile == nil {
 		return errors.New("profile not found")
 	}
-	return u.pkgRepo.Delete(ctx, pkgID, profile.ID)
+	err = u.pkgRepo.Delete(ctx, pkgID, profile.ID)
+	if err == nil {
+		u.invalidateProfileCache(ctx, userID, profile.ID)
+	}
+	return err
 }
 
 func (u *profileUseCase) GetLegalDocuments(ctx context.Context, docType string) ([]entity.LegalDocument, error) {

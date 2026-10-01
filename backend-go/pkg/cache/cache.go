@@ -17,6 +17,9 @@ type Cache interface {
 	DeleteByPattern(ctx context.Context, pattern string) error
 	AcquireLock(ctx context.Context, key string, expiration time.Duration) (bool, error)
 	ReleaseLock(ctx context.Context, key string) error
+	Publish(ctx context.Context, channel string, message interface{}) error
+	Subscribe(ctx context.Context, channels ...string) *redis.PubSub
+	GetClient() *redis.Client
 	Ping(ctx context.Context) error
 	Close() error
 }
@@ -139,6 +142,37 @@ func (r *redisCache) ReleaseLock(ctx context.Context, key string) error {
 	return r.client.Del(ctx, lockKey).Err()
 }
 
+func (r *redisCache) Publish(ctx context.Context, channel string, message interface{}) error {
+	if r.client == nil {
+		return nil
+	}
+	var payload []byte
+	switch v := message.(type) {
+	case []byte:
+		payload = v
+	case string:
+		payload = []byte(v)
+	default:
+		data, err := json.Marshal(message)
+		if err != nil {
+			return err
+		}
+		payload = data
+	}
+	return r.client.Publish(ctx, channel, payload).Err()
+}
+
+func (r *redisCache) Subscribe(ctx context.Context, channels ...string) *redis.PubSub {
+	if r.client == nil || len(channels) == 0 {
+		return nil
+	}
+	return r.client.Subscribe(ctx, channels...)
+}
+
+func (r *redisCache) GetClient() *redis.Client {
+	return r.client
+}
+
 func (r *redisCache) Ping(ctx context.Context) error {
 	if r.client == nil {
 		return errors.New("redis client not initialized")
@@ -152,3 +186,4 @@ func (r *redisCache) Close() error {
 	}
 	return r.client.Close()
 }
+

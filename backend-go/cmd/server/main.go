@@ -56,8 +56,9 @@ func main() {
 		log.Printf("Warning: Database auto-migration: %v", err)
 	}
 
-	// 3. Start Real-time WebSocket Hub
+	// 3. Start Real-time WebSocket Hub with Redis Pub/Sub cluster support
 	hub := websocket.GlobalHub
+	hub.AttachCache(redisCache)
 	go hub.Run()
 
 	// 4. Initialize Push Notifications (Firebase Cloud Messaging)
@@ -110,7 +111,7 @@ func main() {
 
 	// Layer: UseCases (Application Business Rules)
 	authUC := usecase.NewAuthUseCase(userRepo, profileRepo, walletRepo, cfg)
-	profileUC := usecase.NewProfileUseCase(profileRepo, aboutRepo, portfolioRepo, servicePackageRepo, legalRepo)
+	profileUC := usecase.NewProfileUseCase(profileRepo, aboutRepo, portfolioRepo, servicePackageRepo, legalRepo, redisCache)
 	serviceUC := usecase.NewServiceUseCase(categoryRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, userRepo, adminRepo, dispatchRepo, knowledgeRepo, redisCache, cfg)
 	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, walletTxRepo, userRepo, notifRepo, tokenRepo, fcmClient, cfg)
 	chatUC := usecase.NewChatUseCase(convRepo, msgRepo, chatBlockRepo, tokenRepo, fcmClient)

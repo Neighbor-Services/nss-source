@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"backend-go/internal/domain/entity"
 	domainUsecase "backend-go/internal/domain/usecase"
@@ -380,9 +381,36 @@ func (h *InteractionHandler) CreateDispute(c *gin.Context) {
 	userUUID, _ := cleanUUID(userIDStr)
 
 	var dispute entity.Dispute
-	if err := c.ShouldBindJSON(&dispute); err != nil {
-		response.BadRequest(c, "Invalid dispute payload")
-		return
+	contentTypeHeader := c.GetHeader("Content-Type")
+
+	if strings.HasPrefix(contentTypeHeader, "multipart/form-data") {
+		if defStr := c.PostForm("defendant"); defStr != "" {
+			if defUUID, err := cleanUUID(defStr); err == nil {
+				dispute.DefendantID = &defUUID
+			}
+		}
+		if aptStr := c.PostForm("appointment"); aptStr != "" {
+			if aptUUID, err := cleanUUID(aptStr); err == nil {
+				dispute.AppointmentID = &aptUUID
+			}
+		}
+		dispute.Reason = c.PostForm("reason")
+		dispute.Description = c.PostForm("description")
+
+		if file, err := c.FormFile("evidence"); err == nil && file != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(file, "evidence", 15*1024*1024); err == nil && relPath != "" {
+				dispute.Evidence = relPath
+			}
+		} else if file, err := c.FormFile("image"); err == nil && file != nil {
+			if relPath, err := media.ValidateAndSaveUploadedFile(file, "evidence", 15*1024*1024); err == nil && relPath != "" {
+				dispute.Evidence = relPath
+			}
+		}
+	} else {
+		if err := c.ShouldBindJSON(&dispute); err != nil {
+			response.BadRequest(c, "Invalid dispute payload")
+			return
+		}
 	}
 
 	created, err := h.interactionUC.CreateDispute(c.Request.Context(), userUUID, &dispute)
@@ -390,6 +418,11 @@ func (h *InteractionHandler) CreateDispute(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+
+	if created != nil && created.Evidence != "" {
+		created.EvidenceURL = formatMediaURL(created.Evidence)
+	}
+
 	response.JSON(c, http.StatusCreated, created)
 }
 

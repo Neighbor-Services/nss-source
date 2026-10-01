@@ -164,6 +164,30 @@ func (r *serviceRequestRepository) List(ctx context.Context, params repository.S
 		}
 	}
 
+	// Geospatial bounding-box optimization when location & radius are provided
+	hasLocation := params.Latitude != nil && params.Longitude != nil && params.RadiusKm != nil && *params.RadiusKm > 0
+	if hasLocation {
+		lat := *params.Latitude
+		lng := *params.Longitude
+		radius := *params.RadiusKm
+
+		latDelta := (radius / 111.0) * 1.15
+		cosLat := math.Cos(lat * math.Pi / 180.0)
+		if cosLat < 0.001 {
+			cosLat = 0.001
+		}
+		lngDelta := (radius / (111.0 * cosLat)) * 1.15
+
+		minLat := lat - latDelta
+		maxLat := lat + latDelta
+		minLng := lng - lngDelta
+		maxLng := lng + lngDelta
+
+		query = query.Where("services_servicerequest.latitude != 0 AND services_servicerequest.longitude != 0").
+			Where("services_servicerequest.latitude BETWEEN ? AND ?", minLat, maxLat).
+			Where("services_servicerequest.longitude BETWEEN ? AND ?", minLng, maxLng)
+	}
+
 	if params.Limit > 0 && (params.Latitude == nil || params.Longitude == nil) {
 		query = query.Limit(params.Limit)
 	}
