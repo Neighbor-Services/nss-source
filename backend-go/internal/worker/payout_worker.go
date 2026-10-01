@@ -8,6 +8,7 @@ import (
 
 	"backend-go/internal/config"
 	"backend-go/internal/domain/entity"
+	"backend-go/pkg/cache"
 	"backend-go/pkg/email"
 	"backend-go/pkg/fcm"
 
@@ -22,14 +23,16 @@ type PayoutProcessingWorker struct {
 	cfg       *config.Config
 	emailCfg  *email.Config
 	fcmClient fcm.Client
+	cache     cache.Cache
 	stopChan  chan struct{}
 }
 
-func NewPayoutProcessingWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client) *PayoutProcessingWorker {
+func NewPayoutProcessingWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client, cache cache.Cache) *PayoutProcessingWorker {
 	return &PayoutProcessingWorker{
 		db:        db,
 		cfg:       cfg,
 		fcmClient: fcmClient,
+		cache:     cache,
 		emailCfg: &email.Config{
 			Host:     cfg.SMTPHost,
 			Port:     cfg.SMTPPort,
@@ -68,6 +71,19 @@ func (w *PayoutProcessingWorker) Stop() {
 }
 
 func (w *PayoutProcessingWorker) processPayouts() {
+	if w.cache != nil {
+		locked, err := w.cache.AcquireLock(context.Background(), "worker:payout_processing", 25*time.Minute)
+		if err == nil && !locked {
+			log.Println("[PayoutWorker] Another instance is currently processing payouts. Skipping tick.")
+			return
+		}
+		if locked {
+			defer func() {
+				_ = w.cache.ReleaseLock(context.Background(), "worker:payout_processing")
+			}()
+		}
+	}
+
 	var pendingPayouts []entity.PayoutRequest
 	err := w.db.Preload("Wallet").Preload("Wallet.User").
 		Where("status = ?", "PENDING").
@@ -110,31 +126,51 @@ func (w *PayoutProcessingWorker) processPayouts() {
 			continue
 		}
 
-		// Transition to PROCESSING (payment gateway would be invoked here)
+		// Execute status update, wallet balance deduction, and transaction recording in a strict atomic DB transaction
 		now := time.Now()
-		if err := w.db.Model(&payout).Updates(map[string]interface{}{
-			"status":       "PROCESSING",
-			"processed_at": now,
-			"admin_notes":  "Queued for bank/Stripe transfer.",
-		}).Error; err != nil {
-			log.Printf("[PayoutWorker] Failed to update payout %s: %v", payout.ID, err)
+		txErr := w.db.Transaction(func(tx *gorm.DB) error {
+			// Lock wallet row for update
+			var currentWallet entity.Wallet
+			if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&currentWallet, "id = ?", wallet.ID).Error; err != nil {
+				return err
+			}
+
+			if currentWallet.Balance < payout.Amount {
+				return fmt.Errorf("insufficient balance during lock verification")
+			}
+
+			// Transition to PROCESSING
+			if err := tx.Model(&payout).Updates(map[string]interface{}{
+				"status":       "PROCESSING",
+				"processed_at": now,
+				"admin_notes":  "Queued for bank/Stripe transfer.",
+			}).Error; err != nil {
+				return err
+			}
+
+			// Deduct balance atomically
+			if err := tx.Model(&currentWallet).Update("balance", gorm.Expr("balance - ?", payout.Amount)).Error; err != nil {
+				return err
+			}
+
+			// Record wallet ledger transaction
+			ledgerTx := entity.WalletTransaction{
+				ID:              uuid.New(),
+				WalletID:        wallet.ID,
+				Amount:          -payout.Amount,
+				TransactionType: "DEBIT",
+				Description:     fmt.Sprintf("Payout withdrawal — request #%s", payout.ID.String()[:8]),
+				Status:          "COMPLETED",
+				ReferenceID:     payout.ID.String(),
+				CreatedAt:       now,
+			}
+			return tx.Create(&ledgerTx).Error
+		})
+
+		if txErr != nil {
+			log.Printf("[PayoutWorker] Transaction failed for payout %s: %v", payout.ID, txErr)
 			continue
 		}
-
-		// Deduct from wallet balance
-		w.db.Model(wallet).Update("balance", gorm.Expr("balance - ?", payout.Amount))
-
-		// Record wallet transaction
-		w.db.Create(&entity.WalletTransaction{
-			ID:              uuid.New(),
-			WalletID:        wallet.ID,
-			Amount:          -payout.Amount,
-			TransactionType: "DEBIT",
-			Description:     fmt.Sprintf("Payout withdrawal — request #%s", payout.ID.String()[:8]),
-			Status:          "COMPLETED",
-			ReferenceID:     payout.ID.String(),
-			CreatedAt:       time.Now(),
-		})
 
 		// In-app notification
 		_ = w.db.Create(&entity.Notification{

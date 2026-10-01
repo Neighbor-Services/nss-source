@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -8,6 +9,7 @@ import (
 
 	"backend-go/internal/config"
 	"backend-go/internal/domain/entity"
+	"backend-go/pkg/cache"
 	"backend-go/pkg/email"
 
 	"github.com/google/uuid"
@@ -20,13 +22,15 @@ type WalletReconciliationWorker struct {
 	db       *gorm.DB
 	cfg      *config.Config
 	emailCfg *email.Config
+	cache    cache.Cache
 	stopChan chan struct{}
 }
 
-func NewWalletReconciliationWorker(db *gorm.DB, cfg *config.Config) *WalletReconciliationWorker {
+func NewWalletReconciliationWorker(db *gorm.DB, cfg *config.Config, cache cache.Cache) *WalletReconciliationWorker {
 	return &WalletReconciliationWorker{
-		db:  db,
-		cfg: cfg,
+		db:    db,
+		cfg:   cfg,
+		cache: cache,
 		emailCfg: &email.Config{
 			Host:     cfg.SMTPHost,
 			Port:     cfg.SMTPPort,
@@ -64,6 +68,19 @@ func (w *WalletReconciliationWorker) Stop() {
 }
 
 func (w *WalletReconciliationWorker) reconcile() {
+	if w.cache != nil {
+		locked, err := w.cache.AcquireLock(context.Background(), "worker:wallet_reconciliation", 20*time.Hour)
+		if err == nil && !locked {
+			log.Println("[WalletReconWorker] Another instance is currently reconciling wallets. Skipping tick.")
+			return
+		}
+		if locked {
+			defer func() {
+				_ = w.cache.ReleaseLock(context.Background(), "worker:wallet_reconciliation")
+			}()
+		}
+	}
+
 	var wallets []entity.Wallet
 	if err := w.db.Find(&wallets).Error; err != nil {
 		log.Printf("[WalletReconciliation] Error fetching wallets: %v", err)

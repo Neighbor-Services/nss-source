@@ -8,6 +8,7 @@ import (
 
 	"backend-go/internal/config"
 	"backend-go/internal/domain/entity"
+	"backend-go/pkg/cache"
 	"backend-go/pkg/email"
 	"backend-go/pkg/fcm"
 	"backend-go/pkg/recovery"
@@ -22,14 +23,16 @@ type DisputeEscalationWorker struct {
 	cfg       *config.Config
 	emailCfg  *email.Config
 	fcmClient fcm.Client
+	cache     cache.Cache
 	stopChan  chan struct{}
 }
 
-func NewDisputeEscalationWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client) *DisputeEscalationWorker {
+func NewDisputeEscalationWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client, cache cache.Cache) *DisputeEscalationWorker {
 	return &DisputeEscalationWorker{
 		db:        db,
 		cfg:       cfg,
 		fcmClient: fcmClient,
+		cache:     cache,
 		emailCfg: &email.Config{
 			Host:     cfg.SMTPHost,
 			Port:     cfg.SMTPPort,
@@ -67,6 +70,19 @@ func (w *DisputeEscalationWorker) Stop() {
 }
 
 func (w *DisputeEscalationWorker) processDisputeEscalations() {
+	if w.cache != nil {
+		locked, err := w.cache.AcquireLock(context.Background(), "worker:dispute_escalation", 50*time.Minute)
+		if err == nil && !locked {
+			log.Println("[DisputeWorker] Another instance is currently processing dispute escalations. Skipping tick.")
+			return
+		}
+		if locked {
+			defer func() {
+				_ = w.cache.ReleaseLock(context.Background(), "worker:dispute_escalation")
+			}()
+		}
+	}
+
 	idleThreshold := time.Now().Add(-48 * time.Hour)
 
 	var staleDisputes []entity.Dispute

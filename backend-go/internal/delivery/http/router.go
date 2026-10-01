@@ -250,8 +250,11 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 		inter.Use(middleware.AuthRequired(deps.Config, deps.UserRepo))
 		{
 			// Favorites
+			inter.GET("/favorites", deps.InterHandler.GetFavorites)
 			inter.GET("/favorites/", deps.InterHandler.GetFavorites)
+			inter.POST("/favorites", deps.InterHandler.CreateFavorite)
 			inter.POST("/favorites/", deps.InterHandler.CreateFavorite)
+			inter.DELETE("/favorites/:provider_id", deps.InterHandler.DeleteFavorite)
 			inter.DELETE("/favorites/:provider_id/", deps.InterHandler.DeleteFavorite)
 
 			// Reviews (write-only requires auth)

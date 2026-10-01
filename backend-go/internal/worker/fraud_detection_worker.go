@@ -1,12 +1,14 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
 	"backend-go/internal/config"
 	"backend-go/internal/domain/entity"
+	"backend-go/pkg/cache"
 	"backend-go/pkg/recovery"
 
 	"github.com/google/uuid"
@@ -18,13 +20,15 @@ import (
 type FraudDetectionWorker struct {
 	db       *gorm.DB
 	cfg      *config.Config
+	cache    cache.Cache
 	stopChan chan struct{}
 }
 
-func NewFraudDetectionWorker(db *gorm.DB, cfg *config.Config) *FraudDetectionWorker {
+func NewFraudDetectionWorker(db *gorm.DB, cfg *config.Config, cache cache.Cache) *FraudDetectionWorker {
 	return &FraudDetectionWorker{
 		db:       db,
 		cfg:      cfg,
+		cache:    cache,
 		stopChan: make(chan struct{}),
 	}
 }
@@ -55,6 +59,19 @@ func (w *FraudDetectionWorker) Stop() {
 }
 
 func (w *FraudDetectionWorker) scan() {
+	if w.cache != nil {
+		locked, err := w.cache.AcquireLock(context.Background(), "worker:fraud_detection", 8*time.Minute)
+		if err == nil && !locked {
+			log.Println("[FraudWorker] Another instance is currently running fraud scan. Skipping tick.")
+			return
+		}
+		if locked {
+			defer func() {
+				_ = w.cache.ReleaseLock(context.Background(), "worker:fraud_detection")
+			}()
+		}
+	}
+
 	window := time.Now().Add(-10 * time.Minute) // scan the last 10-minute window
 	day := time.Now().Add(-24 * time.Hour)
 

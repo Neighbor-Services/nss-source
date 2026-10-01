@@ -165,16 +165,16 @@ func main() {
 	nearbyWorker := worker.NewNearbyRequestWorker(db, cfg, fcmClient, redisCache)
 	nearbyWorker.Start()
 
-	staleWorker := worker.NewStaleRequestWorker(db, cfg, fcmClient)
+	staleWorker := worker.NewStaleRequestWorker(db, cfg, fcmClient, redisCache)
 	staleWorker.Start()
 
-	payoutWorker := worker.NewPayoutProcessingWorker(db, cfg, fcmClient)
+	payoutWorker := worker.NewPayoutProcessingWorker(db, cfg, fcmClient, redisCache)
 	payoutWorker.Start()
 
 	subExpiryWorker := worker.NewSubscriptionExpiryWorker(db, cfg, fcmClient)
 	subExpiryWorker.Start()
 
-	disputeWorker := worker.NewDisputeEscalationWorker(db, cfg, fcmClient)
+	disputeWorker := worker.NewDisputeEscalationWorker(db, cfg, fcmClient, redisCache)
 	disputeWorker.Start()
 
 	inactiveUserWorker := worker.NewInactiveUserWorker(db, cfg, fcmClient)
@@ -183,10 +183,10 @@ func main() {
 	badgeWorker := worker.NewPerformanceBadgeWorker(db, cfg)
 	badgeWorker.Start()
 
-	reconcileWorker := worker.NewWalletReconciliationWorker(db, cfg)
+	reconcileWorker := worker.NewWalletReconciliationWorker(db, cfg, redisCache)
 	reconcileWorker.Start()
 
-	fraudWorker := worker.NewFraudDetectionWorker(db, cfg)
+	fraudWorker := worker.NewFraudDetectionWorker(db, cfg, redisCache)
 	fraudWorker.Start()
 
 	noShowWorker := worker.NewAppointmentNoShowWorker(db, cfg, fcmClient)

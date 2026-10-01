@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
+import { ADMIN_API_CONFIG } from '../../data/datasources/admin-api.config';
 
 export interface RealtimeServerEvent {
   type: string;
@@ -7,6 +8,14 @@ export interface RealtimeServerEvent {
   body?: string;
   data?: any;
   created_at?: string;
+}
+
+function getWsUrl(): string {
+  const base = ADMIN_API_CONFIG.baseUrl;
+  const isSsl = base.startsWith('https://');
+  const host = base.replace(/^https?:\/\//, '').split('/api')[0];
+  const protocol = isSsl ? 'wss://' : 'ws://';
+  return `${protocol}${host}/ws`;
 }
 
 @Injectable({
@@ -20,7 +29,7 @@ export class WebSocketService {
 
   constructor() {}
 
-  public connect(url = 'ws://localhost:8000/ws'): void {
+  public connect(url = getWsUrl()): void {
     if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
       return;
     }

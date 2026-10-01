@@ -8,6 +8,7 @@ import (
 
 	"backend-go/internal/config"
 	"backend-go/internal/domain/entity"
+	"backend-go/pkg/cache"
 	"backend-go/pkg/email"
 	"backend-go/pkg/fcm"
 
@@ -22,14 +23,16 @@ type StaleRequestWorker struct {
 	cfg       *config.Config
 	emailCfg  *email.Config
 	fcmClient fcm.Client
+	cache     cache.Cache
 	stopChan  chan struct{}
 }
 
-func NewStaleRequestWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client) *StaleRequestWorker {
+func NewStaleRequestWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client, cache cache.Cache) *StaleRequestWorker {
 	return &StaleRequestWorker{
 		db:        db,
 		cfg:       cfg,
 		fcmClient: fcmClient,
+		cache:     cache,
 		emailCfg: &email.Config{
 			Host:     cfg.SMTPHost,
 			Port:     cfg.SMTPPort,
@@ -68,6 +71,19 @@ func (w *StaleRequestWorker) Stop() {
 }
 
 func (w *StaleRequestWorker) processStaleRequests() {
+	if w.cache != nil {
+		locked, err := w.cache.AcquireLock(context.Background(), "worker:stale_request", 50*time.Minute)
+		if err == nil && !locked {
+			log.Println("[StaleRequestWorker] Another instance is currently processing stale requests. Skipping tick.")
+			return
+		}
+		if locked {
+			defer func() {
+				_ = w.cache.ReleaseLock(context.Background(), "worker:stale_request")
+			}()
+		}
+	}
+
 	staleCutoff := time.Now().Add(-30 * 24 * time.Hour)
 
 	var staleRequests []entity.ServiceRequest

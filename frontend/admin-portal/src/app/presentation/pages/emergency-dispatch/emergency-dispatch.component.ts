@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { WebSocketService } from '../../../core/services/websocket.service';
 import { AuditService } from '../../../core/services/audit.service';
 import { PiiMaskComponent } from '../../../core/components/pii-mask/pii-mask.component';
@@ -56,6 +57,7 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
 
   private timerInterval: any;
   private pollInterval: any;
+  private wsSub?: Subscription;
 
   selectedIncident = signal<EmergencyIncident | null>(null);
   filterStatus = signal<string>('ALL');
@@ -92,10 +94,21 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
     this.loadIncidents();
     this.loadFleet();
 
-    // Poll live incidents every 10s
+    // Connect to real-time events hub
+    this.ws.connect();
+    this.wsSub = this.ws.getEvents().subscribe({
+      next: (evt) => {
+        if (evt.type?.includes('SOS') || evt.type?.includes('DISPATCH') || evt.type?.includes('EMERGENCY')) {
+          this.ws.playIncidentChime();
+          this.loadIncidents(false);
+        }
+      }
+    });
+
+    // Background poll every 15s as fallback
     this.pollInterval = setInterval(() => {
       this.loadIncidents(false);
-    }, 10000);
+    }, 15000);
 
     // Tick elapsed times every second
     this.timerInterval = setInterval(() => {
@@ -111,6 +124,7 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.timerInterval) clearInterval(this.timerInterval);
     if (this.pollInterval) clearInterval(this.pollInterval);
+    if (this.wsSub) this.wsSub.unsubscribe();
   }
 
   loadFleet() {
