@@ -214,6 +214,11 @@ func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, up
 			profile.SearchRadiusKm = parsed
 		}
 	}
+	if du, ok := updates["distance_unit"].(string); ok && du != "" {
+		profile.DistanceUnit = strings.ToUpper(strings.TrimSpace(du))
+	} else if du, ok := updates["distanceUnit"].(string); ok && du != "" {
+		profile.DistanceUnit = strings.ToUpper(strings.TrimSpace(du))
+	}
 
 	profile.UpdatedAt = time.Now()
 	if err := u.profileRepo.Update(ctx, profile); err != nil {
