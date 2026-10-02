@@ -207,14 +207,8 @@ func (u *interactionUseCase) GetAppointments(ctx context.Context, userID uuid.UU
 	switch normType {
 	case "CUSTOMER", "SEEKER":
 		list, err = u.aptRepo.List(ctx, &userID, nil, status)
-		if err != nil || len(list) == 0 {
-			list, err = u.aptRepo.List(ctx, &userID, &userID, status)
-		}
 	case "PROVIDER":
 		list, err = u.aptRepo.List(ctx, nil, &userID, status)
-		if err != nil || len(list) == 0 {
-			list, err = u.aptRepo.List(ctx, &userID, &userID, status)
-		}
 	default:
 		list, err = u.aptRepo.List(ctx, &userID, &userID, status)
 	}

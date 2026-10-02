@@ -893,21 +893,17 @@ func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID
 		apts, _ := u.aptRepo.List(ctx, &userID, nil, "")
 		for _, apt := range apts {
 			if apt.ServiceRequestID != nil && *apt.ServiceRequestID == id {
-				// Guard 1: Completed appointments cannot have their source request deleted
-				if apt.Status == "COMPLETED" {
-					return errors.New("cannot delete request: linked service appointment is already marked as completed")
-				}
-				// Guard 2: Active funded appointments require formal cancellation for refund
+				// Guard 1: Active funded appointments require formal cancellation for refund
 				if apt.Status == "IN_PROGRESS" && apt.IsFunded {
 					return errors.New("cannot delete request with an active funded appointment; please cancel the appointment first")
 				}
-				// Guard 3: Disputed appointments
+				// Guard 2: Disputed appointments
 				if apt.Status == "DISPUTED" {
 					return errors.New("cannot delete request while a linked appointment is under dispute")
 				}
 
 				// If scheduled/pending, notify the assigned provider
-				if apt.ProviderID != uuid.Nil {
+				if apt.Status == "SCHEDULED" && apt.ProviderID != uuid.Nil {
 					providerID := apt.ProviderID
 					if u.notifRepo != nil {
 						notif := entity.Notification{
@@ -1020,13 +1016,18 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 		if req.Price != nil && *req.Price > 0 {
 			totalPrice = *req.Price
 		}
+		appDate := req.ScheduledTime
+		if appDate == nil {
+			now := time.Now().Add(1 * time.Hour)
+			appDate = &now
+		}
 		newApt := entity.Appointment{
 			ID:               uuid.New(),
 			SeekerID:         req.UserID,
 			ProviderID:       proposal.ProviderID,
 			Title:            req.Title,
 			Description:      req.Description,
-			AppointmentDate:  req.ScheduledTime,
+			AppointmentDate:  appDate,
 			ServiceRequestID: &req.ID,
 			ProposalID:       &proposal.ID,
 			TotalPrice:       totalPrice,

@@ -209,6 +209,18 @@ func (h *InteractionHandler) GetAppointments(c *gin.Context) {
 	userType := c.GetString("userType")
 	userUUID, _ := uuid.Parse(userIDStr)
 	status := c.Query("status")
+	role := c.Query("role")
+	if role == "" {
+		role = c.Query("user_type")
+	}
+	if role == "" {
+		role = c.Query("type")
+	}
+	if role != "" {
+		userType = role
+	} else {
+		userType = "ALL"
+	}
 
 	appointments, err := h.interactionUC.GetAppointments(c.Request.Context(), userUUID, userType, status)
 	if err != nil {
