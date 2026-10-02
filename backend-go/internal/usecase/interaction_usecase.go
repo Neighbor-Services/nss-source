@@ -341,6 +341,7 @@ func (u *interactionUseCase) UpdateAppointment(ctx context.Context, userID, appo
 	if dateRaw != nil {
 		if parsed := parseAppointmentDate(dateRaw); parsed != nil {
 			apt.AppointmentDate = parsed
+			apt.NoShowProcessed = false
 		}
 	}
 

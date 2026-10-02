@@ -116,7 +116,7 @@ func main() {
 	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, walletTxRepo, userRepo, requestRepo, notifRepo, tokenRepo, fcmClient, cfg)
 	chatUC := usecase.NewChatUseCase(convRepo, msgRepo, chatBlockRepo, tokenRepo, fcmClient)
 	notifUC := usecase.NewNotificationUseCase(notifRepo, tokenRepo, fcmClient)
-	paymentUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, walletTxRepo, payoutRepo, customerRepo, profileRepo, notifRepo, tokenRepo, fcmClient, cfg)
+	paymentUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, walletTxRepo, payoutRepo, customerRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, cfg)
 	consultUC := usecase.NewConsultationUseCase(cfg)
 	moderateUC := usecase.NewModerationUseCase(reportRepo, verificationRepo, bgCheckRepo, profileRepo, userRepo, cfg)
 	auditUC := usecase.NewAuditUseCase(auditRepo)

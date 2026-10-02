@@ -18,6 +18,7 @@ import (
 	"backend-go/internal/domain/repository"
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/pkg/fcm"
+	"backend-go/internal/websocket"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v74"
 	"github.com/stripe/stripe-go/v74/account"
@@ -40,6 +41,7 @@ type paymentUseCase struct {
 	payoutRepo   repository.PayoutRequestRepository
 	customerRepo repository.CustomerRepository
 	profileRepo  repository.ProfileRepository
+	aptRepo      repository.AppointmentRepository
 	notifRepo    repository.NotificationRepository
 	tokenRepo    repository.DeviceTokenRepository
 	fcmClient    fcm.Client
@@ -54,6 +56,7 @@ func NewPaymentUseCase(
 	payoutRepo repository.PayoutRequestRepository,
 	customerRepo repository.CustomerRepository,
 	profileRepo repository.ProfileRepository,
+	aptRepo repository.AppointmentRepository,
 	notifRepo repository.NotificationRepository,
 	tokenRepo repository.DeviceTokenRepository,
 	fcmClient fcm.Client,
@@ -67,6 +70,7 @@ func NewPaymentUseCase(
 		payoutRepo:   payoutRepo,
 		customerRepo: customerRepo,
 		profileRepo:  profileRepo,
+		aptRepo:      aptRepo,
 		notifRepo:    notifRepo,
 		tokenRepo:    tokenRepo,
 		fcmClient:    fcmClient,
@@ -1301,6 +1305,59 @@ func (u *paymentUseCase) ProcessStripeWebhook(ctx context.Context, payload []byt
 							CreatedAt:       time.Now(),
 						}
 						_ = u.txRepo.Create(ctx, &tx)
+					}
+
+					// Update appointment state to IS_FUNDED
+					if u.aptRepo != nil {
+						if apt, aErr := u.aptRepo.GetByID(ctx, aptID); aErr == nil && apt != nil {
+							apt.IsFunded = true
+							apt.PaymentIntentID = pi.ID
+							if apt.TotalPrice <= 0 {
+								apt.TotalPrice = float64(pi.Amount) / 100.0
+							}
+							apt.UpdatedAt = time.Now()
+							_ = u.aptRepo.Update(ctx, apt)
+
+							// Real-time WebSocket broadcast to seeker and provider
+							websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+								"type":           "appointment_funded",
+								"appointment_id": apt.ID.String(),
+								"is_funded":      true,
+								"total_price":    apt.TotalPrice,
+								"title":          "Escrow Secured!",
+								"message":        fmt.Sprintf("Payment for '%s' is securely held in escrow.", apt.Title),
+								"created_at":     time.Now().UTC(),
+							})
+							websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
+								"type":           "appointment_funded",
+								"appointment_id": apt.ID.String(),
+								"is_funded":      true,
+								"total_price":    apt.TotalPrice,
+								"title":          "Job Funded by Client!",
+								"message":        fmt.Sprintf("Funds for '%s' are verified and held in escrow.", apt.Title),
+								"created_at":     time.Now().UTC(),
+							})
+
+							if u.notifRepo != nil {
+								notif := entity.Notification{
+									ID:               uuid.New(),
+									UserID:           apt.ProviderID,
+									SenderID:         &seekerID,
+									NotificationType: "APPOINTMENT",
+									Title:            "Job Funded by Client",
+									Message:          fmt.Sprintf("Funds for '%s' are verified and held in escrow.", apt.Title),
+									Data:             entity.JSONMap{"appointment_id": apt.ID.String(), "is_funded": true},
+									CreatedAt:        time.Now(),
+								}
+								_ = u.notifRepo.Create(ctx, &notif)
+							}
+
+							u.sendPush(apt.ProviderID, "Job Funded by Client!", fmt.Sprintf("Funds for '%s' are verified and held in escrow.", apt.Title), map[string]string{
+								"notification_type": "appointment_funded",
+								"appointment_id":    apt.ID.String(),
+								"sender_id":         seekerID.String(),
+							})
+						}
 					}
 				}
 			}

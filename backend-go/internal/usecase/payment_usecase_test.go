@@ -102,7 +102,7 @@ func TestPaymentUseCase_PaymentSheetAndCustomer(t *testing.T) {
 		StripePublishableKey: "pk_test_12345",
 	}
 
-	payUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, txRepo, payoutRepo, custRepo, profileRepo, nil, nil, nil, cfg)
+	payUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, txRepo, payoutRepo, custRepo, profileRepo, nil, nil, nil, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Create Customer

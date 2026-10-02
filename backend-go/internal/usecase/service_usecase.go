@@ -845,6 +845,7 @@ func (u *serviceUseCase) UpdateRequest(ctx context.Context, userID, id uuid.UUID
 			for _, apt := range apts {
 				if apt.ServiceRequestID != nil && *apt.ServiceRequestID == req.ID {
 					apt.AppointmentDate = req.ScheduledTime
+					apt.NoShowProcessed = false
 					apt.UpdatedAt = time.Now()
 					_ = u.aptRepo.Update(ctx, &apt)
 				}
@@ -1070,7 +1071,7 @@ func (u *serviceUseCase) CancelApproval(ctx context.Context, userID, requestID u
 
 	// Delete the appointment created when the proposal was approved to prevent duplicate cancelled appointments
 	if u.aptRepo != nil {
-		apts, _ := u.aptRepo.List(ctx, &userID, nil, "")
+		apts, _ := u.aptRepo.List(ctx, &userID, &userID, "")
 		for _, apt := range apts {
 			if apt.ServiceRequestID != nil && *apt.ServiceRequestID == requestID {
 				_ = u.aptRepo.Delete(ctx, apt.ID)
