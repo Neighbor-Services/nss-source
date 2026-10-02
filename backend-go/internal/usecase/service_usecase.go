@@ -841,7 +841,7 @@ func (u *serviceUseCase) UpdateRequest(ctx context.Context, userID, id uuid.UUID
 	}
 
 	if u.aptRepo != nil && req.ScheduledTime != nil {
-		if apts, err := u.aptRepo.List(ctx, &req.UserID, nil, ""); err == nil {
+		if apts, err := u.aptRepo.List(ctx, &req.UserID, &req.UserID, ""); err == nil {
 			for _, apt := range apts {
 				if apt.ServiceRequestID != nil && *apt.ServiceRequestID == req.ID {
 					apt.AppointmentDate = req.ScheduledTime

@@ -106,11 +106,22 @@ func (r *appointmentRepository) List(ctx context.Context, seekerID *uuid.UUID, p
 		Order("created_at DESC")
 
 	if seekerID != nil && providerID != nil {
-		query = query.Where("seeker_id = ? OR provider_id = ? OR seeker_id IN (SELECT id FROM accounts_profile WHERE user_id = ?) OR provider_id IN (SELECT id FROM accounts_profile WHERE user_id = ?)", *seekerID, *providerID, *seekerID, *providerID)
+		query = query.Where(`seeker_id = ? OR provider_id = ? 
+			OR seeker_id IN (SELECT id FROM accounts_profile WHERE user_id = ?) 
+			OR seeker_id IN (SELECT user_id FROM accounts_profile WHERE id = ?)
+			OR provider_id IN (SELECT id FROM accounts_profile WHERE user_id = ?)
+			OR provider_id IN (SELECT user_id FROM accounts_profile WHERE id = ?)`, 
+			*seekerID, *providerID, *seekerID, *seekerID, *providerID, *providerID)
 	} else if seekerID != nil {
-		query = query.Where("seeker_id = ? OR seeker_id IN (SELECT id FROM accounts_profile WHERE user_id = ?)", *seekerID, *seekerID)
+		query = query.Where(`seeker_id = ? 
+			OR seeker_id IN (SELECT id FROM accounts_profile WHERE user_id = ?) 
+			OR seeker_id IN (SELECT user_id FROM accounts_profile WHERE id = ?)`, 
+			*seekerID, *seekerID, *seekerID)
 	} else if providerID != nil {
-		query = query.Where("provider_id = ? OR provider_id IN (SELECT id FROM accounts_profile WHERE user_id = ?)", *providerID, *providerID)
+		query = query.Where(`provider_id = ? 
+			OR provider_id IN (SELECT id FROM accounts_profile WHERE user_id = ?) 
+			OR provider_id IN (SELECT user_id FROM accounts_profile WHERE id = ?)`, 
+			*providerID, *providerID, *providerID)
 	}
 	if status != "" {
 		query = query.Where("status = ?", status)

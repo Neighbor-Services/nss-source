@@ -198,22 +198,38 @@ func (u *interactionUseCase) CreateReview(ctx context.Context, reviewerID uuid.U
 
 func (u *interactionUseCase) GetAppointments(ctx context.Context, userID uuid.UUID, userType, status string) ([]entity.Appointment, error) {
 	normType := strings.ToUpper(strings.TrimSpace(userType))
+	var list []entity.Appointment
+	var err error
+
 	switch normType {
 	case "CUSTOMER", "SEEKER":
-		list, err := u.aptRepo.List(ctx, &userID, nil, status)
-		if err == nil && len(list) > 0 {
-			return list, nil
+		list, err = u.aptRepo.List(ctx, &userID, nil, status)
+		if err != nil || len(list) == 0 {
+			list, err = u.aptRepo.List(ctx, &userID, &userID, status)
 		}
-		return u.aptRepo.List(ctx, &userID, &userID, status)
 	case "PROVIDER":
-		list, err := u.aptRepo.List(ctx, nil, &userID, status)
-		if err == nil && len(list) > 0 {
-			return list, nil
+		list, err = u.aptRepo.List(ctx, nil, &userID, status)
+		if err != nil || len(list) == 0 {
+			list, err = u.aptRepo.List(ctx, &userID, &userID, status)
 		}
-		return u.aptRepo.List(ctx, &userID, &userID, status)
 	default:
-		return u.aptRepo.List(ctx, &userID, &userID, status)
+		list, err = u.aptRepo.List(ctx, &userID, &userID, status)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range list {
+		if list[i].Seeker != nil && list[i].Seeker.Profile != nil {
+			list[i].SeekerProfile = list[i].Seeker.Profile
+		}
+		if list[i].Provider != nil && list[i].Provider.Profile != nil {
+			list[i].ProviderProfile = list[i].Provider.Profile
+		}
+	}
+
+	return list, nil
 }
 
 func (u *interactionUseCase) CreateAppointment(ctx context.Context, customerID uuid.UUID, apt *entity.Appointment) (*entity.Appointment, error) {
