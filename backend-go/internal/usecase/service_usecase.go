@@ -812,15 +812,44 @@ func (u *serviceUseCase) UpdateRequest(ctx context.Context, userID, id uuid.UUID
 	if price, ok := updates["price"].(float64); ok {
 		req.Price = &price
 	}
-	if schedStr, ok := updates["scheduled_time"].(string); ok {
-		if t, err := time.Parse(time.RFC3339, schedStr); err == nil {
-			req.ScheduledTime = &t
+	schedRaw := updates["scheduled_time"]
+	if schedRaw == nil {
+		schedRaw = updates["scheduledTime"]
+	}
+	if schedStr, ok := schedRaw.(string); ok && strings.TrimSpace(schedStr) != "" {
+		formats := []string{
+			time.RFC3339,
+			time.RFC3339Nano,
+			"2006-01-02T15:04:05.000Z",
+			"2006-01-02T15:04:05Z",
+			"2006-01-02T15:04:05",
+			"2006-01-02 15:04:05",
+			"2006-01-02 15:04",
+			"2006-01-02",
+		}
+		for _, layout := range formats {
+			if t, err := time.Parse(layout, strings.TrimSpace(schedStr)); err == nil {
+				req.ScheduledTime = &t
+				break
+			}
 		}
 	}
 
 	req.UpdatedAt = time.Now()
 	if err := u.requestRepo.Update(ctx, req); err != nil {
 		return nil, err
+	}
+
+	if u.aptRepo != nil && req.ScheduledTime != nil {
+		if apts, err := u.aptRepo.List(ctx, &req.UserID, nil, ""); err == nil {
+			for _, apt := range apts {
+				if apt.ServiceRequestID != nil && *apt.ServiceRequestID == req.ID {
+					apt.AppointmentDate = req.ScheduledTime
+					apt.UpdatedAt = time.Now()
+					_ = u.aptRepo.Update(ctx, &apt)
+				}
+			}
+		}
 	}
 
 	u.invalidateRequestCaches(ctx)
