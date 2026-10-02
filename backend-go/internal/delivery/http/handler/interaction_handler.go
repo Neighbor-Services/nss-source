@@ -28,18 +28,33 @@ func (h *InteractionHandler) wrapAppointments(appointments []entity.Appointment,
 		var userProfile interface{}
 		role := "provider"
 
-		if apt.SeekerID == currentUserID {
+		isSeeker := apt.SeekerID == currentUserID ||
+			(apt.Seeker != nil && (apt.Seeker.ID == currentUserID || (apt.Seeker.Profile != nil && apt.Seeker.Profile.ID == currentUserID))) ||
+			(apt.SeekerProfile != nil && (apt.SeekerProfile.ID == currentUserID || apt.SeekerProfile.UserID == currentUserID))
+
+		if isSeeker {
 			role = "seeker"
 			if apt.Provider != nil && apt.Provider.Profile != nil {
 				userProfile = apt.Provider.Profile
 			} else if apt.ProviderProfile != nil {
 				userProfile = apt.ProviderProfile
+			} else if apt.Provider != nil {
+				userProfile = &entity.Profile{
+					UserID: apt.Provider.ID,
+					User:   apt.Provider,
+				}
 			}
 		} else {
+			role = "provider"
 			if apt.Seeker != nil && apt.Seeker.Profile != nil {
 				userProfile = apt.Seeker.Profile
 			} else if apt.SeekerProfile != nil {
 				userProfile = apt.SeekerProfile
+			} else if apt.Seeker != nil {
+				userProfile = &entity.Profile{
+					UserID: apt.Seeker.ID,
+					User:   apt.Seeker,
+				}
 			}
 		}
 
@@ -201,6 +216,62 @@ func (h *InteractionHandler) GetAppointments(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, h.wrapAppointments(appointments, userUUID))
+}
+
+func (h *InteractionHandler) GetAppointmentByID(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, _ := cleanUUID(userIDStr)
+
+	idStr := c.Param("id")
+	aptUUID, err := cleanUUID(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid appointment ID")
+		return
+	}
+
+	apt, err := h.interactionUC.GetAppointmentByID(c.Request.Context(), userUUID, aptUUID)
+	if err != nil {
+		response.NotFound(c, err.Error())
+		return
+	}
+
+	wrapped := h.wrapAppointments([]entity.Appointment{*apt}, userUUID)
+	if len(wrapped) > 0 {
+		response.JSON(c, http.StatusOK, wrapped[0])
+		return
+	}
+	response.JSON(c, http.StatusOK, apt)
+}
+
+func (h *InteractionHandler) UpdateAppointment(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, _ := cleanUUID(userIDStr)
+
+	idStr := c.Param("id")
+	aptUUID, err := cleanUUID(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid appointment ID")
+		return
+	}
+
+	var updates map[string]interface{}
+	if err := c.ShouldBindJSON(&updates); err != nil {
+		response.BadRequest(c, "Invalid update payload")
+		return
+	}
+
+	updated, err := h.interactionUC.UpdateAppointment(c.Request.Context(), userUUID, aptUUID, updates)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	wrapped := h.wrapAppointments([]entity.Appointment{*updated}, userUUID)
+	if len(wrapped) > 0 {
+		response.JSON(c, http.StatusOK, wrapped[0])
+		return
+	}
+	response.JSON(c, http.StatusOK, updated)
 }
 
 func (h *InteractionHandler) CreateAppointment(c *gin.Context) {

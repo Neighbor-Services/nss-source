@@ -121,7 +121,7 @@ func TestInteractionUseCase_VerifyArrivalAndCompleteAppointment(t *testing.T) {
 	txRepo := &mockWalletTxRepo{}
 	userRepo := &mockUserRepo{users: make(map[string]*entity.User)}
 
-	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, txRepo, userRepo, nil, nil, nil, nil)
+	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, txRepo, userRepo, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 	// 1. Test Notify On The Way

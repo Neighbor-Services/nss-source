@@ -16,7 +16,9 @@ type InteractionUseCase interface {
 	CreateReview(ctx context.Context, authorID uuid.UUID, review *entity.Review) (*entity.Review, error)
 
 	GetAppointments(ctx context.Context, userID uuid.UUID, userType, status string) ([]entity.Appointment, error)
+	GetAppointmentByID(ctx context.Context, userID, appointmentID uuid.UUID) (*entity.Appointment, error)
 	CreateAppointment(ctx context.Context, customerID uuid.UUID, apt *entity.Appointment) (*entity.Appointment, error)
+	UpdateAppointment(ctx context.Context, userID, appointmentID uuid.UUID, updates map[string]interface{}) (*entity.Appointment, error)
 	VerifyArrivalCode(ctx context.Context, providerID, appointmentID uuid.UUID, code string) (*entity.Appointment, error)
 	NotifyOnTheWay(ctx context.Context, providerID, appointmentID uuid.UUID) (*entity.Appointment, error)
 	NotifyArrived(ctx context.Context, providerID, appointmentID uuid.UUID, providerLat, providerLng *float64) (*entity.Appointment, error)

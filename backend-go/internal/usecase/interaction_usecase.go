@@ -28,6 +28,7 @@ type interactionUseCase struct {
 	walletRepo  repository.WalletRepository
 	txRepo      repository.WalletTransactionRepository
 	userRepo    repository.UserRepository
+	requestRepo repository.ServiceRequestRepository
 	notifRepo   repository.NotificationRepository
 	tokenRepo   repository.DeviceTokenRepository
 	fcmClient   fcm.Client
@@ -43,6 +44,7 @@ func NewInteractionUseCase(
 	walletRepo repository.WalletRepository,
 	txRepo repository.WalletTransactionRepository,
 	userRepo repository.UserRepository,
+	requestRepo repository.ServiceRequestRepository,
 	notifRepo repository.NotificationRepository,
 	tokenRepo repository.DeviceTokenRepository,
 	fcmClient fcm.Client,
@@ -57,6 +59,7 @@ func NewInteractionUseCase(
 		walletRepo:  walletRepo,
 		txRepo:      txRepo,
 		userRepo:    userRepo,
+		requestRepo: requestRepo,
 		notifRepo:   notifRepo,
 		tokenRepo:   tokenRepo,
 		fcmClient:   fcmClient,
@@ -232,6 +235,160 @@ func (u *interactionUseCase) GetAppointments(ctx context.Context, userID uuid.UU
 	return list, nil
 }
 
+func (u *interactionUseCase) checkAppointmentParties(ctx context.Context, apt *entity.Appointment, userID uuid.UUID) (isSeeker bool, isProvider bool) {
+	if apt.SeekerID == userID || (apt.Seeker != nil && (apt.Seeker.ID == userID || (apt.Seeker.Profile != nil && apt.Seeker.Profile.ID == userID))) {
+		isSeeker = true
+	}
+	if apt.ProviderID == userID || (apt.Provider != nil && (apt.Provider.ID == userID || (apt.Provider.Profile != nil && apt.Provider.Profile.ID == userID))) {
+		isProvider = true
+	}
+	if !isSeeker && !isProvider {
+		if prof, err := u.profileRepo.GetByID(ctx, userID); err == nil && prof != nil {
+			if apt.SeekerID == prof.UserID || (apt.Seeker != nil && apt.Seeker.ID == prof.UserID) {
+				isSeeker = true
+			}
+			if apt.ProviderID == prof.UserID || (apt.Provider != nil && apt.Provider.ID == prof.UserID) {
+				isProvider = true
+			}
+		}
+	}
+	return isSeeker, isProvider
+}
+
+func parseAppointmentDate(val interface{}) *time.Time {
+	if val == nil {
+		return nil
+	}
+	if t, ok := val.(time.Time); ok {
+		return &t
+	}
+	str, ok := val.(string)
+	if !ok || strings.TrimSpace(str) == "" {
+		return nil
+	}
+	formats := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02T15:04:05.000Z",
+		"2006-01-02T15:04:05Z",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02",
+	}
+	for _, layout := range formats {
+		if t, err := time.Parse(layout, strings.TrimSpace(str)); err == nil {
+			return &t
+		}
+	}
+	return nil
+}
+
+func (u *interactionUseCase) GetAppointmentByID(ctx context.Context, userID, appointmentID uuid.UUID) (*entity.Appointment, error) {
+	apt, err := u.aptRepo.GetByID(ctx, appointmentID)
+	if err != nil {
+		return nil, errors.New("appointment not found")
+	}
+
+	isSeeker, isProvider := u.checkAppointmentParties(ctx, apt, userID)
+	if !isSeeker && !isProvider {
+		return nil, errors.New("not authorized")
+	}
+
+	if apt.Seeker != nil && apt.Seeker.Profile != nil {
+		apt.SeekerProfile = apt.Seeker.Profile
+	}
+	if apt.Provider != nil && apt.Provider.Profile != nil {
+		apt.ProviderProfile = apt.Provider.Profile
+	}
+
+	return apt, nil
+}
+
+func (u *interactionUseCase) UpdateAppointment(ctx context.Context, userID, appointmentID uuid.UUID, updates map[string]interface{}) (*entity.Appointment, error) {
+	apt, err := u.aptRepo.GetByID(ctx, appointmentID)
+	if err != nil {
+		return nil, errors.New("appointment not found")
+	}
+
+	isSeeker, isProvider := u.checkAppointmentParties(ctx, apt, userID)
+	if !isSeeker && !isProvider {
+		return nil, errors.New("not authorized")
+	}
+
+	if title, ok := updates["title"].(string); ok && title != "" {
+		apt.Title = title
+	}
+	if desc, ok := updates["description"].(string); ok {
+		apt.Description = desc
+	}
+	if status, ok := updates["status"].(string); ok && status != "" {
+		apt.Status = strings.ToUpper(status)
+	}
+	if price, ok := updates["total_price"].(float64); ok {
+		apt.TotalPrice = price
+	} else if priceAlt, ok := updates["totalPrice"].(float64); ok {
+		apt.TotalPrice = priceAlt
+	}
+	if payMode, ok := updates["payment_mode"].(string); ok && payMode != "" {
+		apt.PaymentMode = payMode
+	}
+
+	dateRaw := updates["appointment_date"]
+	if dateRaw == nil {
+		dateRaw = updates["appointmentDate"]
+	}
+	if dateRaw != nil {
+		if parsed := parseAppointmentDate(dateRaw); parsed != nil {
+			apt.AppointmentDate = parsed
+		}
+	}
+
+	apt.UpdatedAt = time.Now()
+	if err := u.aptRepo.Update(ctx, apt); err != nil {
+		return nil, err
+	}
+
+	// Sync scheduled time with linked service request
+	if apt.ServiceRequestID != nil && *apt.ServiceRequestID != uuid.Nil && apt.AppointmentDate != nil && u.requestRepo != nil {
+		if req, rErr := u.requestRepo.GetByID(ctx, *apt.ServiceRequestID); rErr == nil && req != nil {
+			req.ScheduledTime = apt.AppointmentDate
+			req.UpdatedAt = time.Now()
+			_ = u.requestRepo.Update(ctx, req)
+		}
+	}
+
+	// Broadcast real-time update over WebSocket to both parties
+	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+		"type":           "appointment_updated",
+		"appointment_id": apt.ID.String(),
+		"status":         apt.Status,
+		"title":          "Appointment Updated",
+		"message":        fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title),
+		"created_at":     time.Now().UTC(),
+	})
+	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
+		"type":           "appointment_updated",
+		"appointment_id": apt.ID.String(),
+		"status":         apt.Status,
+		"title":          "Appointment Updated",
+		"message":        fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title),
+		"created_at":     time.Now().UTC(),
+	})
+
+	otherPartyID := apt.ProviderID
+	if isProvider {
+		otherPartyID = apt.SeekerID
+	}
+	u.sendPush(otherPartyID, "Appointment Updated", fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title), map[string]string{
+		"notification_type": "appointment",
+		"appointment_id":    apt.ID.String(),
+		"sender_id":         userID.String(),
+	})
+
+	return u.GetAppointmentByID(ctx, userID, appointmentID)
+}
+
 func (u *interactionUseCase) CreateAppointment(ctx context.Context, customerID uuid.UUID, apt *entity.Appointment) (*entity.Appointment, error) {
 	apt.ID = uuid.New()
 	apt.SeekerID = customerID
@@ -315,7 +472,8 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 		return nil, errors.New("appointment not found")
 	}
 
-	if apt.ProviderID != providerID {
+	_, isProvider := u.checkAppointmentParties(ctx, apt, providerID)
+	if !isProvider {
 		return nil, errors.New("only the provider can verify the arrival code")
 	}
 
@@ -357,7 +515,7 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 		"message":        "Your provider has verified the arrival code! Appointment is now in progress.",
 		"created_at":     time.Now().UTC(),
 	})
-	websocket.GlobalHub.SendToUser(providerID.String(), map[string]interface{}{
+	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
 		"type":           "appointment_code_verified",
 		"appointment_id": apt.ID.String(),
 		"status":         "IN_PROGRESS",
@@ -395,7 +553,8 @@ func (u *interactionUseCase) NotifyOnTheWay(ctx context.Context, providerID, app
 		return nil, errors.New("appointment not found")
 	}
 
-	if apt.ProviderID != providerID {
+	_, isProvider := u.checkAppointmentParties(ctx, apt, providerID)
+	if !isProvider {
 		return nil, errors.New("only the provider can send on-the-way notification")
 	}
 
@@ -449,7 +608,8 @@ func (u *interactionUseCase) NotifyArrived(ctx context.Context, providerID, appo
 		return nil, errors.New("appointment not found")
 	}
 
-	if apt.ProviderID != providerID {
+	_, isProvider := u.checkAppointmentParties(ctx, apt, providerID)
+	if !isProvider {
 		return nil, errors.New("only the provider can send arrival notification")
 	}
 
@@ -511,7 +671,8 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 		return 0, 0, errors.New("appointment not found")
 	}
 
-	if apt.SeekerID != userID && apt.ProviderID != userID {
+	isSeeker, isProvider := u.checkAppointmentParties(ctx, apt, userID)
+	if !isSeeker && !isProvider {
 		return 0, 0, errors.New("not authorized")
 	}
 
@@ -523,8 +684,17 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 	apt.UpdatedAt = time.Now()
 	_ = u.aptRepo.Update(ctx, apt)
 
+	// Sync linked ServiceRequest to DONE
+	if apt.ServiceRequestID != nil && *apt.ServiceRequestID != uuid.Nil && u.requestRepo != nil {
+		if req, rErr := u.requestRepo.GetByID(ctx, *apt.ServiceRequestID); rErr == nil && req != nil {
+			req.Status = "DONE"
+			req.UpdatedAt = time.Now()
+			_ = u.requestRepo.Update(ctx, req)
+		}
+	}
+
 	otherPartyID := apt.ProviderID
-	if userID == apt.ProviderID {
+	if isProvider {
 		otherPartyID = apt.SeekerID
 	}
 	if u.notifRepo != nil {
@@ -544,6 +714,24 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 		"notification_type": "appointment",
 		"appointment_id":    apt.ID.String(),
 		"sender_id":         userID.String(),
+	})
+
+	// Real-time WebSocket broadcast to both seeker and provider
+	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+		"type":           "appointment_completed",
+		"appointment_id": apt.ID.String(),
+		"status":         "COMPLETED",
+		"title":          "Appointment Completed",
+		"message":        fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title),
+		"created_at":     time.Now().UTC(),
+	})
+	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
+		"type":           "appointment_completed",
+		"appointment_id": apt.ID.String(),
+		"status":         "COMPLETED",
+		"title":          "Appointment Completed",
+		"message":        fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title),
+		"created_at":     time.Now().UTC(),
 	})
 
 	// Award XP
@@ -647,7 +835,8 @@ func (u *interactionUseCase) CancelAppointment(ctx context.Context, userID, appo
 		return errors.New("appointment not found")
 	}
 
-	if apt.SeekerID != userID && apt.ProviderID != userID {
+	isSeeker, isProvider := u.checkAppointmentParties(ctx, apt, userID)
+	if !isSeeker && !isProvider {
 		return errors.New("not authorized")
 	}
 
@@ -657,8 +846,19 @@ func (u *interactionUseCase) CancelAppointment(ctx context.Context, userID, appo
 		return err
 	}
 
+	// If linked service request was in progress, reset to OPEN so proposals can be accepted or re-scheduled
+	if apt.ServiceRequestID != nil && *apt.ServiceRequestID != uuid.Nil && u.requestRepo != nil {
+		if req, rErr := u.requestRepo.GetByID(ctx, *apt.ServiceRequestID); rErr == nil && req != nil {
+			if req.Status == "IN_PROGRESS" {
+				req.Status = "OPEN"
+				req.UpdatedAt = time.Now()
+				_ = u.requestRepo.Update(ctx, req)
+			}
+		}
+	}
+
 	cancelOtherID := apt.ProviderID
-	if userID == apt.ProviderID {
+	if isProvider {
 		cancelOtherID = apt.SeekerID
 	}
 	if u.notifRepo != nil {
@@ -678,6 +878,24 @@ func (u *interactionUseCase) CancelAppointment(ctx context.Context, userID, appo
 		"notification_type": "appointment",
 		"appointment_id":    apt.ID.String(),
 		"sender_id":         userID.String(),
+	})
+
+	// Real-time WebSocket broadcast to both seeker and provider
+	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+		"type":           "appointment_cancelled",
+		"appointment_id": apt.ID.String(),
+		"status":         "CANCELLED",
+		"title":          "Appointment Cancelled",
+		"message":        fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title),
+		"created_at":     time.Now().UTC(),
+	})
+	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
+		"type":           "appointment_cancelled",
+		"appointment_id": apt.ID.String(),
+		"status":         "CANCELLED",
+		"title":          "Appointment Cancelled",
+		"message":        fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title),
+		"created_at":     time.Now().UTC(),
 	})
 
 	// Asynchronously send cancellation emails
