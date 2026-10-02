@@ -880,7 +880,7 @@ func (u *serviceUseCase) UploadRequestImage(ctx context.Context, userID, id uuid
 
 func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID) error {
 	req, err := u.requestRepo.GetByID(ctx, id)
-	if err != nil {
+	if err != nil || req == nil {
 		return errors.New("request not found")
 	}
 
@@ -888,12 +888,85 @@ func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID
 		return errors.New("not authorized")
 	}
 
+	// Handle edge cases if linked appointments exist
 	if u.aptRepo != nil {
 		apts, _ := u.aptRepo.List(ctx, &userID, nil, "")
 		for _, apt := range apts {
 			if apt.ServiceRequestID != nil && *apt.ServiceRequestID == id {
+				// Guard 1: Completed appointments cannot have their source request deleted
+				if apt.Status == "COMPLETED" {
+					return errors.New("cannot delete request: linked service appointment is already marked as completed")
+				}
+				// Guard 2: Active funded appointments require formal cancellation for refund
+				if apt.Status == "IN_PROGRESS" && apt.IsFunded {
+					return errors.New("cannot delete request with an active funded appointment; please cancel the appointment first")
+				}
+				// Guard 3: Disputed appointments
+				if apt.Status == "DISPUTED" {
+					return errors.New("cannot delete request while a linked appointment is under dispute")
+				}
+
+				// If scheduled/pending, notify the assigned provider
+				if apt.ProviderID != uuid.Nil {
+					providerID := apt.ProviderID
+					if u.notifRepo != nil {
+						notif := entity.Notification{
+							ID:               uuid.New(),
+							UserID:           providerID,
+							SenderID:         &userID,
+							NotificationType: "APPOINTMENT",
+							Title:            "Appointment Cancelled",
+							Message:          fmt.Sprintf("The service request '%s' and its scheduled appointment were cancelled by the client.", req.Title),
+							Data:             entity.JSONMap{"request_id": req.ID.String(), "appointment_id": apt.ID.String()},
+							CreatedAt:        time.Now(),
+						}
+						_ = u.notifRepo.Create(ctx, &notif)
+					}
+
+					u.sendPush(providerID, "Appointment Cancelled", fmt.Sprintf("The service request '%s' and its scheduled appointment were cancelled by the client.", req.Title), map[string]string{
+						"notification_type": "appointment",
+						"request_id":        req.ID.String(),
+						"appointment_id":    apt.ID.String(),
+						"sender_id":         userID.String(),
+					})
+
+					if u.cfg != nil && u.cfg.SMTPHost != "" && u.userRepo != nil {
+						go func(pID uuid.UUID, reqTitle string) {
+							pUser, pErr := u.userRepo.GetByID(context.Background(), pID)
+							sUser, sErr := u.userRepo.GetByID(context.Background(), userID)
+							if pErr == nil && pUser != nil && sErr == nil && sUser != nil {
+								pProf, _ := u.profileRepo.GetByUserID(context.Background(), pID)
+								sProf, _ := u.profileRepo.GetByUserID(context.Background(), userID)
+								pName := pUser.Email
+								if pProf != nil && pProf.FirstName != "" {
+									pName = pProf.FirstName
+								}
+								sName := sUser.Email
+								if sProf != nil && sProf.FirstName != "" {
+									sName = sProf.FirstName
+								}
+								emailCfg := &email.Config{
+									Host:     u.cfg.SMTPHost,
+									Port:     u.cfg.SMTPPort,
+									User:     u.cfg.SMTPUser,
+									Password: u.cfg.SMTPPassword,
+									From:     u.cfg.EmailFrom,
+								}
+								_ = email.SendAppointmentCancelledEmail(emailCfg, pUser.Email, pName, sName, reqTitle, "Cancelled by client")
+							}
+						}(providerID, req.Title)
+					}
+				}
+
 				_ = u.aptRepo.Delete(ctx, apt.ID)
 			}
+		}
+	}
+
+	if u.proposalRepo != nil {
+		props, _ := u.proposalRepo.ListByRequest(ctx, id)
+		for _, prop := range props {
+			_ = u.proposalRepo.Delete(ctx, prop.ID)
 		}
 	}
 

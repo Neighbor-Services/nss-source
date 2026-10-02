@@ -277,3 +277,56 @@ func TestServiceUseCase_ImageUploadAndProposalDeletion(t *testing.T) {
 		t.Errorf("Expected proposal to be deleted")
 	}
 }
+
+func TestServiceUseCase_DeleteRequest(t *testing.T) {
+	seekerID := uuid.New()
+	otherUserID := uuid.New()
+	providerID := uuid.New()
+	reqID := uuid.New()
+	propID := uuid.New()
+
+	requestRepo := &mockRequestRepo{requests: map[uuid.UUID]*entity.ServiceRequest{
+		reqID: {
+			ID:          reqID,
+			UserID:      seekerID,
+			Title:       "Test Service Request",
+			Description: "Need plumbing assistance",
+			Status:      "OPEN",
+		},
+	}}
+
+	proposalRepo := &mockProposalRepo{proposals: map[uuid.UUID]*entity.Proposal{
+		propID: {
+			ID:         propID,
+			RequestID:  reqID,
+			ProviderID: providerID,
+		},
+	}}
+
+	profileRepo := &mockProfileRepo{profiles: map[uuid.UUID]*entity.Profile{
+		seekerID: {ID: uuid.New(), UserID: seekerID},
+	}}
+
+	srvUC := usecase.NewServiceUseCase(nil, nil, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	ctx := context.Background()
+
+	// 1. Unauthorized delete attempt
+	err := srvUC.DeleteRequest(ctx, otherUserID, reqID)
+	if err == nil || err.Error() != "not authorized" {
+		t.Errorf("Expected 'not authorized' error, got %v", err)
+	}
+
+	// 2. Successful delete by request owner
+	err = srvUC.DeleteRequest(ctx, seekerID, reqID)
+	if err != nil {
+		t.Fatalf("DeleteRequest failed: %v", err)
+	}
+
+	if _, ok := requestRepo.requests[reqID]; ok {
+		t.Errorf("Expected service request to be deleted from repo")
+	}
+
+	if _, ok := proposalRepo.proposals[propID]; ok {
+		t.Errorf("Expected associated proposals to be cleaned up on request delete")
+	}
+}

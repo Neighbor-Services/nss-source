@@ -210,15 +210,25 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 
 			// Requests ViewSet
 			srv.GET("/requests/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequests)
+			srv.GET("/requests", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequests)
 			srv.POST("/requests/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CreateRequest)
+			srv.POST("/requests", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CreateRequest)
 			srv.GET("/requests/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequestByID)
+			srv.GET("/requests/:id", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequestByID)
 			srv.PATCH("/requests/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UpdateRequest)
+			srv.PATCH("/requests/:id", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UpdateRequest)
 			srv.DELETE("/requests/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.DeleteRequest)
+			srv.DELETE("/requests/:id", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.DeleteRequest)
 			srv.POST("/requests/:id/approve_proposal/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.ApproveProposal)
+			srv.POST("/requests/:id/approve_proposal", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.ApproveProposal)
 			srv.POST("/requests/:id/accept_proposal/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.ApproveProposal)
+			srv.POST("/requests/:id/accept_proposal", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.ApproveProposal)
 			srv.POST("/requests/:id/cancel_approval/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CancelApproval)
+			srv.POST("/requests/:id/cancel_approval", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CancelApproval)
 			srv.PATCH("/requests/image/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestImage)
+			srv.PATCH("/requests/image", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestImage)
 			srv.POST("/requests/:id/upload_image/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestImage)
+			srv.POST("/requests/:id/upload_image", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestImage)
 
 			// Proposals ViewSet
 			srv.GET("/proposals/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetProposals)

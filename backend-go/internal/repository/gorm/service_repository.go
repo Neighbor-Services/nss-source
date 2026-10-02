@@ -291,7 +291,20 @@ func (r *serviceRequestRepository) Update(ctx context.Context, req *entity.Servi
 }
 
 func (r *serviceRequestRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Unscoped().Delete(&entity.ServiceRequest{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Clean up appointments referencing this service request
+		if err := tx.Unscoped().Where("service_request_id = ?", id).Delete(&entity.Appointment{}).Error; err != nil {
+			return err
+		}
+		// Clean up proposals referencing this service request
+		if err := tx.Unscoped().Where("request_id = ?", id).Delete(&entity.Proposal{}).Error; err != nil {
+			return err
+		}
+		// Clear any voice speech log linkages
+		_ = tx.Model(&entity.VoiceSpeechLog{}).Where("linked_request_id = ?", id).Update("linked_request_id", nil).Error
+		// Delete the service request itself
+		return tx.Unscoped().Delete(&entity.ServiceRequest{}, "id = ?", id).Error
+	})
 }
 
 type proposalRepository struct {
