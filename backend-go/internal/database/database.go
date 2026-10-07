@@ -55,7 +55,10 @@ func AutoMigrate(db *gorm.DB) error {
 	// 1. Ensure required flash dispatch & AI index tables are created with explicit DDL first
 	ensureExplicitTables(db)
 
-	// 2. Resilient per-model AutoMigrate so that legacy table conflicts never abort new table creation
+	// 2. Clean up dangling orphan records to prevent foreign key constraint violations
+	cleanOrphanRecords(db)
+
+	// 3. Resilient per-model AutoMigrate so that legacy table conflicts never abort new table creation
 	models := []interface{}{
 		// Accounts & Profiles
 		&entity.User{},
@@ -191,6 +194,62 @@ func ensureExplicitTables(db *gorm.DB) {
 	for _, ddl := range ddls {
 		if err := db.Exec(ddl).Error; err != nil {
 			log.Printf("⚠️ DDL table creation warning: %v", err)
+		}
+	}
+}
+
+// cleanOrphanRecords purges dangling rows referencing deleted/non-existent users or wallets
+// to prevent PostgreSQL foreign key constraint violations during AutoMigrate.
+func cleanOrphanRecords(db *gorm.DB) {
+	if db.Migrator().HasTable("accounts_user") {
+		if db.Migrator().HasTable("payments_wallet") {
+			// Clean up transactions and payout requests referencing orphan wallets
+			_ = db.Exec(`
+				DELETE FROM payments_wallettransaction 
+				WHERE wallet_id IN (
+					SELECT id FROM payments_wallet WHERE user_id NOT IN (SELECT id FROM accounts_user)
+				)
+			`).Error
+			_ = db.Exec(`
+				DELETE FROM payments_payoutrequest 
+				WHERE wallet_id IN (
+					SELECT id FROM payments_wallet WHERE user_id NOT IN (SELECT id FROM accounts_user)
+				)
+			`).Error
+			// Clean up orphan wallets
+			_ = db.Exec(`
+				DELETE FROM payments_wallet 
+				WHERE user_id NOT IN (SELECT id FROM accounts_user)
+			`).Error
+		}
+
+		if db.Migrator().HasTable("payments_customer") {
+			_ = db.Exec(`
+				DELETE FROM payments_customer 
+				WHERE user_id NOT IN (SELECT id FROM accounts_user)
+			`).Error
+		}
+
+		if db.Migrator().HasTable("payments_subscription") {
+			_ = db.Exec(`
+				DELETE FROM payments_subscription 
+				WHERE user_id NOT IN (SELECT id FROM accounts_user)
+			`).Error
+		}
+	}
+
+	if db.Migrator().HasTable("payments_wallet") {
+		if db.Migrator().HasTable("payments_wallettransaction") {
+			_ = db.Exec(`
+				DELETE FROM payments_wallettransaction 
+				WHERE wallet_id NOT IN (SELECT id FROM payments_wallet)
+			`).Error
+		}
+		if db.Migrator().HasTable("payments_payoutrequest") {
+			_ = db.Exec(`
+				DELETE FROM payments_payoutrequest 
+				WHERE wallet_id NOT IN (SELECT id FROM payments_wallet)
+			`).Error
 		}
 	}
 }
