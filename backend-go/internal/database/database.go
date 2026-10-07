@@ -202,6 +202,13 @@ func ensureExplicitTables(db *gorm.DB) {
 // to prevent PostgreSQL foreign key constraint violations during AutoMigrate.
 func cleanOrphanRecords(db *gorm.DB) {
 	if db.Migrator().HasTable("accounts_user") {
+		if db.Migrator().HasTable("accounts_profile") {
+			_ = db.Exec(`
+				DELETE FROM accounts_profile 
+				WHERE user_id NOT IN (SELECT id FROM accounts_user)
+			`).Error
+		}
+
 		if db.Migrator().HasTable("payments_wallet") {
 			// Clean up transactions and payout requests referencing orphan wallets
 			_ = db.Exec(`
@@ -275,14 +282,14 @@ func createCompositeIndexes(db *gorm.DB) {
 		// Appointments & Disputes
 		"CREATE INDEX IF NOT EXISTS idx_appointment_status_date ON interactions_appointment (status, appointment_date)",
 		"CREATE INDEX IF NOT EXISTS idx_appointment_provider_status ON interactions_appointment (provider_id, status, appointment_date)",
-		"CREATE INDEX IF NOT EXISTS idx_appointment_user_status ON interactions_appointment (user_id, status, appointment_date)",
+		"CREATE INDEX IF NOT EXISTS idx_appointment_seeker_status ON interactions_appointment (seeker_id, status, appointment_date)",
 		"CREATE INDEX IF NOT EXISTS idx_dispute_status_created ON interactions_dispute (status, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_dispute_request_id ON interactions_dispute (request_id)",
+		"CREATE INDEX IF NOT EXISTS idx_dispute_appointment_id ON interactions_dispute (appointment_id)",
+		"CREATE INDEX IF NOT EXISTS idx_dispute_raised_by ON interactions_dispute (raised_by_id)",
 
 		// Chat & Messaging
 		"CREATE INDEX IF NOT EXISTS idx_chat_message_conv_created ON chat_message (conversation_id, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_chat_conv_user1 ON chat_conversation (user1_id)",
-		"CREATE INDEX IF NOT EXISTS idx_chat_conv_user2 ON chat_conversation (user2_id)",
+		"CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_conversation_participants (user_id, conversation_id)",
 
 		// Notifications & Tokens
 		"CREATE INDEX IF NOT EXISTS idx_notification_user_unread ON notifications_notification (user_id, is_read, created_at DESC)",
