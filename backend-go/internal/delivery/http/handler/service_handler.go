@@ -2,9 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -488,15 +486,13 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 		return
 	}
 
-	mediaDir := media.ResolveMediaDir("requests")
-	filename := fmt.Sprintf("request_%d_%s", time.Now().UnixNano(), filepath.Base(file.Filename))
-	savePath := filepath.Join(mediaDir, filename)
-	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		response.InternalError(c, "Failed to save uploaded image")
+	relPath, err := media.ValidateAndSaveUploadedFile(file, "requests", 25*1024*1024)
+	if err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	imageURL := "/media/requests/" + filename
+	imageURL := "/media/" + strings.TrimPrefix(relPath, "/")
 	updatedReq, err := h.serviceUC.UploadRequestImage(c.Request.Context(), userUUID, reqUUID, imageURL)
 	if err != nil {
 		response.BadRequest(c, err.Error())

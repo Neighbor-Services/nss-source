@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -302,16 +301,14 @@ func (h *ChatHandler) UploadChatMedia(c *gin.Context) {
 		return
 	}
 
-	mediaDir := media.ResolveMediaDir("chat")
 	cleanBase := filepath.Base(fileHeader.Filename)
-	filename := fmt.Sprintf("chat_%d_%s", time.Now().UnixNano(), cleanBase)
-	savePath := filepath.Join(mediaDir, filename)
-	if err := c.SaveUploadedFile(fileHeader, savePath); err != nil {
-		response.InternalError(c, "Failed to save uploaded file")
+	relPath, err := media.ValidateAndSaveUploadedFile(fileHeader, "chat", 50*1024*1024)
+	if err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	mediaURL := "/media/chat/" + filename
+	mediaURL := "/media/" + strings.TrimPrefix(relPath, "/")
 	response.JSON(c, http.StatusCreated, gin.H{
 		"media_url": mediaURL,
 		"file_name": cleanBase,

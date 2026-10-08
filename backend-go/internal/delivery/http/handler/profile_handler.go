@@ -1,12 +1,9 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
@@ -243,11 +240,8 @@ func (h *ProfileHandler) UploadPicture(c *gin.Context) {
 	var imageURL string
 	file, err := c.FormFile("image")
 	if err == nil {
-		mediaDir := media.ResolveMediaDir("profiles")
-		filename := fmt.Sprintf("profile_%d_%s", time.Now().UnixNano(), filepath.Base(file.Filename))
-		savePath := filepath.Join(mediaDir, filename)
-		if err := c.SaveUploadedFile(file, savePath); err == nil {
-			imageURL = "/media/profiles/" + filename
+		if relPath, saveErr := media.ValidateAndSaveUploadedFile(file, "profiles", 15*1024*1024); saveErr == nil {
+			imageURL = "/media/" + strings.TrimPrefix(relPath, "/")
 		}
 	} else {
 		var body struct {

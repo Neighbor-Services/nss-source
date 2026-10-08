@@ -29,6 +29,7 @@ type RouterDependencies struct {
 	AdminHandler    *handler.AdminHandler
 	PublicHandler   *handler.PublicHandler
 	DocsHandler     *handler.DocsHandler
+	GoStoreHandler  *handler.GoStoreHandler
 }
 
 func SetupRouter(deps RouterDependencies) *gin.Engine {
@@ -38,8 +39,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS(deps.Config))
 
-	// Static Media Serving with fuzzy fallback
+	// Unified Media Serving with GoStore CAS Proxy & Local Disk Fallback
 	mediaHandler := func(c *gin.Context) {
+		if deps.GoStoreHandler != nil {
+			deps.GoStoreHandler.ProxyMedia(c)
+			return
+		}
 		reqPath := c.Param("filepath")
 		baseDir := media.GetBaseMediaDir()
 		if foundPath, ok := media.FindMediaFile(baseDir, reqPath); ok {
@@ -52,6 +57,14 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.HEAD("/media/*filepath", mediaHandler)
 	r.GET("/api/v1/media/*filepath", mediaHandler)
 	r.HEAD("/api/v1/media/*filepath", mediaHandler)
+
+	// GoStore Webhooks
+	if deps.GoStoreHandler != nil {
+		r.POST("/api/v1/webhooks/gostore", deps.GoStoreHandler.HandleWebhook)
+		r.POST("/api/v1/webhooks/gostore/", deps.GoStoreHandler.HandleWebhook)
+		r.POST("/webhooks/gostore", deps.GoStoreHandler.HandleWebhook)
+		r.POST("/webhooks/gostore/", deps.GoStoreHandler.HandleWebhook)
+	}
 
 	// Interactive OpenAPI Documentation & Swagger UI for ALL endpoints
 	if deps.DocsHandler != nil {
@@ -811,6 +824,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			// Webhook Event Log
 			admin.GET("/webhooks/events", deps.AdminHandler.ListWebhookEvents)
 			admin.GET("/webhooks/events/", deps.AdminHandler.ListWebhookEvents)
+
+			// GoStore Storage & Media Browser
+			if deps.GoStoreHandler != nil {
+				admin.GET("/media/browser", deps.GoStoreHandler.ListMedia)
+				admin.GET("/media/browser/", deps.GoStoreHandler.ListMedia)
+			}
 		}
 	}
 

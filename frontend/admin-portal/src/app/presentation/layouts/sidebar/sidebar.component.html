@@ -248,6 +248,15 @@
       <div class="nav-section-title">Platform &amp; Services</div>
     }
     
+    <a routerLink="/admin/media" routerLinkActive="active" class="nav-link" [attr.title]="layoutService.isDesktopCollapsed() ? 'Storage & Media Browser' : null">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>
+      </svg>
+      @if (!layoutService.isDesktopCollapsed()) {
+        <span class="nav-label">Media &amp; Storage</span>
+      }
+    </a>
+
     <a routerLink="/admin/catalog" routerLinkActive="active" class="nav-link" [attr.title]="layoutService.isDesktopCollapsed() ? 'Categories & Catalog' : null">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>

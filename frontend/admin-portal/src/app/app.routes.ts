@@ -1,3 +1,4 @@
+import { MediaBrowserComponent } from './presentation/pages/media-browser/media-browser.component';
 import { Routes } from '@angular/router';
 import { LoginComponent } from './presentation/pages/login/login.component';
 import { AdminShellComponent } from './presentation/layouts/admin-shell/admin-shell.component';
@@ -50,6 +51,7 @@ export const routes: Routes = [
       { path: 'payouts', component: PayoutsComponent },
       { path: 'promos', component: PromosComponent },
       { path: 'subscriptions', component: SubscriptionsComponent },
+      { path: 'media', component: MediaBrowserComponent },
       { path: 'catalog', component: CatalogComponent },
       { path: 'legal', component: LegalComponent },
       { path: 'support', component: SupportComponent },

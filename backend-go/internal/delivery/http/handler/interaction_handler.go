@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"backend-go/internal/domain/entity"
@@ -526,15 +524,13 @@ func (h *InteractionHandler) UploadDisputeEvidence(c *gin.Context) {
 		return
 	}
 
-	mediaDir := media.ResolveMediaDir("evidence")
-	filename := fmt.Sprintf("evidence_%s_%s", uuid.New().String(), filepath.Base(file.Filename))
-	savePath := filepath.Join(mediaDir, filename)
-	if err := c.SaveUploadedFile(file, savePath); err != nil {
-		response.InternalError(c, "Failed to save evidence file")
+	relPath, err := media.ValidateAndSaveUploadedFile(file, "evidence", 25*1024*1024)
+	if err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	evidenceURL := "/media/evidence/" + filename
+	evidenceURL := "/media/" + strings.TrimPrefix(relPath, "/")
 
 	if err := h.interactionUC.UploadDisputeEvidence(c.Request.Context(), userUUID, disputeUUID, evidenceURL); err != nil {
 		response.BadRequest(c, err.Error())

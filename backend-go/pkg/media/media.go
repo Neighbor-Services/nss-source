@@ -1,11 +1,13 @@
 package media
 
 import (
+	"time"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,7 +165,60 @@ func ValidateAndSaveUploadedFile(fileHeader *multipart.FileHeader, subfolder str
 		return "", fmt.Errorf("failed to save file: %w", err)
 	}
 
-	// Return relative media path (e.g., "portfolio/uuid.jpg" or "/media/portfolio/uuid.jpg")
+		// Sync with GoStore CAS engine asynchronously
+	go func() {
+		_ = SyncToGoStore(subfolder, sanitizedName, destPath, mimeType)
+	}()
+
 	relPath := filepath.Join(subfolder, sanitizedName)
 	return relPath, nil
+}
+
+// SyncToGoStore uploads a local media file to the GoStore CAS object store.
+func SyncToGoStore(subfolder, filename, filePath, contentType string) error {
+	gostoreURL := os.Getenv("GOSTORE_URL")
+	if gostoreURL == "" {
+		if os.Getenv("GIN_MODE") == "release" || os.Getenv("ENV") == "production" || os.Getenv("APP_ENV") == "production" {
+			gostoreURL = "https://file.proleadsolutions.co"
+		} else {
+			gostoreURL = "http://localhost:8080"
+		}
+	}
+
+	apiKey := os.Getenv("GOSTORE_API_KEY")
+	objectPath := fmt.Sprintf("%s/%s", subfolder, filename)
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	bucket := os.Getenv("GOSTORE_BUCKET")
+	if bucket == "" {
+		bucket = "neighborservice"
+	}
+
+	endpoint := fmt.Sprintf("%s/v0/b/%s/o?name=%s", strings.TrimRight(gostoreURL, "/"), url.PathEscape(bucket), strings.ReplaceAll(objectPath, "/", "%2F"))
+	req, err := http.NewRequest(http.MethodPost, endpoint, f)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", contentType)
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("X-API-Key", apiKey)
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("gostore sync failed with status %d", resp.StatusCode)
+	}
+	return nil
 }

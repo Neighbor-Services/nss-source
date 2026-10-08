@@ -33,6 +33,9 @@ type Config struct {
 	CheckrAPIKey             string
 	FrontendURL              string
 	MediaUploadDir           string
+	GoStoreURL               string
+	GoStoreAPIKey            string
+	GoStoreBucket            string
 	FirebaseCredentialsFile  string
 	FirebaseCredentialsJSON  string
 	SMTPHost                 string
@@ -109,6 +112,9 @@ func Load() *Config {
 		CheckrAPIKey:             getEnv("CHECKR_API_KEY", ""),
 		FrontendURL:              getEnv("FRONTEND_URL", "http://localhost:4200"),
 		MediaUploadDir:           getEnv("MEDIA_UPLOAD_DIR", "./media"),
+		GoStoreURL:               getEnv("GOSTORE_URL", "https://file.proleadsolutions.co"),
+		GoStoreAPIKey:            getEnv("GOSTORE_API_KEY", ""),
+		GoStoreBucket:            getEnv("GOSTORE_BUCKET", "default"),
 		FirebaseCredentialsFile:  getEnv("FIREBASE_CREDENTIALS_FILE", "./firebase-service-account.json"),
 		FirebaseCredentialsJSON:  getEnv("FIREBASE_CREDENTIALS_JSON", ""),
 		SMTPHost:                 getEnv("EMAIL_HOST", ""),
