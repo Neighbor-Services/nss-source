@@ -65,10 +65,10 @@ func (r *catalogServiceRepository) List(ctx context.Context, categorySlug string
 
 	if categorySlug != "" {
 		if catUUID, err := uuid.Parse(categorySlug); err == nil {
-			query = query.Where("category_id = ?", catUUID)
+			query = query.Where("services_catalogservice.category_id = ?", catUUID)
 		} else {
 			query = query.Joins("JOIN services_category ON services_category.id = services_catalogservice.category_id").
-				Where("services_category.name ILIKE ?", categorySlug)
+				Where("services_category.name ILIKE ? OR services_category.slug ILIKE ?", categorySlug, categorySlug)
 		}
 	}
 	if search != "" {
@@ -76,7 +76,7 @@ func (r *catalogServiceRepository) List(ctx context.Context, categorySlug string
 		query = query.Where("services_catalogservice.name ILIKE ? OR services_catalogservice.description ILIKE ? OR CAST(services_catalogservice.specialties AS TEXT) ILIKE ?", searchPattern, searchPattern, searchPattern)
 	}
 
-	err := query.Order("name ASC").Find(&services).Error
+	err := query.Order("services_catalogservice.name ASC").Find(&services).Error
 	return services, err
 }
 

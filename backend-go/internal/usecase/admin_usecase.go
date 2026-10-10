@@ -19,6 +19,7 @@ import (
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/pkg/aimatcher"
 	"backend-go/pkg/auth"
+	"backend-go/pkg/cache"
 	"backend-go/pkg/email"
 	"github.com/google/uuid"
 )
@@ -28,6 +29,7 @@ type adminUseCase struct {
 	profileRepo repository.ProfileRepository
 	userRepo    repository.UserRepository
 	walletRepo  repository.WalletRepository
+	cache       cache.Cache
 	cfg         *config.Config
 }
 
@@ -36,6 +38,7 @@ func NewAdminUseCase(
 	profileRepo repository.ProfileRepository,
 	userRepo repository.UserRepository,
 	walletRepo repository.WalletRepository,
+	cache cache.Cache,
 	cfg *config.Config,
 ) domainUsecase.AdminUseCase {
 	return &adminUseCase{
@@ -43,6 +46,7 @@ func NewAdminUseCase(
 		profileRepo: profileRepo,
 		userRepo:    userRepo,
 		walletRepo:  walletRepo,
+		cache:       cache,
 		cfg:         cfg,
 	}
 }
@@ -847,12 +851,22 @@ func (u *adminUseCase) DeleteSubscriptionPlan(ctx context.Context, adminID, plan
 	return nil
 }
 
+func (u *adminUseCase) invalidateCatalogCache(ctx context.Context) {
+	if u.cache != nil {
+		_ = u.cache.Delete(ctx, "cache:categories:active")
+		_ = u.cache.DeleteByPattern(ctx, "cache:catalog:*")
+		_ = u.cache.DeleteByPattern(ctx, "cache:*categories*")
+		_ = u.cache.DeleteByPattern(ctx, "cache:*catalog*")
+	}
+}
+
 func (u *adminUseCase) CreateCategory(ctx context.Context, adminID uuid.UUID, cat *entity.Category) (*entity.Category, error) {
 	cat.ID = uuid.New()
 	cat.CreatedAt = time.Now()
 	if err := u.adminRepo.CreateCategory(ctx, cat); err != nil {
 		return nil, err
 	}
+	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_CATEGORY", "Category", cat.ID.String(), map[string]interface{}{
 		"name": cat.Name,
 	})
@@ -870,6 +884,7 @@ func (u *adminUseCase) UpdateCategory(ctx context.Context, adminID, catID uuid.U
 	if err := u.adminRepo.UpdateCategory(ctx, &cat); err != nil {
 		return nil, err
 	}
+	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_CATEGORY", "Category", catID.String(), map[string]interface{}{
 		"name": name,
 	})
@@ -879,7 +894,19 @@ func (u *adminUseCase) UpdateCategory(ctx context.Context, adminID, catID uuid.U
 func (u *adminUseCase) DeleteCategory(ctx context.Context, adminID, catID uuid.UUID) error {
 	err := u.adminRepo.DeleteCategory(ctx, catID)
 	if err == nil {
+		u.invalidateCatalogCache(ctx)
 		u.logAudit(ctx, &adminID, "ADMIN_DELETE_CATEGORY", "Category", catID.String(), nil)
+	}
+	return err
+}
+
+func (u *adminUseCase) BulkDeleteCategories(ctx context.Context, adminID uuid.UUID, ids []uuid.UUID) error {
+	err := u.adminRepo.BulkDeleteCategories(ctx, ids)
+	if err == nil {
+		u.invalidateCatalogCache(ctx)
+		u.logAudit(ctx, &adminID, "ADMIN_BULK_DELETE_CATEGORIES", "Category", fmt.Sprintf("count:%d", len(ids)), map[string]interface{}{
+			"count": len(ids),
+		})
 	}
 	return err
 }
@@ -890,6 +917,7 @@ func (u *adminUseCase) CreateCatalogService(ctx context.Context, adminID uuid.UU
 	if err := u.adminRepo.CreateCatalogService(ctx, cs); err != nil {
 		return nil, err
 	}
+	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_CATALOG_SERVICE", "CatalogService", cs.ID.String(), map[string]interface{}{
 		"name": cs.Name,
 	})
@@ -913,6 +941,7 @@ func (u *adminUseCase) UpdateCatalogService(ctx context.Context, adminID, csID u
 	if err := u.adminRepo.UpdateCatalogService(ctx, &cs); err != nil {
 		return nil, err
 	}
+	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_CATALOG_SERVICE", "CatalogService", csID.String(), map[string]interface{}{
 		"name": name,
 	})
@@ -922,7 +951,19 @@ func (u *adminUseCase) UpdateCatalogService(ctx context.Context, adminID, csID u
 func (u *adminUseCase) DeleteCatalogService(ctx context.Context, adminID, csID uuid.UUID) error {
 	err := u.adminRepo.DeleteCatalogService(ctx, csID)
 	if err == nil {
+		u.invalidateCatalogCache(ctx)
 		u.logAudit(ctx, &adminID, "ADMIN_DELETE_CATALOG_SERVICE", "CatalogService", csID.String(), nil)
+	}
+	return err
+}
+
+func (u *adminUseCase) BulkDeleteCatalogServices(ctx context.Context, adminID uuid.UUID, ids []uuid.UUID) error {
+	err := u.adminRepo.BulkDeleteCatalogServices(ctx, ids)
+	if err == nil {
+		u.invalidateCatalogCache(ctx)
+		u.logAudit(ctx, &adminID, "ADMIN_BULK_DELETE_CATALOG_SERVICES", "CatalogService", fmt.Sprintf("count:%d", len(ids)), map[string]interface{}{
+			"count": len(ids),
+		})
 	}
 	return err
 }
@@ -1092,6 +1133,15 @@ func (u *adminUseCase) GetFinancialReport(ctx context.Context, adminID uuid.UUID
 
 func (u *adminUseCase) GetSystemHealth(ctx context.Context, adminID uuid.UUID) (*entity.SystemHealthStatus, error) {
 	return u.adminRepo.GetSystemHealth(ctx)
+}
+
+func (u *adminUseCase) ClearCache(ctx context.Context, adminID uuid.UUID) error {
+	if u.cache != nil {
+		_ = u.cache.Delete(ctx, "cache:categories:active")
+		_ = u.cache.DeleteByPattern(ctx, "cache:*")
+	}
+	u.logAudit(ctx, &adminID, "ADMIN_CLEAR_CACHE", "System", "all", nil)
+	return nil
 }
 
 func (u *adminUseCase) GetGDPRUserData(ctx context.Context, adminID, userID uuid.UUID) (*entity.GDPRUserData, error) {
@@ -2035,6 +2085,7 @@ func (u *adminUseCase) ImportCatalogBatch(ctx context.Context, adminID uuid.UUID
 	if err != nil {
 		return 0, err
 	}
+	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_IMPORT_CATALOG_BATCH", "CatalogService", fmt.Sprintf("count:%d", count), map[string]interface{}{
 		"imported_count": count,
 	})

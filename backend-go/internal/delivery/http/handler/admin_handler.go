@@ -707,6 +707,37 @@ func (h *AdminHandler) DeleteCategory(c *gin.Context) {
 	response.JSON(c, http.StatusOK, gin.H{"status": "category deleted"})
 }
 
+type BulkDeleteCatalogRequest struct {
+	IDs []string `json:"ids" binding:"required"`
+}
+
+func (h *AdminHandler) BulkDeleteCategories(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var req BulkDeleteCatalogRequest
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.IDs) == 0 {
+		response.BadRequest(c, "Valid list of category IDs is required")
+		return
+	}
+
+	uuids := make([]uuid.UUID, 0, len(req.IDs))
+	for _, idStr := range req.IDs {
+		if u, err := uuid.Parse(idStr); err == nil {
+			uuids = append(uuids, u)
+		}
+	}
+
+	if len(uuids) == 0 {
+		response.BadRequest(c, "No valid category IDs provided")
+		return
+	}
+
+	if err := h.adminUC.BulkDeleteCategories(c.Request.Context(), adminID, uuids); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "categories deleted", "deleted_count": len(uuids)})
+}
+
 type CreateCatalogServiceRequest struct {
 	CategoryID  uuid.UUID `json:"category_id" binding:"required"`
 	Name        string    `json:"name" binding:"required"`
@@ -795,6 +826,33 @@ func (h *AdminHandler) DeleteCatalogService(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{"status": "catalog service deleted"})
+}
+
+func (h *AdminHandler) BulkDeleteCatalogServices(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var req BulkDeleteCatalogRequest
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.IDs) == 0 {
+		response.BadRequest(c, "Valid list of service IDs is required")
+		return
+	}
+
+	uuids := make([]uuid.UUID, 0, len(req.IDs))
+	for _, idStr := range req.IDs {
+		if u, err := uuid.Parse(idStr); err == nil {
+			uuids = append(uuids, u)
+		}
+	}
+
+	if len(uuids) == 0 {
+		response.BadRequest(c, "No valid service IDs provided")
+		return
+	}
+
+	if err := h.adminUC.BulkDeleteCatalogServices(c.Request.Context(), adminID, uuids); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "catalog services deleted", "deleted_count": len(uuids)})
 }
 
 // ─── SETTINGS & AUDIT LOGS ──────────────────────────────────────────────────
@@ -1000,8 +1058,10 @@ func (h *AdminHandler) SetFeatureFlag(c *gin.Context) {
 
 func (h *AdminHandler) ClearCache(c *gin.Context) {
 	adminID := h.getAdminID(c)
-	// Triggers cache flushes
-	_ = adminID
+	if err := h.adminUC.ClearCache(c.Request.Context(), adminID); err != nil {
+		response.InternalError(c, "Failed to clear cache: "+err.Error())
+		return
+	}
 	response.JSON(c, http.StatusOK, gin.H{"status": "application cache cleared successfully"})
 }
 

@@ -73,10 +73,12 @@ type AdminRepository interface {
 	CreateCategory(ctx context.Context, cat *entity.Category) error
 	UpdateCategory(ctx context.Context, cat *entity.Category) error
 	DeleteCategory(ctx context.Context, id uuid.UUID) error
+	BulkDeleteCategories(ctx context.Context, ids []uuid.UUID) error
 
 	CreateCatalogService(ctx context.Context, cs *entity.CatalogService) error
 	UpdateCatalogService(ctx context.Context, cs *entity.CatalogService) error
 	DeleteCatalogService(ctx context.Context, id uuid.UUID) error
+	BulkDeleteCatalogServices(ctx context.Context, ids []uuid.UUID) error
 
 	GetSettings(ctx context.Context) (*entity.ModerationSetting, error)
 	UpdateSettings(ctx context.Context, setting *entity.ModerationSetting) error

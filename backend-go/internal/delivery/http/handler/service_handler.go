@@ -36,6 +36,9 @@ func (h *ServiceHandler) GetCategories(c *gin.Context) {
 
 func (h *ServiceHandler) GetCatalogServices(c *gin.Context) {
 	category := c.Query("category")
+	if category == "" {
+		category = c.Query("category_id")
+	}
 	search := c.Query("search")
 
 	services, err := h.serviceUC.GetCatalogServices(c.Request.Context(), category, search)

@@ -147,6 +147,10 @@ func (m *mockAdminUseCase) DeleteCategory(ctx context.Context, adminID, catID uu
 	return m.err
 }
 
+func (m *mockAdminUseCase) BulkDeleteCategories(ctx context.Context, adminID uuid.UUID, ids []uuid.UUID) error {
+	return m.err
+}
+
 func (m *mockAdminUseCase) CreateCatalogService(ctx context.Context, adminID uuid.UUID, cs *entity.CatalogService) (*entity.CatalogService, error) {
 	return m.service, m.err
 }
@@ -156,6 +160,14 @@ func (m *mockAdminUseCase) UpdateCatalogService(ctx context.Context, adminID, cs
 }
 
 func (m *mockAdminUseCase) DeleteCatalogService(ctx context.Context, adminID, csID uuid.UUID) error {
+	return m.err
+}
+
+func (m *mockAdminUseCase) BulkDeleteCatalogServices(ctx context.Context, adminID uuid.UUID, ids []uuid.UUID) error {
+	return m.err
+}
+
+func (m *mockAdminUseCase) ClearCache(ctx context.Context, adminID uuid.UUID) error {
 	return m.err
 }
 

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 
 	"backend-go/internal/config"
 	"backend-go/internal/database"
 	"backend-go/internal/domain/entity"
+	"backend-go/pkg/cache"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -365,6 +367,15 @@ func main() {
 			totalServices++
 		}
 	}
+
+	// Invalidate Redis cache so running servers immediately reflect the newly seeded categories & services
+	ctx := context.Background()
+	redisCache := cache.NewRedisCache(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB, cfg.RedisURL)
+	_ = redisCache.Delete(ctx, "cache:categories:active")
+	_ = redisCache.DeleteByPattern(ctx, "cache:catalog:*")
+	_ = redisCache.DeleteByPattern(ctx, "cache:*categories*")
+	_ = redisCache.DeleteByPattern(ctx, "cache:*catalog*")
+	redisCache.Close()
 
 	log.Printf("✅ Successfully seeded %d Parent Categories and %d Child Catalog Services with Searchable Specialties!", totalCategories, totalServices)
 }

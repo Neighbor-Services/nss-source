@@ -120,7 +120,7 @@ func main() {
 	consultUC := usecase.NewConsultationUseCase(cfg)
 	moderateUC := usecase.NewModerationUseCase(reportRepo, verificationRepo, bgCheckRepo, profileRepo, userRepo, cfg)
 	auditUC := usecase.NewAuditUseCase(auditRepo)
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, redisCache, cfg)
 	publicUC := usecase.NewPublicUseCase(publicRepo, catalogRepo, categoryRepo, cfg)
 
 	// Layer: Delivery Handlers (Interface Adapters / Transport)

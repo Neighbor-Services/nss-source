@@ -214,6 +214,12 @@ func (m *mockAdminRepo) DeleteCategory(ctx context.Context, id uuid.UUID) error 
 	delete(m.categories, id)
 	return nil
 }
+func (m *mockAdminRepo) BulkDeleteCategories(ctx context.Context, ids []uuid.UUID) error {
+	for _, id := range ids {
+		delete(m.categories, id)
+	}
+	return nil
+}
 func (m *mockAdminRepo) CreateCatalogService(ctx context.Context, cs *entity.CatalogService) error {
 	m.catalog[cs.ID] = cs
 	return nil
@@ -224,6 +230,12 @@ func (m *mockAdminRepo) UpdateCatalogService(ctx context.Context, cs *entity.Cat
 }
 func (m *mockAdminRepo) DeleteCatalogService(ctx context.Context, id uuid.UUID) error {
 	delete(m.catalog, id)
+	return nil
+}
+func (m *mockAdminRepo) BulkDeleteCatalogServices(ctx context.Context, ids []uuid.UUID) error {
+	for _, id := range ids {
+		delete(m.catalog, id)
+	}
 	return nil
 }
 func (m *mockAdminRepo) GetSettings(ctx context.Context) (*entity.ModerationSetting, error) {
@@ -654,7 +666,7 @@ func TestAdminUseCase_DashboardAndUserOperations(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: map[uuid.UUID]*entity.Wallet{}}
 
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Test Dashboard Stats
@@ -711,7 +723,7 @@ func TestAdminUseCase_DisputesAndPayouts(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: map[uuid.UUID]*entity.Wallet{walletID: wallet, providerID: wallet}}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Resolve Dispute
@@ -770,7 +782,7 @@ func TestAdminUseCase_VerificationAndBackgroundChecks(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: make(map[uuid.UUID]*entity.Wallet)}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Approve Verification
@@ -804,7 +816,7 @@ func TestAdminUseCase_AdvancedOperations(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: map[uuid.UUID]*entity.Wallet{walletID: wallet, targetUserID: wallet}}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Wallet Adjustment
@@ -890,7 +902,7 @@ func TestAdminUseCase_EnterpriseFeatures(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: make(map[uuid.UUID]*entity.Wallet)}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
 	ctx := context.Background()
 
 	// 1. TOTP 2FA Setup

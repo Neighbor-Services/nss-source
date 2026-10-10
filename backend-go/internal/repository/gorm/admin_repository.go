@@ -540,12 +540,34 @@ func (r *adminRepository) DeleteCategory(ctx context.Context, id uuid.UUID) erro
 		var catalogServiceIDs []uuid.UUID
 		if err := tx.Model(&entity.CatalogService{}).Where("category_id = ?", id).Pluck("id", &catalogServiceIDs).Error; err == nil && len(catalogServiceIDs) > 0 {
 			_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE catalog_service_id IN ?", catalogServiceIDs).Error
-			_ = tx.Model(&entity.ServiceRequest{}).Where("catalog_service_id IN ?", catalogServiceIDs).Update("catalog_service_id", nil).Error
-			if err := tx.Where("id IN ?", catalogServiceIDs).Unscoped().Delete(&entity.CatalogService{}).Error; err != nil {
+			_ = tx.Exec("UPDATE services_servicerequest SET catalog_service_id = NULL WHERE catalog_service_id IN ?", catalogServiceIDs).Error
+			_ = tx.Exec("UPDATE ai_voice_speech_logs SET catalog_service_id = NULL WHERE catalog_service_id IN ?", catalogServiceIDs).Error
+			_ = tx.Exec("UPDATE services_catalog_knowledge_index SET service_id = NULL WHERE service_id IN ?", catalogServiceIDs).Error
+			if err := tx.Exec("DELETE FROM services_catalogservice WHERE id IN ?", catalogServiceIDs).Error; err != nil {
 				return err
 			}
 		}
-		return tx.Unscoped().Delete(&entity.Category{}, "id = ?", id).Error
+		_ = tx.Exec("UPDATE services_catalog_knowledge_index SET category_name = '' WHERE category_name = (SELECT name FROM services_category WHERE id = ?)", id).Error
+		return tx.Exec("DELETE FROM services_category WHERE id = ?", id).Error
+	})
+}
+
+func (r *adminRepository) BulkDeleteCategories(ctx context.Context, ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var catalogServiceIDs []uuid.UUID
+		if err := tx.Model(&entity.CatalogService{}).Where("category_id IN ?", ids).Pluck("id", &catalogServiceIDs).Error; err == nil && len(catalogServiceIDs) > 0 {
+			_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE catalog_service_id IN ?", catalogServiceIDs).Error
+			_ = tx.Exec("UPDATE services_servicerequest SET catalog_service_id = NULL WHERE catalog_service_id IN ?", catalogServiceIDs).Error
+			_ = tx.Exec("UPDATE ai_voice_speech_logs SET catalog_service_id = NULL WHERE catalog_service_id IN ?", catalogServiceIDs).Error
+			_ = tx.Exec("UPDATE services_catalog_knowledge_index SET service_id = NULL WHERE service_id IN ?", catalogServiceIDs).Error
+			if err := tx.Exec("DELETE FROM services_catalogservice WHERE id IN ?", catalogServiceIDs).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Exec("DELETE FROM services_category WHERE id IN ?", ids).Error
 	})
 }
 
@@ -575,8 +597,23 @@ func (r *adminRepository) UpdateCatalogService(ctx context.Context, cs *entity.C
 func (r *adminRepository) DeleteCatalogService(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE catalog_service_id = ?", id).Error
-		_ = tx.Model(&entity.ServiceRequest{}).Where("catalog_service_id = ?", id).Update("catalog_service_id", nil).Error
-		return tx.Unscoped().Delete(&entity.CatalogService{}, "id = ?", id).Error
+		_ = tx.Exec("UPDATE services_servicerequest SET catalog_service_id = NULL WHERE catalog_service_id = ?", id).Error
+		_ = tx.Exec("UPDATE ai_voice_speech_logs SET catalog_service_id = NULL WHERE catalog_service_id = ?", id).Error
+		_ = tx.Exec("UPDATE services_catalog_knowledge_index SET service_id = NULL WHERE service_id = ?", id).Error
+		return tx.Exec("DELETE FROM services_catalogservice WHERE id = ?", id).Error
+	})
+}
+
+func (r *adminRepository) BulkDeleteCatalogServices(ctx context.Context, ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		_ = tx.Exec("DELETE FROM accounts_profile_catalog_services WHERE catalog_service_id IN ?", ids).Error
+		_ = tx.Exec("UPDATE services_servicerequest SET catalog_service_id = NULL WHERE catalog_service_id IN ?", ids).Error
+		_ = tx.Exec("UPDATE ai_voice_speech_logs SET catalog_service_id = NULL WHERE catalog_service_id IN ?", ids).Error
+		_ = tx.Exec("UPDATE services_catalog_knowledge_index SET service_id = NULL WHERE service_id IN ?", ids).Error
+		return tx.Exec("DELETE FROM services_catalogservice WHERE id IN ?", ids).Error
 	})
 }
 

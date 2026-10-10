@@ -109,10 +109,12 @@ type AdminUseCase interface {
 	CreateCategory(ctx context.Context, adminID uuid.UUID, cat *entity.Category) (*entity.Category, error)
 	UpdateCategory(ctx context.Context, adminID, catID uuid.UUID, name, description, icon string) (*entity.Category, error)
 	DeleteCategory(ctx context.Context, adminID, catID uuid.UUID) error
+	BulkDeleteCategories(ctx context.Context, adminID uuid.UUID, ids []uuid.UUID) error
 
 	CreateCatalogService(ctx context.Context, adminID uuid.UUID, cs *entity.CatalogService) (*entity.CatalogService, error)
 	UpdateCatalogService(ctx context.Context, adminID, csID uuid.UUID, name, description string, basePrice float64, categoryID *uuid.UUID) (*entity.CatalogService, error)
 	DeleteCatalogService(ctx context.Context, adminID, csID uuid.UUID) error
+	BulkDeleteCatalogServices(ctx context.Context, adminID uuid.UUID, ids []uuid.UUID) error
 
 	// Settings & Audit
 	GetSettings(ctx context.Context, adminID uuid.UUID) (*entity.ModerationSetting, error)
@@ -131,9 +133,10 @@ type AdminUseCase interface {
 	ListFeatureFlags(ctx context.Context, adminID uuid.UUID) ([]entity.FeatureFlag, error)
 	SetFeatureFlag(ctx context.Context, adminID uuid.UUID, key string, isEnabled bool) (*entity.FeatureFlag, error)
 
-	// Reports, Health & GDPR
+	// Reports, Health, Cache & GDPR
 	GetFinancialReport(ctx context.Context, adminID uuid.UUID, startDate, endDate string) (*entity.FinancialReportSummary, error)
 	GetSystemHealth(ctx context.Context, adminID uuid.UUID) (*entity.SystemHealthStatus, error)
+	ClearCache(ctx context.Context, adminID uuid.UUID) error
 	GetGDPRUserData(ctx context.Context, adminID, userID uuid.UUID) (*entity.GDPRUserData, error)
 
 	// Data Exports (CSV)
