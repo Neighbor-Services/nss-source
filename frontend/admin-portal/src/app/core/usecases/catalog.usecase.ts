@@ -25,6 +25,10 @@ export class CatalogUseCase {
     return this.catalogRepo.deleteCategory(id);
   }
 
+  bulkDeleteCategories(ids: string[]): Observable<{ success: boolean; deleted_count?: number }> {
+    return this.catalogRepo.bulkDeleteCategories(ids);
+  }
+
   listCatalogServices(categoryId?: string): Observable<CatalogServiceItem[]> {
     return this.catalogRepo.listCatalogServices(categoryId);
   }
@@ -39,6 +43,10 @@ export class CatalogUseCase {
 
   deleteCatalogService(id: string): Observable<{ success: boolean }> {
     return this.catalogRepo.deleteCatalogService(id);
+  }
+
+  bulkDeleteCatalogServices(ids: string[]): Observable<{ success: boolean; deleted_count?: number }> {
+    return this.catalogRepo.bulkDeleteCatalogServices(ids);
   }
 
   importCatalogBatch(items: any[]): Observable<{ imported_count: number; message: string }> {

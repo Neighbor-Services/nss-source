@@ -21,7 +21,14 @@ export class CatalogComponent implements OnInit {
 
   selectedCategoryTab = signal<string>('all');
   serviceSearchQuery = signal<string>('');
+  categorySearchQuery = signal<string>('');
   activeSection = signal<'CATEGORIES' | 'SERVICES' | 'TAXONOMY' | 'AI_SYNONYMS'>('CATEGORIES');
+
+  // Bulk Selection States
+  selectedCategoryIds = signal<string[]>([]);
+  selectedServiceIds = signal<string[]>([]);
+  isBatchDeletingCategories = signal(false);
+  isBatchDeletingServices = signal(false);
 
   // Computed KPIs
   totalCategories = computed(() => this.categories().length);
@@ -87,6 +94,9 @@ export class CatalogComponent implements OnInit {
     this.catalogUC.listCategories().subscribe({
       next: (cats) => {
         this.categories.set(cats);
+        // Clean up any stale selected category IDs that no longer exist
+        const validIds = new Set(cats.map(c => c.id));
+        this.selectedCategoryIds.update(ids => ids.filter(id => validIds.has(id)));
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -98,8 +108,24 @@ export class CatalogComponent implements OnInit {
     this.catalogUC.listCatalogServices().subscribe({
       next: (srvs) => {
         this.services.set(srvs);
+        // Clean up any stale selected service IDs that no longer exist
+        const validIds = new Set(srvs.map(s => s.id));
+        this.selectedServiceIds.update(ids => ids.filter(id => validIds.has(id)));
       }
     });
+  }
+
+  filteredCategories(): CategoryItem[] {
+    let list = this.categories();
+    const q = this.categorySearchQuery().trim().toLowerCase();
+    if (q) {
+      list = list.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.slug || '').toLowerCase().includes(q) ||
+        (c.description || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
   }
 
   filteredServices(): CatalogServiceItem[] {
@@ -111,7 +137,8 @@ export class CatalogComponent implements OnInit {
     if (q) {
       list = list.filter(s =>
         s.name.toLowerCase().includes(q) ||
-        (s.description || '').toLowerCase().includes(q)
+        (s.description || '').toLowerCase().includes(q) ||
+        (s.categoryName || '').toLowerCase().includes(q)
       );
     }
     return list;
@@ -119,6 +146,134 @@ export class CatalogComponent implements OnInit {
 
   getServiceCountForCategory(catId: string): number {
     return this.services().filter(s => s.categoryId === catId).length;
+  }
+
+  // ─── CATEGORY SELECTION & BULK ACTIONS ──────────────────────────────────────
+
+  isAllCategoriesSelected(): boolean {
+    const list = this.filteredCategories();
+    if (list.length === 0) return false;
+    const selected = this.selectedCategoryIds();
+    return list.every(c => selected.includes(c.id));
+  }
+
+  toggleSelectAllCategories() {
+    const list = this.filteredCategories();
+    if (this.isAllCategoriesSelected()) {
+      const listIds = new Set(list.map(c => c.id));
+      this.selectedCategoryIds.update(ids => ids.filter(id => !listIds.has(id)));
+    } else {
+      const current = new Set(this.selectedCategoryIds());
+      list.forEach(c => current.add(c.id));
+      this.selectedCategoryIds.set(Array.from(current));
+    }
+  }
+
+  isCategorySelected(id: string): boolean {
+    return this.selectedCategoryIds().includes(id);
+  }
+
+  toggleCategorySelect(id: string) {
+    this.selectedCategoryIds.update(ids =>
+      ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id]
+    );
+  }
+
+  clearCategorySelection() {
+    this.selectedCategoryIds.set([]);
+  }
+
+  async bulkDeleteCategories() {
+    const ids = this.selectedCategoryIds();
+    if (ids.length === 0) return;
+
+    const confirmed = await this.dialog.dangerConfirm(
+      'Bulk Delete Categories',
+      `Are you sure you want to delete ${ids.length} selected categories? All catalog services under these categories will also be removed. This action cannot be undone.`,
+      `Delete ${ids.length} Categories`
+    );
+    if (!confirmed) return;
+
+    this.isBatchDeletingCategories.set(true);
+    this.errorMessage.set(null);
+
+    this.catalogUC.bulkDeleteCategories(ids).subscribe({
+      next: (res) => {
+        this.isBatchDeletingCategories.set(false);
+        this.selectedCategoryIds.set([]);
+        this.successMessage.set(`Successfully deleted ${res.deleted_count || ids.length} categories.`);
+        this.loadCatalog();
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err) => {
+        this.isBatchDeletingCategories.set(false);
+        this.errorMessage.set(err.error?.message || 'Failed to bulk delete categories');
+      }
+    });
+  }
+
+  // ─── SERVICE SELECTION & BULK ACTIONS ───────────────────────────────────────
+
+  isAllServicesSelected(): boolean {
+    const list = this.filteredServices();
+    if (list.length === 0) return false;
+    const selected = this.selectedServiceIds();
+    return list.every(s => selected.includes(s.id));
+  }
+
+  toggleSelectAllServices() {
+    const list = this.filteredServices();
+    if (this.isAllServicesSelected()) {
+      const listIds = new Set(list.map(s => s.id));
+      this.selectedServiceIds.update(ids => ids.filter(id => !listIds.has(id)));
+    } else {
+      const current = new Set(this.selectedServiceIds());
+      list.forEach(s => current.add(s.id));
+      this.selectedServiceIds.set(Array.from(current));
+    }
+  }
+
+  isServiceSelected(id: string): boolean {
+    return this.selectedServiceIds().includes(id);
+  }
+
+  toggleServiceSelect(id: string) {
+    this.selectedServiceIds.update(ids =>
+      ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id]
+    );
+  }
+
+  clearServiceSelection() {
+    this.selectedServiceIds.set([]);
+  }
+
+  async bulkDeleteServices() {
+    const ids = this.selectedServiceIds();
+    if (ids.length === 0) return;
+
+    const confirmed = await this.dialog.dangerConfirm(
+      'Bulk Delete Catalog Services',
+      `Are you sure you want to delete ${ids.length} selected catalog services? This action cannot be undone.`,
+      `Delete ${ids.length} Services`
+    );
+    if (!confirmed) return;
+
+    this.isBatchDeletingServices.set(true);
+    this.errorMessage.set(null);
+
+    this.catalogUC.bulkDeleteCatalogServices(ids).subscribe({
+      next: (res) => {
+        this.isBatchDeletingServices.set(false);
+        this.selectedServiceIds.set([]);
+        this.successMessage.set(`Successfully deleted ${res.deleted_count || ids.length} catalog services.`);
+        this.loadCatalog();
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err) => {
+        this.isBatchDeletingServices.set(false);
+        this.errorMessage.set(err.error?.message || 'Failed to bulk delete catalog services');
+      }
+    });
   }
 
   // ─── CATEGORY ACTIONS ───────────────────────────────────────────────────────
@@ -206,6 +361,7 @@ export class CatalogComponent implements OnInit {
 
     this.catalogUC.deleteCategory(cat.id).subscribe({
       next: () => {
+        this.selectedCategoryIds.update(ids => ids.filter(id => id !== cat.id));
         this.successMessage.set(`Category "${cat.name}" deleted.`);
         this.loadCatalog();
         setTimeout(() => this.successMessage.set(null), 4000);
@@ -294,6 +450,7 @@ export class CatalogComponent implements OnInit {
 
     this.catalogUC.deleteCatalogService(srv.id).subscribe({
       next: () => {
+        this.selectedServiceIds.update(ids => ids.filter(id => id !== srv.id));
         this.successMessage.set(`Catalog service "${srv.name}" deleted.`);
         this.loadCatalog();
         setTimeout(() => this.successMessage.set(null), 4000);

@@ -176,51 +176,169 @@
   </div>
 
 
-  <!-- ── TAB: CATEGORIES GRID ──────────────────────────────────────────── -->
+  <!-- ── TAB: CATEGORIES TABLE ──────────────────────────────────────────── -->
   @if (activeSection() === 'CATEGORIES') {
     <div class="catalog-tab-panel">
-      <div class="categories-grid">
-        @for (cat of categories(); track cat.id) {
-          <div class="card category-card">
-            <div class="cat-header">
-              <div class="cat-title-box">
-                <div class="cat-icon-badge">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-                  </svg>
-                </div>
-                <div>
-                  <h4>{{ cat.name }}</h4>
-                  <span class="cat-slug font-mono">{{ cat.slug }}</span>
-                </div>
-              </div>
-              <div class="cat-header-right">
-                <span class="svc-count-chip">{{ getServiceCountForCategory(cat.id) }} services</span>
-                <span class="badge" [class.badge-success]="cat.isActive" [class.badge-danger]="!cat.isActive">
-                  <span class="dot-indicator"></span>
-                  {{ cat.isActive ? 'Active' : 'Disabled' }}
-                </span>
-              </div>
-            </div>
-
-            <p class="cat-desc">{{ cat.description || 'General category for localized home and commercial services.' }}</p>
-
-            <div class="cat-actions">
-              <button class="btn btn-sm btn-secondary" (click)="openEditCategory(cat)">Edit</button>
-              <button class="btn btn-sm btn-danger" (click)="deleteCategory(cat)">Delete</button>
-            </div>
+      <!-- Search + Actions Top Bar -->
+      <div class="services-top-bar">
+        <div class="services-filter-row">
+          <div class="search-input-wrap">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              class="form-control search-field"
+              placeholder="Search categories by name, slug or description…"
+              [value]="categorySearchQuery()"
+              (input)="categorySearchQuery.set($any($event.target).value)"
+            />
           </div>
-        } @empty {
-          <div class="card empty-category-card">
-            <div class="empty-icon-box">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-              </svg>
-            </div>
-            <h4>No Categories Registered Yet</h4>
-            <p class="subtitle">Click "Add Category" above to initialize taxonomy groupings.</p>
+          <span class="services-count-badge">{{ filteredCategories().length }} of {{ categories().length }} categories</span>
+        </div>
+
+        <div class="tab-filters">
+          <button class="btn btn-sm btn-primary" (click)="openAddCategory()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Add Category</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- BATCH ACTION BAR -->
+      @if (filteredCategories().length > 0) {
+        <div class="batch-bar">
+          <div class="batch-left">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [checked]="isAllCategoriesSelected()"
+                (change)="toggleSelectAllCategories()"
+                class="custom-chk"
+              />
+              <span>Select All (<b>{{ selectedCategoryIds().length }}</b> of {{ filteredCategories().length }} Selected)</span>
+            </label>
           </div>
-        }
+          @if (selectedCategoryIds().length > 0) {
+            <div class="batch-buttons">
+              <button class="btn btn-sm btn-danger" (click)="bulkDeleteCategories()" [disabled]="isBatchDeletingCategories()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                <span>{{ isBatchDeletingCategories() ? 'Deleting...' : 'Bulk Delete (' + selectedCategoryIds().length + ')' }}</span>
+              </button>
+              <button class="btn btn-sm btn-secondary" (click)="clearCategorySelection()">
+                Clear Selection
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="card table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    [checked]="isAllCategoriesSelected()"
+                    (change)="toggleSelectAllCategories()"
+                    class="custom-chk"
+                  />
+                </th>
+                <th>Category Details</th>
+                <th>Description</th>
+                <th>Linked Services</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cat of filteredCategories(); track cat.id) {
+                <tr [class.row-selected]="isCategorySelected(cat.id)">
+                  <td style="text-align: center;">
+                    <input
+                      type="checkbox"
+                      [checked]="isCategorySelected(cat.id)"
+                      (change)="toggleCategorySelect(cat.id)"
+                      class="custom-chk"
+                    />
+                  </td>
+                  <td>
+                    <div class="cat-cell-details">
+                      <div class="cat-cell-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <b>{{ cat.name }}</b>
+                        <span class="cat-slug font-mono d-block text-xs text-muted">{{ cat.slug }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p class="sub-text srv-desc">{{ cat.description || 'General category for localized home and commercial services.' }}</p>
+                  </td>
+                  <td>
+                    <span class="badge badge-info font-semibold">{{ getServiceCountForCategory(cat.id) }} services</span>
+                  </td>
+                  <td>
+                    <span class="badge" [class.badge-success]="cat.isActive" [class.badge-danger]="!cat.isActive">
+                      <span class="dot-indicator"></span>
+                      {{ cat.isActive ? 'Active' : 'Disabled' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="table-actions">
+                      <button class="btn btn-sm btn-secondary" (click)="openEditCategory(cat)">Edit</button>
+                      <button class="btn btn-sm btn-danger" (click)="deleteCategory(cat)">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="table-empty-cell">
+                    <div class="table-empty-state">
+                      <div class="empty-icon-wrap blue">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                          <path d="m3.3 7 8.7 5 8.7-5"/>
+                          <path d="M12 22V12"/>
+                        </svg>
+                      </div>
+                      <h4 class="empty-title">No Categories Found</h4>
+                      <p class="empty-subtitle">
+                        @if (categorySearchQuery()) {
+                          No categories matched your search "{{ categorySearchQuery() }}". Try adjusting your search query.
+                        } @else {
+                          No categories have been created yet. Get started by adding your first service category.
+                        }
+                      </p>
+                      <div class="empty-actions">
+                        @if (categorySearchQuery()) {
+                          <button class="btn btn-secondary btn-sm" (click)="categorySearchQuery.set('')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Clear Search
+                          </button>
+                        } @else {
+                          <button class="btn btn-primary btn-sm" (click)="openAddCategory()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Add Category
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   }
@@ -262,11 +380,49 @@
         </div>
       </div>
 
+      <!-- BATCH ACTION BAR FOR SERVICES -->
+      @if (filteredServices().length > 0) {
+        <div class="batch-bar">
+          <div class="batch-left">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [checked]="isAllServicesSelected()"
+                (change)="toggleSelectAllServices()"
+                class="custom-chk"
+              />
+              <span>Select All (<b>{{ selectedServiceIds().length }}</b> of {{ filteredServices().length }} Selected)</span>
+            </label>
+          </div>
+          @if (selectedServiceIds().length > 0) {
+            <div class="batch-buttons">
+              <button class="btn btn-sm btn-danger" (click)="bulkDeleteServices()" [disabled]="isBatchDeletingServices()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                <span>{{ isBatchDeletingServices() ? 'Deleting...' : 'Bulk Delete (' + selectedServiceIds().length + ')' }}</span>
+              </button>
+              <button class="btn btn-sm btn-secondary" (click)="clearServiceSelection()">
+                Clear Selection
+              </button>
+            </div>
+          }
+        </div>
+      }
+
       <div class="card table-card">
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
+                <th style="width: 44px; text-align: center;">
+                  <input
+                    type="checkbox"
+                    [checked]="isAllServicesSelected()"
+                    (change)="toggleSelectAllServices()"
+                    class="custom-chk"
+                  />
+                </th>
                 <th>Service Details</th>
                 <th>Category</th>
                 <th>Price Corridor</th>
@@ -278,7 +434,15 @@
             </thead>
             <tbody>
               @for (srv of filteredServices(); track srv.id) {
-                <tr>
+                <tr [class.row-selected]="isServiceSelected(srv.id)">
+                  <td style="text-align: center;">
+                    <input
+                      type="checkbox"
+                      [checked]="isServiceSelected(srv.id)"
+                      (change)="toggleServiceSelect(srv.id)"
+                      class="custom-chk"
+                    />
+                  </td>
                   <td>
                     <b>{{ srv.name }}</b>
                     <p class="sub-text srv-desc">{{ srv.description }}</p>
@@ -321,12 +485,34 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="7" class="empty-state text-center">
-                    <div class="empty-state-box">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                      <p class="subtitle">No catalog services match your current filter.</p>
+                  <td colspan="8" class="table-empty-cell">
+                    <div class="table-empty-state">
+                      <div class="empty-icon-wrap purple">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                      </div>
+                      <h4 class="empty-title">No Catalog Services Found</h4>
+                      <p class="empty-subtitle">
+                        @if (serviceSearchQuery() || selectedCategoryTab() !== 'all') {
+                          No services matched your current search filters. Try clearing your search or category filter.
+                        } @else {
+                          No standardized catalog services have been created yet.
+                        }
+                      </p>
+                      <div class="empty-actions">
+                        @if (serviceSearchQuery() || selectedCategoryTab() !== 'all') {
+                          <button class="btn btn-secondary btn-sm" (click)="serviceSearchQuery.set(''); selectedCategoryTab.set('all')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Reset Filters
+                          </button>
+                        } @else {
+                          <button class="btn btn-primary btn-sm" (click)="openAddService()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            New Catalog Service
+                          </button>
+                        }
+                      </div>
                     </div>
                   </td>
                 </tr>

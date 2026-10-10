@@ -70,6 +70,12 @@ export class CatalogRepositoryImpl implements CatalogRepository {
     );
   }
 
+  bulkDeleteCategories(ids: string[]): Observable<{ success: boolean; deleted_count?: number }> {
+    return this.http.post<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.categories}/bulk-delete`, { ids }).pipe(
+      map((res) => ({ success: true, deleted_count: res.deleted_count || ids.length }))
+    );
+  }
+
   listCatalogServices(categoryId?: string): Observable<CatalogServiceItem[]> {
     const url = categoryId
       ? `${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.catalogServices}?category_id=${categoryId}`
@@ -78,18 +84,38 @@ export class CatalogRepositoryImpl implements CatalogRepository {
     return this.http.get<any>(url).pipe(
       map(res => {
         const raw = Array.isArray(res) ? res : (res.results || []);
-        return raw.map((s: any) => ({
-          id: s.id?.toString() || '',
-          categoryId: s.category?.toString() || s.category_id?.toString() || '',
-          categoryName: s.category_name || s.category?.name || 'General',
-          name: s.name || '',
-          description: s.description || '',
-          minPrice: s.min_price || s.suggested_min_price || 0,
-          maxPrice: s.max_price || s.suggested_max_price || 0,
-          pricingType: s.pricing_type || 'hourly',
-          isPopular: s.is_popular ?? false,
-          isActive: s.is_active ?? true
-        }));
+        return raw.map((s: any) => {
+          let catId = '';
+          if (s.category_id) {
+            catId = s.category_id.toString();
+          } else if (s.category && typeof s.category === 'object' && s.category.id) {
+            catId = s.category.id.toString();
+          } else if (typeof s.category === 'string') {
+            catId = s.category;
+          }
+
+          let catName = 'General';
+          if (s.category && typeof s.category === 'object' && s.category.name) {
+            catName = s.category.name;
+          } else if (s.category_name) {
+            catName = s.category_name;
+          }
+
+          return {
+            id: s.id?.toString() || '',
+            categoryId: catId,
+            categoryName: catName,
+            name: s.name || '',
+            description: s.description || '',
+            minPrice: s.base_price || s.min_price || s.suggested_min_price || 0,
+            maxPrice: s.max_price || s.suggested_max_price || s.base_price || 0,
+            pricingType: s.pricing_type || 'hourly',
+            isPopular: s.is_popular ?? false,
+            isActive: s.is_active ?? true,
+            specialties: Array.isArray(s.specialties) ? s.specialties : [],
+            defaultServiceLocation: s.default_service_location || 'CUSTOMER_LOCATION'
+          };
+        });
       })
     );
   }
@@ -105,18 +131,22 @@ export class CatalogRepositoryImpl implements CatalogRepository {
       pricing_type: data.pricingType || 'hourly',
       is_popular: data.isPopular || false
     }).pipe(
-      map(res => ({
-        id: res.id?.toString() || '',
-        categoryId: res.category_id || data.categoryId || '',
-        categoryName: res.category_name || data.categoryName || '',
-        name: res.name || data.name || '',
-        description: res.description || data.description || '',
-        minPrice: res.base_price || res.min_price || data.minPrice || 0,
-        maxPrice: res.max_price || data.maxPrice || 0,
-        pricingType: res.pricing_type || data.pricingType || 'hourly',
-        isPopular: res.is_popular ?? false,
-        isActive: res.is_active ?? true
-      }))
+      map(res => {
+        const catId = res.category_id || (typeof res.category === 'object' && res.category?.id) || data.categoryId || '';
+        const catName = res.category_name || (typeof res.category === 'object' && res.category?.name) || data.categoryName || 'General';
+        return {
+          id: res.id?.toString() || '',
+          categoryId: catId,
+          categoryName: catName,
+          name: res.name || data.name || '',
+          description: res.description || data.description || '',
+          minPrice: res.base_price || res.min_price || data.minPrice || 0,
+          maxPrice: res.max_price || data.maxPrice || 0,
+          pricingType: res.pricing_type || data.pricingType || 'hourly',
+          isPopular: res.is_popular ?? false,
+          isActive: res.is_active ?? true
+        };
+      })
     );
   }
 
@@ -131,24 +161,34 @@ export class CatalogRepositoryImpl implements CatalogRepository {
       pricing_type: data.pricingType,
       is_popular: data.isPopular
     }).pipe(
-      map(res => ({
-        id: res.id?.toString() || id,
-        categoryId: res.category_id || data.categoryId || '',
-        categoryName: res.category_name || data.categoryName || '',
-        name: res.name || data.name || '',
-        description: res.description || data.description || '',
-        minPrice: res.base_price || res.min_price || data.minPrice || 0,
-        maxPrice: res.max_price || data.maxPrice || 0,
-        pricingType: res.pricing_type || data.pricingType || 'hourly',
-        isPopular: res.is_popular ?? false,
-        isActive: res.is_active ?? true
-      }))
+      map(res => {
+        const catId = res.category_id || (typeof res.category === 'object' && res.category?.id) || data.categoryId || '';
+        const catName = res.category_name || (typeof res.category === 'object' && res.category?.name) || data.categoryName || 'General';
+        return {
+          id: res.id?.toString() || id,
+          categoryId: catId,
+          categoryName: catName,
+          name: res.name || data.name || '',
+          description: res.description || data.description || '',
+          minPrice: res.base_price || res.min_price || data.minPrice || 0,
+          maxPrice: res.max_price || data.maxPrice || 0,
+          pricingType: res.pricing_type || data.pricingType || 'hourly',
+          isPopular: res.is_popular ?? false,
+          isActive: res.is_active ?? true
+        };
+      })
     );
   }
 
   deleteCatalogService(id: string): Observable<{ success: boolean }> {
     return this.http.delete<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.catalogServices}/${id}`).pipe(
       map(() => ({ success: true }))
+    );
+  }
+
+  bulkDeleteCatalogServices(ids: string[]): Observable<{ success: boolean; deleted_count?: number }> {
+    return this.http.post<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.catalogServices}/bulk-delete`, { ids }).pipe(
+      map((res) => ({ success: true, deleted_count: res.deleted_count || ids.length }))
     );
   }
 
