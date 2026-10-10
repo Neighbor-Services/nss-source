@@ -20,4 +20,13 @@ export class FraudUseCase {
   resolveRiskAlert(alertId: string, action: string): Observable<{ success: boolean }> {
     return this.fraudRepo.resolveRiskAlert(alertId, action);
   }
+
+  getLeakageAlerts(): Observable<{ results: any[]; count: number }> {
+    return this.fraudRepo.getLeakageAlerts();
+  }
+
+  getExpiringCredentials(): Observable<{ results: any[]; count: number }> {
+    return this.fraudRepo.getExpiringCredentials();
+  }
 }
+

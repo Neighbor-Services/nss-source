@@ -151,4 +151,37 @@ export class CatalogRepositoryImpl implements CatalogRepository {
       map(() => ({ success: true }))
     );
   }
+
+  importCatalogBatch(items: any[]): Observable<{ imported_count: number; message: string }> {
+    return this.http.post<{ imported_count: number; message: string }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/catalog/batch-import/`,
+      { items }
+    );
+  }
+
+  exportCatalogBatch(): Observable<{ items: any[]; count: number }> {
+    return this.http.get<{ items: any[]; count: number }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/catalog/batch-export/`
+    );
+  }
+
+  getAISynonyms(): Observable<{ synonyms: Record<string, string[]>; count: number }> {
+    return this.http.get<{ synonyms: Record<string, string[]>; count: number }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/ai-synonyms/`
+    );
+  }
+
+  addAISynonym(key: string, synonyms: string[]): Observable<{ status: string }> {
+    return this.http.post<{ status: string }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/ai-synonyms/`,
+      { key, synonyms }
+    );
+  }
+
+  deleteAISynonym(key: string): Observable<{ status: string }> {
+    return this.http.delete<{ status: string }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/ai-synonyms/${encodeURIComponent(key)}/`
+    );
+  }
 }
+

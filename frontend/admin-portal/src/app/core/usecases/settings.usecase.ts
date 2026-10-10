@@ -24,4 +24,9 @@ export class SettingsUseCase {
   broadcastNotification(targetUserType: string, title: string, message: string): Observable<{ success: boolean; recipients: number }> {
     return this.settingsRepo.broadcastNotification(targetUserType, title, message);
   }
+
+  testAlertWebhook(webhookUrl: string, platform: string): Observable<{ status: string; message: string }> {
+    return this.settingsRepo.testAlertWebhook(webhookUrl, platform);
+  }
 }
+

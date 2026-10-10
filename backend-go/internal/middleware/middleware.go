@@ -162,7 +162,17 @@ func AuthRequired(cfg *config.Config, userRepo ...repository.UserRepository) gin
 				return
 			}
 			if !user.IsActive {
-				response.Unauthorized(c, "User account is disabled or deactivated")
+				reason := user.SuspensionReason
+				if reason == "" {
+					reason = "Your account has been suspended by an administrator."
+				}
+				c.JSON(http.StatusForbidden, gin.H{
+					"code":              "ACCOUNT_SUSPENDED",
+					"error":             "Account suspended",
+					"message":           "Your account has been suspended by an administrator.",
+					"suspension_reason": reason,
+					"support_email":     "support@neighborservice.com",
+				})
 				c.Abort()
 				return
 			}

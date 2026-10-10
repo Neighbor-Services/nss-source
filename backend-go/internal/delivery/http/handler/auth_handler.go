@@ -66,6 +66,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	result, err := h.authUC.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
+			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":              "ACCOUNT_SUSPENDED",
+				"error":             "Account suspended",
+				"message":           "Your account has been suspended by an administrator.",
+				"suspension_reason": reason,
+				"support_email":     "support@neighborservice.com",
+			})
+			return
+		}
 		response.Unauthorized(c, err.Error())
 		return
 	}
@@ -94,6 +105,17 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 
 	_, err := h.authUC.VerifyOTP(c.Request.Context(), req.Email, code)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
+			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":              "ACCOUNT_SUSPENDED",
+				"error":             "Account suspended",
+				"message":           "Your account has been suspended by an administrator.",
+				"suspension_reason": reason,
+				"support_email":     "support@neighborservice.com",
+			})
+			return
+		}
 		response.BadRequest(c, err.Error())
 		return
 	}
@@ -224,6 +246,17 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 
 	result, err := h.authUC.SocialLogin(c.Request.Context(), "google", token, req.Email, name)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
+			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":              "ACCOUNT_SUSPENDED",
+				"error":             "Account suspended",
+				"message":           "Your account has been suspended by an administrator.",
+				"suspension_reason": reason,
+				"support_email":     "support@neighborservice.com",
+			})
+			return
+		}
 		response.BadRequest(c, err.Error())
 		return
 	}
@@ -246,6 +279,17 @@ func (h *AuthHandler) AppleLogin(c *gin.Context) {
 
 	result, err := h.authUC.SocialLogin(c.Request.Context(), "apple", token, req.Email, name)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
+			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":              "ACCOUNT_SUSPENDED",
+				"error":             "Account suspended",
+				"message":           "Your account has been suspended by an administrator.",
+				"suspension_reason": reason,
+				"support_email":     "support@neighborservice.com",
+			})
+			return
+		}
 		response.BadRequest(c, err.Error())
 		return
 	}

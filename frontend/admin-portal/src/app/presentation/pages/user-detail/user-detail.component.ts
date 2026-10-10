@@ -199,16 +199,17 @@ export class UserDetailComponent implements OnInit {
         }
       });
     } else {
-      const confirmed = await this.dialog.dangerConfirm(
-        'Suspend User Account',
-        `Are you sure you want to suspend account ${u.email}? The user will immediately be logged out and prohibited from platform actions.`,
-        'Suspend Account'
-      );
-      if (!confirmed) return;
+      const reason = await this.dialog.prompt({
+        title: 'Suspend User Account',
+        message: `Suspend ${u.email}? The user will be logged out, emailed, and shown this reason in the app.`,
+        placeholder: 'Reason for suspension (shown to the user)',
+        confirmText: 'Suspend Account'
+      });
+      if (reason === null) return;
 
       this.isActioning.set(true);
       this.errorMessage.set(null);
-      this.userUC.updateUser(u.id, { isActive: false }).subscribe({
+      this.userUC.updateUser(u.id, { isActive: false, suspensionReason: reason.trim() }).subscribe({
         next: () => {
           this.isActioning.set(false);
           this.successMessage.set(`Account ${u.email} has been suspended.`);

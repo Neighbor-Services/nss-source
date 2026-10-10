@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { FraudUseCase } from '../../../core/usecases/fraud.usecase';
 import { FraudRiskAlert } from '../../../core/domain/entities/fraud.model';
 
-export type FraudMainTab = 'ALERTS' | 'SCANNER' | 'RADAR_RULES';
+export type FraudMainTab = 'ALERTS' | 'LEAKAGE' | 'CREDENTIALS' | 'SCANNER' | 'RADAR_RULES';
 
 @Component({
   selector: 'app-fraud',
@@ -20,11 +20,18 @@ export class FraudComponent implements OnInit {
   evaluating = signal<boolean>(false);
   resolvingAlertId = signal<string | null>(null);
 
+  // Leakage & Credentials State
+  leakageAlerts = signal<any[]>([]);
+  loadingLeakage = signal<boolean>(false);
+  expiringCredentials = signal<any[]>([]);
+  loadingCredentials = signal<boolean>(false);
+
   activeTab = signal<FraudMainTab>('ALERTS');
   selectedStatus = '';
   selectedLevel = '';
   searchQuery = signal<string>('');
   manualUserId = '';
+
 
   selectedAlert = signal<FraudRiskAlert | null>(null);
   evaluationResult = signal<FraudRiskAlert | null>(null);
@@ -144,4 +151,31 @@ export class FraudComponent implements OnInit {
   formatFlag(flag: string): string {
     return flag.replace(/_/g, ' ');
   }
+
+  fetchLeakageAlerts(): void {
+    this.loadingLeakage.set(true);
+    this.fraudUseCase.getLeakageAlerts().subscribe({
+      next: (res) => {
+        this.leakageAlerts.set(res.results || []);
+        this.loadingLeakage.set(false);
+      },
+      error: () => {
+        this.loadingLeakage.set(false);
+      }
+    });
+  }
+
+  fetchExpiringCredentials(): void {
+    this.loadingCredentials.set(true);
+    this.fraudUseCase.getExpiringCredentials().subscribe({
+      next: (res) => {
+        this.expiringCredentials.set(res.results || []);
+        this.loadingCredentials.set(false);
+      },
+      error: () => {
+        this.loadingCredentials.set(false);
+      }
+    });
+  }
 }
+

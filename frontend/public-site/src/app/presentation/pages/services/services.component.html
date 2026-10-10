@@ -198,7 +198,18 @@
             @if (srv.description) {
             <p style="font-size:14.5px; margin-bottom: 14px;">{{ srv.description }}</p>
             }
-
+            @if (srv.specialties && srv.specialties.length > 0) {
+            <div class="specialty-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">
+              @for (spec of srv.specialties; track spec) {
+              <span class="specialty-chip" style="font-size:11px; font-weight:600; background:#f0ebff; color:#5b16ee; padding:3px 8px; border-radius:12px;">{{ spec }}</span>
+              }
+            </div>
+            }
+            @if (srv.defaultServiceLocation) {
+            <div class="location-badge" style="font-size:11px; font-weight:500; color:#6b7280; display:flex; align-items:center; gap:4px;">
+              <span>📍 {{ formatLocation(srv.defaultServiceLocation) }}</span>
+            </div>
+            }
           </article>
           }
         </div>

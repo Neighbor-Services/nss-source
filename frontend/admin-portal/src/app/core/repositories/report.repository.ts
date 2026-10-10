@@ -13,4 +13,6 @@ export abstract class ReportRepository {
   abstract resolveModerationReport(id: string, action: string, notes?: string): Observable<any>;
   abstract dismissModerationReport(id: string, notes?: string): Observable<any>;
   abstract getStripeLiveBalance(): Observable<{ available: number; pending: number; reserved: number; currency: string; lastRefreshed: string }>;
+  abstract getDoubleEntryLedger(): Observable<any>;
+  abstract listLedgerEntries(limit?: number, offset?: number): Observable<any>;
 }

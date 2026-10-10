@@ -73,7 +73,7 @@ func (r *catalogServiceRepository) List(ctx context.Context, categorySlug string
 	}
 	if search != "" {
 		searchPattern := "%" + search + "%"
-		query = query.Where("services_catalogservice.name ILIKE ? OR services_catalogservice.description ILIKE ?", searchPattern, searchPattern)
+		query = query.Where("services_catalogservice.name ILIKE ? OR services_catalogservice.description ILIKE ? OR CAST(services_catalogservice.specialties AS TEXT) ILIKE ?", searchPattern, searchPattern, searchPattern)
 	}
 
 	err := query.Order("name ASC").Find(&services).Error

@@ -51,3 +51,40 @@ export interface WorkerTelemetryResponse {
   all_healthy: boolean;
   workers: WorkerTelemetryItem[];
 }
+
+export interface HeatmapCluster {
+  latitude: number;
+  longitude: number;
+  request_count: number;
+  provider_count: number;
+  supply_deficit: number;
+  zip_code: string;
+  city: string;
+}
+
+export interface OperationsHeatmapData {
+  clusters: HeatmapCluster[];
+  total_requests: number;
+  total_providers: number;
+  underserved_pct: number;
+}
+
+export interface EscrowSummary {
+  total_held_in_escrow: number;
+  active_jobs_count: number;
+  pending_clearance: number;
+  disputed_funds: number;
+  escrow_velocity_avg_hours: number;
+}
+
+export interface SubscriptionCohortStats {
+  total_subscribers: number;
+  silver_count: number;
+  gold_count: number;
+  platinum_count: number;
+  mrr: number;
+  arr: number;
+  churn_rate_pct: number;
+  tier_conversion_pct: Record<string, number>;
+}
+

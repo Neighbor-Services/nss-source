@@ -80,7 +80,7 @@ func (w *UnsubscribedProviderWorker) processUnsubscribedProviders() {
 	err := w.db.Preload("User").
 		Joins("JOIN accounts_user ON accounts_user.id = accounts_profile.user_id").
 		Where("accounts_profile.user_type = ? AND accounts_user.is_active = ? AND accounts_profile.created_at <= ?", "PROVIDER", true, registeredBefore).
-		Where("accounts_profile.user_id NOT IN (SELECT user_id FROM subscriptions WHERE is_active = true)").
+		Where("accounts_profile.user_id NOT IN (SELECT user_id FROM payments_subscription WHERE is_active = true)").
 		Limit(100).
 		Find(&providers).Error
 

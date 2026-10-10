@@ -480,19 +480,40 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 		return
 	}
 
+	var imageURL string
 	file, err := c.FormFile("image")
-	if err != nil {
+	if err == nil {
+		relPath, err := media.ValidateAndSaveUploadedFile(file, "requests", 25*1024*1024)
+		if err != nil {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		imageURL = "/media/" + strings.TrimPrefix(relPath, "/")
+	} else {
+		var body struct {
+			ID    string `json:"id"`
+			Image string `json:"image"`
+		}
+		if err := c.ShouldBindJSON(&body); err == nil && body.Image != "" {
+			imageURL = body.Image
+			if reqUUID == uuid.Nil && body.ID != "" {
+				if parsedID, parseErr := uuid.Parse(body.ID); parseErr == nil {
+					reqUUID = parsedID
+				}
+			}
+		}
+	}
+
+	if imageURL == "" {
 		response.BadRequest(c, "No image provided")
 		return
 	}
 
-	relPath, err := media.ValidateAndSaveUploadedFile(file, "requests", 25*1024*1024)
-	if err != nil {
-		response.BadRequest(c, err.Error())
+	if reqUUID == uuid.Nil {
+		response.BadRequest(c, "Request ID required")
 		return
 	}
 
-	imageURL := "/media/" + strings.TrimPrefix(relPath, "/")
 	updatedReq, err := h.serviceUC.UploadRequestImage(c.Request.Context(), userUUID, reqUUID, imageURL)
 	if err != nil {
 		response.BadRequest(c, err.Error())

@@ -78,6 +78,8 @@ export class ReportsComponent implements OnInit {
     return list.length > 0 && list.every(r => this.selectedReportIds().includes(r.id));
   });
 
+  hasActiveFilters = computed(() => !!this.searchQuery().trim() || !!this.modStatusFilter() || !!this.categoryFilter());
+
   constructor(
     private reportUseCase: ReportUseCase,
     private dialog: DialogService
@@ -109,6 +111,12 @@ export class ReportsComponent implements OnInit {
 
   filterByCategory(category: string) {
     this.categoryFilter.set(category);
+  }
+
+  resetFilters(): void {
+    this.searchQuery.set('');
+    this.modStatusFilter.set('');
+    this.categoryFilter.set('');
   }
 
   // ─── DOSSIER MODAL ─────────────────────────────────────────────────────────

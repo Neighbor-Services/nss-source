@@ -79,6 +79,21 @@
       <span>Webhook Live Events</span>
       <span class="tab-badge">{{ webhookEvents().length }}</span>
     </button>
+
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'MAKER_CHECKER'" (click)="activeTab.set('MAKER_CHECKER'); loadApprovalRequests()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span>Maker-Checker (Dual Approvals)</span>
+      <span class="tab-badge" style="background: rgba(239, 68, 68, 0.3);">{{ approvalRequests().length }}</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'IMPERSONATION'" (click)="activeTab.set('IMPERSONATION')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>Safe Shadow Impersonation</span>
+    </button>
   </div>
 </div>
 
@@ -729,6 +744,162 @@
             }
           </tbody>
         </table>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 6: MAKER-CHECKER (DUAL APPROVALS) -->
+  @if (activeTab() === 'MAKER_CHECKER') {
+    <div class="card table-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box purple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Maker-Checker Dual Authorization Queue</h3>
+            <p class="card-subtitle">4-Eyes principle governance for high-value refunds (&gt; $500), escrow releases &amp; user bans</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" (click)="loadApprovalRequests()" [disabled]="loadingApprovals()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loadingApprovals()">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>Refresh Queue</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Action Scope</th>
+              <th>Target Resource</th>
+              <th>Maker (Requester)</th>
+              <th>Justification</th>
+              <th>Status</th>
+              <th class="text-right">Checker Resolution</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (req of approvalRequests(); track req.id) {
+              <tr>
+                <td class="font-mono text-muted">{{ req.created_at | date:'medium' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="req.action_type.includes('BAN') ? 'badge-danger' : (req.action_type.includes('REFUND') ? 'badge-warning' : 'badge-primary')">
+                    {{ req.action_type }}
+                  </span>
+                </td>
+                <td><code class="mono-badge">{{ req.target_resource }}:{{ req.target_id | slice:0:8 }}...</code></td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-ring">{{ (req.requester_email || req.requester_id || 'M').charAt(0).toUpperCase() }}</div>
+                    <b>{{ req.requester_email || req.requester_id }}</b>
+                  </div>
+                </td>
+                <td><span class="text-sm text-dim">{{ req.amount > 0 ? ('$' + req.amount) : (req.rejection_reason || 'Dual-Authorization Required') }}</span></td>
+                <td>
+                  <span class="badge" [ngClass]="req.status === 'APPROVED' ? 'badge-success' : (req.status === 'REJECTED' ? 'badge-danger' : 'badge-warning')">
+                    <span class="dot-indicator"></span> {{ req.status }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  @if (req.status === 'PENDING') {
+                    <div class="btn-group-sm" style="display: inline-flex; gap: 6px;">
+                      <button class="btn btn-xs btn-success" (click)="resolveApproval(req, 'APPROVED')" [disabled]="resolvingApprovalId() === req.id">
+                        Approve
+                      </button>
+                      <button class="btn btn-xs btn-danger" (click)="resolveApproval(req, 'REJECTED')" [disabled]="resolvingApprovalId() === req.id">
+                        Reject
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="text-dim text-xs font-mono">Resolved by {{ req.approver_email || req.approver_id || 'Admin' }}</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                  <div class="empty-state">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-muted mb-2">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h4 class="empty-title">Queue Clear — No Pending Authorizations</h4>
+                    <p class="empty-sub">All high-risk operations requiring dual-authorization have been reviewed.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 7: SAFE SHADOW IMPERSONATION -->
+  @if (activeTab() === 'IMPERSONATION') {
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box purple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Safe Shadow Impersonation Generator</h3>
+            <p class="card-subtitle">Generate a time-limited 30-minute read-only JWT session to inspect user account issues</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding: 24px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: flex-end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label font-bold">Target User ID (UUID)</label>
+            <input type="text" [(ngModel)]="impersonationUserId" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" class="form-control" />
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label font-bold">Audit &amp; Compliance Reason</label>
+            <input type="text" [(ngModel)]="impersonationReason" placeholder="e.g. Investigating payout escrow discrepancy ticket #481" class="form-control" />
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+          <button class="btn btn-primary" (click)="generateImpersonationSession()" [disabled]="isGeneratingImpersonation() || !impersonationUserId || !impersonationReason">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isGeneratingImpersonation()">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            <span>{{ isGeneratingImpersonation() ? 'Minting Session Token...' : 'Generate 30-Min Shadow Token' }}</span>
+          </button>
+        </div>
+
+        @if (impersonationSession()) {
+          <div class="card" style="margin-top: 24px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h4 style="font-size: 16px; font-weight: 700; color: #6366f1; margin: 0 0 4px 0;">Shadow Session Minted Successfully</h4>
+                <p class="text-sm text-dim" style="margin: 0;">Target: <b>{{ impersonationSession()!.target_email }}</b> (Role: {{ impersonationSession()!.target_user_role }})</p>
+              </div>
+              <span class="badge badge-warning font-mono">Expires: {{ impersonationSession()!.expires_at | date:'shortTime' }}</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label text-xs font-mono">Temporary Impersonation Bearer Token (JWT)</label>
+              <textarea class="form-control font-mono text-xs" rows="3" readonly [value]="impersonationSession()!.token"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 12px;">
+              <span class="badge badge-success">Read-Only Mode Enabled</span>
+              <span class="text-dim text-xs">Immutable audit entry logged to PostgreSQL operator records.</span>
+            </div>
+          </div>
+        }
       </div>
     </div>
   }

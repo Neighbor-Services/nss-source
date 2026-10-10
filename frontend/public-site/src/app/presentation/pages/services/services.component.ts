@@ -76,24 +76,41 @@ export class ServicesComponent implements OnInit {
     if (!q) return services;
     return services.filter(s =>
       s.name.toLowerCase().includes(q) ||
-      s.description.toLowerCase().includes(q)
+      s.description.toLowerCase().includes(q) ||
+      (s.specialties && s.specialties.some(spec => spec.toLowerCase().includes(q)))
     );
   }
 
   getCategoryIconType(catName: string): string {
     const lower = (catName || '').toLowerCase();
     if (lower.includes('auto') || lower.includes('transport')) return 'automotive';
-    if (lower.includes('beauty') || lower.includes('groom')) return 'beauty';
-    if (lower.includes('care') || lower.includes('family')) return 'caregiving';
-    if (lower.includes('clean') || lower.includes('sanit')) return 'cleaning';
-    if (lower.includes('educat') || lower.includes('digit') || lower.includes('tutor')) return 'education';
-    if (lower.includes('fash') || lower.includes('appar')) return 'fashion';
-    if (lower.includes('food') || lower.includes('culin')) return 'food';
-    if (lower.includes('health') || lower.includes('well')) return 'healthcare';
+    if (lower.includes('beauty') || lower.includes('groom') || lower.includes('cosmetic')) return 'beauty';
+    if (lower.includes('care') || lower.includes('family') || lower.includes('nanny')) return 'caregiving';
+    if (lower.includes('clean') || lower.includes('sanit') || lower.includes('housekeep')) return 'cleaning';
+    if (lower.includes('construct') || lower.includes('trade') || lower.includes('build')) return 'construction';
+    if (lower.includes('culin') || lower.includes('food') || lower.includes('bake') || lower.includes('chef')) return 'food';
+    if (lower.includes('digit') || lower.includes('tech') || lower.includes('media')) return 'digital';
+    if (lower.includes('educat') || lower.includes('tutor') || lower.includes('teach')) return 'education';
+    if (lower.includes('event') || lower.includes('party') || lower.includes('dj') || lower.includes('cater')) return 'events';
+    if (lower.includes('fash') || lower.includes('appar') || lower.includes('tailor')) return 'fashion';
+    if (lower.includes('fit') || lower.includes('train') || lower.includes('gym')) return 'fitness';
+    if (lower.includes('health') || lower.includes('well') || lower.includes('therap') || lower.includes('clinic')) return 'healthcare';
     if (lower.includes('home') || lower.includes('repair') || lower.includes('improv')) return 'home';
-    if (lower.includes('lawn') || lower.includes('pest') || lower.includes('garden')) return 'lawn';
-    if (lower.includes('pet')) return 'pet';
+    if (lower.includes('lawn') || lower.includes('pest') || lower.includes('garden') || lower.includes('landscap')) return 'lawn';
+    if (lower.includes('pet') || lower.includes('dog') || lower.includes('veterin')) return 'pet';
+    if (lower.includes('photo') || lower.includes('video')) return 'photography';
+    if (lower.includes('real estate') || lower.includes('realt') || lower.includes('propert')) return 'realestate';
     return 'professional';
+  }
+
+  formatLocation(loc?: string): string {
+    if (!loc) return '';
+    switch (loc) {
+      case 'CUSTOMER_LOCATION': return 'Client Location';
+      case 'PROVIDER_LOCATION': return 'Provider Workshop';
+      case 'ONLINE': return 'Online / Remote';
+      default: return loc;
+    }
   }
 
   onSearch() {

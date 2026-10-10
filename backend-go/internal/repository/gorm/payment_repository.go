@@ -233,3 +233,92 @@ func (r *payoutRequestRepository) ListByWalletID(ctx context.Context, walletID u
 	err := r.db.WithContext(ctx).Where("wallet_id = ?", walletID).Order("created_at DESC").Find(&list).Error
 	return list, err
 }
+
+type ledgerRepository struct {
+	db *gorm.DB
+}
+
+func NewLedgerRepository(db *gorm.DB) repository.LedgerRepository {
+	return &ledgerRepository{db: db}
+}
+
+func (r *ledgerRepository) GetOrCreateAccount(ctx context.Context, code, name, accType, currency string) (*entity.LedgerAccount, error) {
+	var acc entity.LedgerAccount
+	err := r.db.WithContext(ctx).Where("code = ?", code).First(&acc).Error
+	if err == nil {
+		return &acc, nil
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		if currency == "" {
+			currency = "USD"
+		}
+		newAcc := entity.LedgerAccount{
+			ID:       uuid.New(),
+			Code:     code,
+			Name:     name,
+			Type:     accType,
+			Currency: currency,
+			Balance:  0.0,
+		}
+		if err := r.db.WithContext(ctx).Create(&newAcc).Error; err != nil {
+			return nil, err
+		}
+		return &newAcc, nil
+	}
+	return nil, err
+}
+
+func (r *ledgerRepository) RecordEntry(ctx context.Context, entry *entity.LedgerEntry) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if entry.ID == uuid.Nil {
+			entry.ID = uuid.New()
+		}
+		if entry.TransactionID == uuid.Nil {
+			entry.TransactionID = uuid.New()
+		}
+
+		if err := tx.Create(entry).Error; err != nil {
+			return err
+		}
+
+		// Update Debit Account Balance (+ balance for Assets/Expenses, - balance for Liabilities/Equity/Revenue)
+		if err := tx.Model(&entity.LedgerAccount{}).Where("id = ?", entry.DebitAccountID).
+			UpdateColumn("balance", gorm.Expr("balance + ?", entry.Amount)).Error; err != nil {
+			return err
+		}
+
+		// Update Credit Account Balance
+		if err := tx.Model(&entity.LedgerAccount{}).Where("id = ?", entry.CreditAccountID).
+			UpdateColumn("balance", gorm.Expr("balance - ?", entry.Amount)).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *ledgerRepository) ListEntriesByAccount(ctx context.Context, accountID uuid.UUID, limit, offset int) ([]entity.LedgerEntry, int64, error) {
+	var entries []entity.LedgerEntry
+	var total int64
+
+	q := r.db.WithContext(ctx).Model(&entity.LedgerEntry{}).
+		Where("debit_account_id = ? OR credit_account_id = ?", accountID, accountID)
+
+	_ = q.Count(&total).Error
+	err := q.Preload("DebitAccount").Preload("CreditAccount").
+		Order("created_at DESC").Limit(limit).Offset(offset).Find(&entries).Error
+
+	return entries, total, err
+}
+
+func (r *ledgerRepository) GetPlatformFinancialSummary(ctx context.Context) (map[string]float64, error) {
+	summary := make(map[string]float64)
+	var accounts []entity.LedgerAccount
+	if err := r.db.WithContext(ctx).Find(&accounts).Error; err != nil {
+		return nil, err
+	}
+	for _, acc := range accounts {
+		summary[acc.Code] = acc.Balance
+	}
+	return summary, nil
+}

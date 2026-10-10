@@ -171,6 +171,14 @@ func (u *authUseCase) Login(ctx context.Context, email, password string) (*domai
 		return nil, errors.New("Email not verified. Please verify your email before logging in.")
 	}
 
+	if !user.IsActive {
+		reason := user.SuspensionReason
+		if reason == "" {
+			reason = "Your account has been suspended by platform administration."
+		}
+		return nil, fmt.Errorf("ACCOUNT_SUSPENDED: %s", reason)
+	}
+
 	profile, err := u.profileRepo.GetByUserID(ctx, user.ID)
 	if err != nil || profile == nil {
 		profile = &entity.Profile{
@@ -232,6 +240,14 @@ func (u *authUseCase) VerifyOTP(ctx context.Context, email, code string) (*domai
 	u.otpMu.Lock()
 	delete(u.otpAttempts, email)
 	u.otpMu.Unlock()
+
+	if !user.IsActive {
+		reason := user.SuspensionReason
+		if reason == "" {
+			reason = "Your account has been suspended by platform administration."
+		}
+		return nil, fmt.Errorf("ACCOUNT_SUSPENDED: %s", reason)
+	}
 
 	user.IsVerified = true
 	user.OTPCode = ""
@@ -469,6 +485,13 @@ func (u *authUseCase) SocialLogin(ctx context.Context, provider, token, email, n
 		}
 	} else {
 		log.Printf("[SOCIAL LOGIN] %s: found existing user for %s (id=%s)", provider, email, user.ID)
+		if !user.IsActive {
+			reason := user.SuspensionReason
+			if reason == "" {
+				reason = "Your account has been suspended by platform administration."
+			}
+			return nil, fmt.Errorf("ACCOUNT_SUSPENDED: %s", reason)
+		}
 	}
 
 	profile, _ := u.profileRepo.GetByUserID(ctx, user.ID)

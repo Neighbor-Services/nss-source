@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportUseCase } from '../../../core/usecases/report.usecase';
+import { DashboardUseCase } from '../../../core/usecases/dashboard.usecase';
 import { DialogService } from '../../../core/services/dialog.service';
 import { FinancialReport } from '../../../core/domain/entities/report.model';
 
@@ -14,6 +15,8 @@ import { FinancialReport } from '../../../core/domain/entities/report.model';
 })
 export class FinancialComponent implements OnInit, OnDestroy {
   report = signal<FinancialReport | null>(null);
+  escrowSummary = signal<{ total_escrow_held: number; active_jobs_count: number; clearing_within_24h: number; disputed_escrow_amount: number } | null>(null);
+  cohortStats = signal<{ total_mrr: number; total_arr: number; tier_breakdown: Record<string, number>; monthly_churn_rate: number } | null>(null);
   loading = signal<boolean>(false);
   exporting = signal<string | null>(null);
   errorMessage = signal<string | null>(null);
@@ -33,6 +36,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
 
   constructor(
     private reportUseCase: ReportUseCase,
+    private dashboardUseCase: DashboardUseCase,
     private dialog: DialogService
   ) {
     this.setPreset('30d');
@@ -41,6 +45,9 @@ export class FinancialComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.fetchFinancialReport();
     this.loadStripeBalance();
+    this.loadEscrowSummary();
+    this.loadCohortStats();
+    this.loadLedgerReport();
     // Auto-refresh Stripe balance every 30s
     this.balanceRefreshTimer = setInterval(() => this.loadStripeBalance(), 30000);
   }
@@ -172,6 +179,40 @@ export class FinancialComponent implements OnInit, OnDestroy {
       error: () => {
         this.isLoadingBalance.set(false);
       }
+    });
+  }
+
+  ledgerReport = signal<{ total_assets: number; total_liabilities: number; total_equity: number; total_revenue: number; total_expenses: number; net_income: number; escrow_held: number; platform_fee_earned: number; accounts: any[]; recent_entries: any[] } | null>(null);
+  isLoadingLedger = signal<boolean>(false);
+
+  loadLedgerReport(): void {
+    this.isLoadingLedger.set(true);
+    this.reportUseCase.getDoubleEntryLedger().subscribe({
+      next: (res) => {
+        this.ledgerReport.set(res);
+        this.isLoadingLedger.set(false);
+      },
+      error: () => {
+        this.isLoadingLedger.set(false);
+      }
+    });
+  }
+
+  loadEscrowSummary(): void {
+    this.dashboardUseCase.getEscrowSummary().subscribe({
+      next: (res) => {
+        this.escrowSummary.set(res);
+      },
+      error: () => {}
+    });
+  }
+
+  loadCohortStats(): void {
+    this.dashboardUseCase.getSubscriptionCohortStats().subscribe({
+      next: (res) => {
+        this.cohortStats.set(res);
+      },
+      error: () => {}
     });
   }
 }

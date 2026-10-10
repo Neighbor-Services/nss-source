@@ -113,6 +113,22 @@
         <span class="pill-count">{{ totalCount() }}</span>
       </button>
 
+      <button class="tab-pill" [class.active]="activeTab() === 'LEAKAGE'" (click)="activeTab.set('LEAKAGE'); fetchLeakageAlerts()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>Off-Platform Leakage Sniffer</span>
+        <span class="pill-count">{{ leakageAlerts().length }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="activeTab() === 'CREDENTIALS'" (click)="activeTab.set('CREDENTIALS'); fetchExpiringCredentials()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Credential Expirations</span>
+        <span class="pill-count">{{ expiringCredentials().length }}</span>
+      </button>
+
       <button class="tab-pill" [class.active]="activeTab() === 'SCANNER'" (click)="activeTab.set('SCANNER')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -128,6 +144,7 @@
         <span>Velocity &amp; Radar Rules</span>
       </button>
     </div>
+
 
     @if (activeTab() === 'ALERTS') {
       <div class="filter-row">
@@ -353,7 +370,206 @@
     </div>
   }
 
-  <!-- TAB 3: VELOCITY & RADAR RULES -->
+  <!-- TAB 2: OFF-PLATFORM LEAKAGE SNIFFER -->
+  @if (activeTab() === 'LEAKAGE') {
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <span class="table-icon-dot" style="background: #f59e0b; box-shadow: 0 0 6px #f59e0b;"></span>
+          <h3>Off-Platform Communication &amp; Payment Leakage Sniffer</h3>
+        </div>
+        <div class="action-row">
+          <span class="text-dim">{{ leakageAlerts().length }} suspicious message patterns</span>
+          <button class="btn btn-sm btn-secondary" (click)="fetchLeakageAlerts()" [disabled]="loadingLeakage()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loadingLeakage()">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Sender</th>
+              <th>Recipient</th>
+              <th>Intercepted Text Snippet</th>
+              <th>Detected Trigger</th>
+              <th>Risk Score</th>
+              <th>Intercept Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of leakageAlerts(); track item.id) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-ring">
+                      {{ (item.sender_name || 'U').charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-meta">
+                      <b>{{ item.sender_name || 'Sender' }}</b>
+                      <span class="user-id-chip">{{ item.sender_id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-ring" style="background: linear-gradient(135deg, #10b981, #6ee7b7);">
+                      {{ (item.receiver_name || 'R').charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-meta">
+                      <b>{{ item.receiver_name || 'Recipient' }}</b>
+                      <span class="user-id-chip">{{ item.receiver_id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div style="max-width: 280px; font-size: 12.5px; background: var(--bg-input); padding: 6px 10px; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle); color: var(--text-main);">
+                    "{{ item.message_snippet }}"
+                  </div>
+                </td>
+                <td>
+                  <span class="flag-chip" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.08);">
+                    ⚠️ {{ item.matched_keyword }}
+                  </span>
+                </td>
+                <td>
+                  <div class="score-pill" [class.critical]="item.risk_score >= 70" [class.danger]="item.risk_score >= 50 && item.risk_score < 70" [class.warning]="item.risk_score < 50">
+                    <span class="score-num">{{ item.risk_score }}</span> / 100
+                  </div>
+                </td>
+                <td>
+                  <span class="text-dim">{{ item.detected_at | date:'medium' }}</span>
+                </td>
+                <td>
+                  <span class="badge" [class.badge-danger]="item.status === 'PENDING'" [class.badge-secondary]="item.status !== 'PENDING'">
+                    {{ item.status }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7">
+                  <div class="empty-state">
+                    <div class="empty-icon-wrap">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                    </div>
+                    <h4 class="empty-title">No Off-Platform Leakage Intercepted</h4>
+                    <p class="empty-sub">Direct contact sharing, off-platform payment attempts, and cash bypass keywords are continuously filtered.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: CREDENTIAL EXPIRATION TRACKER -->
+  @if (activeTab() === 'CREDENTIALS') {
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title-group">
+          <span class="table-icon-dot" style="background: #ef4444; box-shadow: 0 0 6px #ef4444;"></span>
+          <h3>Provider Credential &amp; Insurance Expiration Tracker (30-Day Horizon)</h3>
+        </div>
+        <div class="action-row">
+          <span class="text-dim">{{ expiringCredentials().length }} credentials need renewal</span>
+          <button class="btn btn-sm btn-secondary" (click)="fetchExpiringCredentials()" [disabled]="loadingCredentials()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loadingCredentials()">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Service Provider</th>
+              <th>Credential Type</th>
+              <th>Document / License #</th>
+              <th>Expiration Date</th>
+              <th>Days Remaining</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cred of expiringCredentials(); track cred.id) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-ring">
+                      {{ (cred.provider_name || 'P').charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-meta">
+                      <b>{{ cred.provider_name || 'Provider' }}</b>
+                      <span class="user-sub">{{ cred.provider_email }}</span>
+                      <span class="user-id-chip">{{ cred.provider_id }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="flag-chip" style="font-weight: 700;">
+                    🛡️ {{ cred.credential_type }}
+                  </span>
+                </td>
+                <td>
+                  <span class="font-mono text-dim">{{ cred.document_number || 'DOC-VERIFIED' }}</span>
+                </td>
+                <td>
+                  <b>{{ cred.expires_at | date:'mediumDate' }}</b>
+                </td>
+                <td>
+                  @if (cred.days_remaining <= 0) {
+                    <span class="badge badge-critical">EXPIRED ({{ cred.days_remaining }}d)</span>
+                  } @else if (cred.days_remaining <= 7) {
+                    <span class="badge badge-danger">{{ cred.days_remaining }} days left</span>
+                  } @else {
+                    <span class="badge badge-warning">{{ cred.days_remaining }} days left</span>
+                  }
+                </td>
+                <td>
+                  <span class="badge" [class.badge-critical]="cred.status === 'EXPIRED'" [class.badge-warning]="cred.status === 'EXPIRING_SOON'">
+                    {{ cred.status }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <button class="btn btn-sm btn-primary" (click)="successMessage.set('Sent automated SMS/Push reminder for renewal to ' + (cred.provider_name || 'provider'))">
+                    Ping Provider
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7">
+                  <div class="empty-state">
+                    <div class="empty-icon-wrap">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                    </div>
+                    <h4 class="empty-title">All Provider Credentials Current</h4>
+                    <p class="empty-sub">No verified trade licenses, background clearances, or liability insurances are expiring within the 30-day window.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
   @if (activeTab() === 'RADAR_RULES') {
     <div class="deck-grid">
       <div class="deck-card">

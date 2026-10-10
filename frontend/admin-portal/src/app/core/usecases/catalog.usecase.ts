@@ -40,4 +40,25 @@ export class CatalogUseCase {
   deleteCatalogService(id: string): Observable<{ success: boolean }> {
     return this.catalogRepo.deleteCatalogService(id);
   }
+
+  importCatalogBatch(items: any[]): Observable<{ imported_count: number; message: string }> {
+    return this.catalogRepo.importCatalogBatch(items);
+  }
+
+  exportCatalogBatch(): Observable<{ items: any[]; count: number }> {
+    return this.catalogRepo.exportCatalogBatch();
+  }
+
+  getAISynonyms(): Observable<{ synonyms: Record<string, string[]>; count: number }> {
+    return this.catalogRepo.getAISynonyms();
+  }
+
+  addAISynonym(key: string, synonyms: string[]): Observable<{ status: string }> {
+    return this.catalogRepo.addAISynonym(key, synonyms);
+  }
+
+  deleteAISynonym(key: string): Observable<{ status: string }> {
+    return this.catalogRepo.deleteAISynonym(key);
+  }
 }
+

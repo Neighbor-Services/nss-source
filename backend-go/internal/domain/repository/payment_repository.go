@@ -42,3 +42,10 @@ type PayoutRequestRepository interface {
 	Create(ctx context.Context, req *entity.PayoutRequest) error
 	ListByWalletID(ctx context.Context, walletID uuid.UUID) ([]entity.PayoutRequest, error)
 }
+
+type LedgerRepository interface {
+	GetOrCreateAccount(ctx context.Context, code, name, accType, currency string) (*entity.LedgerAccount, error)
+	RecordEntry(ctx context.Context, entry *entity.LedgerEntry) error
+	ListEntriesByAccount(ctx context.Context, accountID uuid.UUID, limit, offset int) ([]entity.LedgerEntry, int64, error)
+	GetPlatformFinancialSummary(ctx context.Context) (map[string]float64, error)
+}

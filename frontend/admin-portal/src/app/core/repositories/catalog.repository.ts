@@ -11,4 +11,11 @@ export abstract class CatalogRepository {
   abstract createCatalogService(data: Partial<CatalogServiceItem>): Observable<CatalogServiceItem>;
   abstract updateCatalogService(id: string, data: Partial<CatalogServiceItem>): Observable<CatalogServiceItem>;
   abstract deleteCatalogService(id: string): Observable<{ success: boolean }>;
+
+  abstract importCatalogBatch(items: any[]): Observable<{ imported_count: number; message: string }>;
+  abstract exportCatalogBatch(): Observable<{ items: any[]; count: number }>;
+  abstract getAISynonyms(): Observable<{ synonyms: Record<string, string[]>; count: number }>;
+  abstract addAISynonym(key: string, synonyms: string[]): Observable<{ status: string }>;
+  abstract deleteAISynonym(key: string): Observable<{ status: string }>;
 }
+

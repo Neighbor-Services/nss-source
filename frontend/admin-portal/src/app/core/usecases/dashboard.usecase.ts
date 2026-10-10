@@ -12,4 +12,17 @@ export class DashboardUseCase {
   getDashboardStats(): Observable<DashboardStats> {
     return this.dashboardRepo.getDashboardStats();
   }
+
+  getEscrowSummary(): Observable<any> {
+    return this.dashboardRepo.getEscrowSummary();
+  }
+
+  getSubscriptionCohortStats(): Observable<any> {
+    return this.dashboardRepo.getSubscriptionCohortStats();
+  }
+
+  getGeospatialHeatmap(): Observable<any> {
+    return this.dashboardRepo.getGeospatialHeatmap();
+  }
 }
+

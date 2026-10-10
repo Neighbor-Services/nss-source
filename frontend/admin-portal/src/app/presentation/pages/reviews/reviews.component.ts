@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ReviewUseCase } from '../../../core/usecases/review.usecase';
+import { GovernanceUseCase } from '../../../core/usecases/governance.usecase';
 import { AdminReview } from '../../../core/domain/entities/review.model';
+import { ProviderQualityHealth } from '../../../core/domain/entities/governance.model';
 
 @Component({
   selector: 'app-reviews',
@@ -13,9 +15,14 @@ import { AdminReview } from '../../../core/domain/entities/review.model';
   styleUrl: './reviews.component.css'
 })
 export class ReviewsComponent implements OnInit {
+  activeMainTab = signal<'REVIEWS' | 'PQHS'>('REVIEWS');
   reviews = signal<AdminReview[]>([]);
   totalCount = signal(0);
   
+  // PQHS State
+  pqhsList = signal<ProviderQualityHealth[]>([]);
+  loadingPqhs = signal(false);
+
   // Filters
   selectedRating = signal<number>(0);
   selectedVisibility = signal<'ALL' | 'VISIBLE' | 'HIDDEN'>('ALL');
@@ -42,10 +49,27 @@ export class ReviewsComponent implements OnInit {
   oneStarCount = computed(() => this.reviews().filter(r => r.rating === 1).length);
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize())));
 
-  constructor(private reviewUC: ReviewUseCase) {}
+  constructor(
+    private reviewUC: ReviewUseCase,
+    private governanceUC: GovernanceUseCase
+  ) {}
 
   ngOnInit(): void {
     this.loadReviews();
+    this.fetchProviderQualityHealth();
+  }
+
+  fetchProviderQualityHealth(): void {
+    this.loadingPqhs.set(true);
+    this.governanceUC.listProviderQualityHealth().subscribe({
+      next: (res) => {
+        this.pqhsList.set(res.results || []);
+        this.loadingPqhs.set(false);
+      },
+      error: () => {
+        this.loadingPqhs.set(false);
+      }
+    });
   }
 
   loadReviews(): void {

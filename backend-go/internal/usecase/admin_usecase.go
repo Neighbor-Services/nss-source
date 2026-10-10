@@ -6,8 +6,10 @@ import (
 	"crypto/sha256"
 	"encoding/csv"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
 	domainUsecase "backend-go/internal/domain/usecase"
+	"backend-go/pkg/aimatcher"
 	"backend-go/pkg/auth"
 	"backend-go/pkg/email"
 	"github.com/google/uuid"
@@ -184,10 +187,33 @@ func (u *adminUseCase) UpdateUser(ctx context.Context, adminID, userID uuid.UUID
 			details["role_id"] = *input.RoleID
 		}
 	}
+	var statusChangeAction string // "SUSPENDED" or "REINSTATED"
 	if input.IsActive != nil {
+		wasActive := user.IsActive
 		user.IsActive = *input.IsActive
 		details["is_active"] = *input.IsActive
+
+		if wasActive && !user.IsActive {
+			statusChangeAction = "SUSPENDED"
+			now := time.Now()
+			user.SuspendedAt = &now
+			if input.SuspensionReason != nil && *input.SuspensionReason != "" {
+				user.SuspensionReason = *input.SuspensionReason
+			} else if user.SuspensionReason == "" {
+				user.SuspensionReason = "Account suspended by platform administrator for policy or security review."
+			}
+			details["suspension_reason"] = user.SuspensionReason
+		} else if !wasActive && user.IsActive {
+			statusChangeAction = "REINSTATED"
+			user.SuspendedAt = nil
+			user.SuspensionReason = ""
+			details["reinstated"] = true
+		}
+	} else if input.SuspensionReason != nil {
+		user.SuspensionReason = *input.SuspensionReason
+		details["suspension_reason"] = *input.SuspensionReason
 	}
+
 	if input.IsStaff != nil {
 		user.IsStaff = *input.IsStaff
 		details["is_staff"] = *input.IsStaff
@@ -199,6 +225,72 @@ func (u *adminUseCase) UpdateUser(ctx context.Context, adminID, userID uuid.UUID
 
 	if err := u.adminRepo.UpdateUser(ctx, user); err != nil {
 		return nil, err
+	}
+
+	// Dispatch Transactional Emails and System In-App Notifications on Suspension / Reinstatement
+	switch statusChangeAction {
+case "SUSPENDED":
+		recipientName := user.Email
+		if user.Profile != nil && user.Profile.FirstName != "" {
+			recipientName = strings.TrimSpace(user.Profile.FirstName + " " + user.Profile.LastName)
+		}
+		suspensionReason := user.SuspensionReason
+		if suspensionReason == "" {
+			suspensionReason = "Violation of platform terms of service or ongoing safety and compliance review."
+		}
+
+		go func(emailAddr, name, reason string) {
+			cfg := u.cfg
+			if cfg != nil && cfg.SMTPHost != "" {
+				emailCfg := &email.Config{
+					Host:     cfg.SMTPHost,
+					Port:     cfg.SMTPPort,
+					User:     cfg.SMTPUser,
+					Password: cfg.SMTPPassword,
+					From:     cfg.EmailFrom,
+				}
+				_ = email.SendAccountSuspensionEmail(emailCfg, emailAddr, name, reason)
+			}
+		}(user.Email, recipientName, suspensionReason)
+
+		_ = u.adminRepo.CreateNotification(ctx, &entity.Notification{
+			ID:               uuid.New(),
+			UserID:           user.ID,
+			NotificationType: "ACCOUNT_SUSPENDED",
+			Title:            "Account Suspended",
+			Message:          "Your account has been suspended by administration. Reason: " + suspensionReason,
+			IsRead:           false,
+			CreatedAt:        time.Now(),
+		})
+	case "REINSTATED":
+		recipientName := user.Email
+		if user.Profile != nil && user.Profile.FirstName != "" {
+			recipientName = strings.TrimSpace(user.Profile.FirstName + " " + user.Profile.LastName)
+		}
+
+		go func(emailAddr, name string) {
+			cfg := u.cfg
+			if cfg != nil && cfg.SMTPHost != "" {
+				emailCfg := &email.Config{
+					Host:     cfg.SMTPHost,
+					Port:     cfg.SMTPPort,
+					User:     cfg.SMTPUser,
+					Password: cfg.SMTPPassword,
+					From:     cfg.EmailFrom,
+				}
+				_ = email.SendAccountReinstatedEmail(emailCfg, emailAddr, name)
+			}
+		}(user.Email, recipientName)
+
+		_ = u.adminRepo.CreateNotification(ctx, &entity.Notification{
+			ID:               uuid.New(),
+			UserID:           user.ID,
+			NotificationType: "SYSTEM_ALERT",
+			Title:            "Account Reinstated",
+			Message:          "Your Neighbor Service account has been reviewed and reinstated. You may now resume using all services.",
+			IsRead:           false,
+			CreatedAt:        time.Now(),
+		})
 	}
 
 	if user.Profile != nil {
@@ -1935,4 +2027,242 @@ func (u *adminUseCase) GetGeospatialProviderFleet(ctx context.Context, adminID u
 func (u *adminUseCase) GetSystemMetrics(ctx context.Context, adminID uuid.UUID) (*entity.SystemMetricsSummary, error) {
 	return u.adminRepo.GetSystemMetrics(ctx)
 }
+
+// ─── ADVANCED OPERATIONS & INTELLIGENCE ─────────────────────────────────────────
+
+func (u *adminUseCase) ImportCatalogBatch(ctx context.Context, adminID uuid.UUID, items []entity.CatalogImportItem) (int, error) {
+	count, err := u.adminRepo.ImportCatalogBatch(ctx, items)
+	if err != nil {
+		return 0, err
+	}
+	u.logAudit(ctx, &adminID, "ADMIN_IMPORT_CATALOG_BATCH", "CatalogService", fmt.Sprintf("count:%d", count), map[string]interface{}{
+		"imported_count": count,
+	})
+	return count, nil
+}
+
+func (u *adminUseCase) ExportCatalogBatch(ctx context.Context, adminID uuid.UUID) ([]entity.CatalogExportItem, error) {
+	items, err := u.adminRepo.ExportCatalogBatch(ctx)
+	if err != nil {
+		return nil, err
+	}
+	u.logAudit(ctx, &adminID, "ADMIN_EXPORT_CATALOG_BATCH", "CatalogService", fmt.Sprintf("count:%d", len(items)), nil)
+	return items, nil
+}
+
+func (u *adminUseCase) GetAISynonyms(ctx context.Context, adminID uuid.UUID) (map[string][]string, error) {
+	return aimatcher.GlobalKnowledge.GetAllConceptsMerged(), nil
+}
+
+func (u *adminUseCase) AddAISynonym(ctx context.Context, adminID uuid.UUID, key string, synonyms []string) error {
+	if key == "" || len(synonyms) == 0 {
+		return errors.New("concept key and at least one synonym are required")
+	}
+	aimatcher.GlobalKnowledge.AddConceptSynonyms(key, synonyms)
+	u.logAudit(ctx, &adminID, "ADMIN_ADD_AI_SYNONYM", "DynamicOntology", key, map[string]interface{}{
+		"synonyms": synonyms,
+	})
+	return nil
+}
+
+func (u *adminUseCase) DeleteAISynonym(ctx context.Context, adminID uuid.UUID, key string) error {
+	if key == "" {
+		return errors.New("concept key is required")
+	}
+	aimatcher.GlobalKnowledge.RemoveConcept(key)
+	u.logAudit(ctx, &adminID, "ADMIN_DELETE_AI_SYNONYM", "DynamicOntology", key, nil)
+	return nil
+}
+
+func (u *adminUseCase) GetGeospatialHeatmap(ctx context.Context, adminID uuid.UUID) (*entity.OperationsHeatmapData, error) {
+	return u.adminRepo.GetGeospatialHeatmap(ctx)
+}
+
+func (u *adminUseCase) GetLeakageAlerts(ctx context.Context, adminID uuid.UUID) ([]entity.LeakageAlert, error) {
+	return u.adminRepo.GetLeakageAlerts(ctx)
+}
+
+func (u *adminUseCase) GetExpiringCredentials(ctx context.Context, adminID uuid.UUID) ([]entity.ExpiringCredential, error) {
+	return u.adminRepo.GetExpiringCredentials(ctx)
+}
+
+func (u *adminUseCase) MediationResolveDispute(ctx context.Context, adminID, disputeID uuid.UUID, input entity.DisputeMediationInput) error {
+	err := u.adminRepo.MediationResolveDispute(ctx, disputeID, input, adminID)
+	if err != nil {
+		return err
+	}
+	u.logAudit(ctx, &adminID, "ADMIN_MEDIATION_RESOLVE_DISPUTE", "Dispute", disputeID.String(), map[string]interface{}{
+		"resolution_type": input.ResolutionType,
+		"refund_amount":   input.RefundAmount,
+		"provider_payout": input.ProviderPayout,
+		"credit_voucher":  input.CreditVoucher,
+		"notes":           input.Notes,
+	})
+	return nil
+}
+
+func (u *adminUseCase) GetEscrowSummary(ctx context.Context, adminID uuid.UUID) (*entity.EscrowSummary, error) {
+	return u.adminRepo.GetEscrowSummary(ctx)
+}
+
+func (u *adminUseCase) GetSubscriptionCohortStats(ctx context.Context, adminID uuid.UUID) (*entity.SubscriptionCohortStats, error) {
+	return u.adminRepo.GetSubscriptionCohortStats(ctx)
+}
+
+func (u *adminUseCase) TestAlertWebhook(ctx context.Context, adminID uuid.UUID, webhookURL, platform string) error {
+	if webhookURL == "" {
+		return errors.New("webhook URL is required")
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	var payload map[string]interface{}
+
+	if strings.ToLower(platform) == "discord" {
+		payload = map[string]interface{}{
+			"content": "🚨 **Neighbor Service Alert System**: Test Webhook Connection Successful!",
+			"embeds": []map[string]interface{}{
+				{
+					"title":       "System Telemetry Ping",
+					"description": fmt.Sprintf("Triggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
+					"color":       3066993, // Green
+				},
+			},
+		}
+	} else {
+		// Slack compatible payload default
+		payload = map[string]interface{}{
+			"text": fmt.Sprintf("🚨 *Neighbor Service Alert System*: Test Webhook Connection Successful!\nTriggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
+		}
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send webhook ping: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("webhook responded with non-2xx status: %d", resp.StatusCode)
+	}
+
+	u.logAudit(ctx, &adminID, "ADMIN_TEST_ALERT_WEBHOOK", "WebhookIntegration", webhookURL, map[string]interface{}{
+		"platform": platform,
+	})
+
+	return nil
+}
+
+// ─── ENTERPRISE GOVERNANCE (MAKER-CHECKER) ──────────────────────────────────
+
+func (u *adminUseCase) ListApprovalRequests(ctx context.Context, adminID uuid.UUID, status string) ([]entity.ApprovalRequest, error) {
+	return u.adminRepo.ListApprovalRequests(ctx, status)
+}
+
+func (u *adminUseCase) CreateApprovalRequest(ctx context.Context, adminID uuid.UUID, req *entity.ApprovalRequest) error {
+	req.RequesterID = adminID
+	if err := u.adminRepo.CreateApprovalRequest(ctx, req); err != nil {
+		return err
+	}
+	u.logAudit(ctx, &adminID, "MAKER_CHECKER_REQUEST_CREATED", req.ActionType, req.TargetID, map[string]interface{}{
+		"target_resource": req.TargetResource,
+		"amount":          req.Amount,
+	})
+	return nil
+}
+
+func (u *adminUseCase) ResolveApprovalRequest(ctx context.Context, adminID, id uuid.UUID, status, reason string) error {
+	if err := u.adminRepo.ResolveApprovalRequest(ctx, id, adminID, status, reason); err != nil {
+		return err
+	}
+	u.logAudit(ctx, &adminID, "MAKER_CHECKER_REQUEST_RESOLVED", "ApprovalRequest", id.String(), map[string]interface{}{
+		"status": status,
+		"reason": reason,
+	})
+	return nil
+}
+
+// ─── CHARGEBACK EVIDENCE KIT ────────────────────────────────────────────────
+
+func (u *adminUseCase) CompileChargebackEvidence(ctx context.Context, adminID, disputeID uuid.UUID) (*entity.ChargebackEvidencePackage, error) {
+	pkg, err := u.adminRepo.CompileChargebackEvidence(ctx, disputeID)
+	if err != nil {
+		return nil, err
+	}
+	u.logAudit(ctx, &adminID, "CHARGEBACK_EVIDENCE_COMPILED", "Dispute", disputeID.String(), nil)
+	return pkg, nil
+}
+
+// ─── SAFE IMPERSONATION ─────────────────────────────────────────────────────
+
+func (u *adminUseCase) GenerateImpersonationToken(ctx context.Context, adminID, targetUserID uuid.UUID, reason string) (*entity.ImpersonationSession, error) {
+	return u.adminRepo.GenerateImpersonationToken(ctx, adminID, targetUserID, reason)
+}
+
+// ─── PREDICTIVE SLA DISPATCH ────────────────────────────────────────────────
+
+func (u *adminUseCase) ListSLADispatchAlerts(ctx context.Context, adminID uuid.UUID) ([]entity.SLADispatchAlert, error) {
+	return u.adminRepo.ListSLADispatchAlerts(ctx)
+}
+
+func (u *adminUseCase) EscalateSLADispatch(ctx context.Context, adminID, appointmentID uuid.UUID) error {
+	if err := u.adminRepo.EscalateSLADispatch(ctx, appointmentID); err != nil {
+		return err
+	}
+	u.logAudit(ctx, &adminID, "SLA_DISPATCH_ESCALATED", "Appointment", appointmentID.String(), nil)
+	return nil
+}
+
+// ─── PROVIDER QUALITY HEALTH SCORE ──────────────────────────────────────────
+
+func (u *adminUseCase) ListProviderQualityHealth(ctx context.Context, adminID uuid.UUID) ([]entity.ProviderQualityHealth, error) {
+	return u.adminRepo.ListProviderQualityHealth(ctx)
+}
+
+// ─── DYNAMIC SURGE PRICING ──────────────────────────────────────────────────
+
+func (u *adminUseCase) ListSurgePricingRules(ctx context.Context, adminID uuid.UUID) ([]entity.SurgePricingRule, error) {
+	return u.adminRepo.ListSurgePricingRules(ctx)
+}
+
+func (u *adminUseCase) SaveSurgePricingRule(ctx context.Context, adminID uuid.UUID, rule *entity.SurgePricingRule) error {
+	if err := u.adminRepo.SaveSurgePricingRule(ctx, rule); err != nil {
+		return err
+	}
+	u.logAudit(ctx, &adminID, "SURGE_RULE_SAVED", "SurgePricingRule", rule.RegionZip, map[string]interface{}{
+		"multiplier": rule.Multiplier,
+		"reason":     rule.Reason,
+	})
+	return nil
+}
+
+func (u *adminUseCase) DeleteSurgePricingRule(ctx context.Context, adminID, id uuid.UUID) error {
+	if err := u.adminRepo.DeleteSurgePricingRule(ctx, id); err != nil {
+		return err
+	}
+	u.logAudit(ctx, &adminID, "SURGE_RULE_DELETED", "SurgePricingRule", id.String(), nil)
+	return nil
+}
+
+// ─── DOUBLE-ENTRY FINANCIAL LEDGER ──────────────────────────────────────────
+
+func (u *adminUseCase) GetDoubleEntryLedger(ctx context.Context, adminID uuid.UUID) (*entity.PlatformLedgerReport, error) {
+	return u.adminRepo.GetDoubleEntryLedger(ctx)
+}
+
+func (u *adminUseCase) ListLedgerEntries(ctx context.Context, adminID uuid.UUID, limit, offset int) ([]entity.LedgerEntry, int64, error) {
+	return u.adminRepo.ListLedgerEntries(ctx, limit, offset)
+}
+
+
 

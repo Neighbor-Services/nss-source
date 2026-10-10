@@ -213,5 +213,47 @@ type AdminRepository interface {
 	OverrideDispatchIncident(ctx context.Context, incidentID uuid.UUID, action string, targetProviderID *uuid.UUID, extendRadiusKm float64, reason string, adminID uuid.UUID) error
 	GetGeospatialProviderFleet(ctx context.Context) ([]entity.ProviderFleetTelemetry, error)
 	GetSystemMetrics(ctx context.Context) (*entity.SystemMetricsSummary, error)
+
+	// Advanced Operations & Intelligence
+	ImportCatalogBatch(ctx context.Context, items []entity.CatalogImportItem) (int, error)
+	ExportCatalogBatch(ctx context.Context) ([]entity.CatalogExportItem, error)
+	GetGeospatialHeatmap(ctx context.Context) (*entity.OperationsHeatmapData, error)
+	GetLeakageAlerts(ctx context.Context) ([]entity.LeakageAlert, error)
+	GetExpiringCredentials(ctx context.Context) ([]entity.ExpiringCredential, error)
+	MediationResolveDispute(ctx context.Context, disputeID uuid.UUID, input entity.DisputeMediationInput, adminID uuid.UUID) error
+	GetEscrowSummary(ctx context.Context) (*entity.EscrowSummary, error)
+	GetSubscriptionCohortStats(ctx context.Context) (*entity.SubscriptionCohortStats, error)
+
+	// Maker-Checker & Governance
+	ListApprovalRequests(ctx context.Context, status string) ([]entity.ApprovalRequest, error)
+	CreateApprovalRequest(ctx context.Context, req *entity.ApprovalRequest) error
+	ResolveApprovalRequest(ctx context.Context, id uuid.UUID, approverID uuid.UUID, status string, reason string) error
+
+	// Chargeback Defense Kit
+	CompileChargebackEvidence(ctx context.Context, disputeID uuid.UUID) (*entity.ChargebackEvidencePackage, error)
+
+	// Safe Impersonation Token
+	GenerateImpersonationToken(ctx context.Context, adminID uuid.UUID, targetUserID uuid.UUID, reason string) (*entity.ImpersonationSession, error)
+
+	// SLA Dispatch & Auto-Escalation
+	ListSLADispatchAlerts(ctx context.Context) ([]entity.SLADispatchAlert, error)
+	EscalateSLADispatch(ctx context.Context, appointmentID uuid.UUID) error
+
+	// Provider Quality Health & Review Sentiment
+	ListProviderQualityHealth(ctx context.Context) ([]entity.ProviderQualityHealth, error)
+
+	// Dynamic Surge Pricing Rules
+	ListSurgePricingRules(ctx context.Context) ([]entity.SurgePricingRule, error)
+	SaveSurgePricingRule(ctx context.Context, rule *entity.SurgePricingRule) error
+	DeleteSurgePricingRule(ctx context.Context, id uuid.UUID) error
+
+	// Double-Entry Financial Ledger
+	GetDoubleEntryLedger(ctx context.Context) (*entity.PlatformLedgerReport, error)
+	ListLedgerEntries(ctx context.Context, limit, offset int) ([]entity.LedgerEntry, int64, error)
+
+	// In-App Notifications
+	CreateNotification(ctx context.Context, notif *entity.Notification) error
 }
+
+
 

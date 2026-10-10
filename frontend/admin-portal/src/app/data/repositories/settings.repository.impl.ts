@@ -56,4 +56,12 @@ export class SettingsRepositoryImpl implements SettingsRepository {
       map(res => ({ success: true, recipients: res.recipients ?? 0 }))
     );
   }
+
+  testAlertWebhook(webhookUrl: string, platform: string): Observable<{ status: string; message: string }> {
+    return this.http.post<{ status: string; message: string }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/webhooks/test-alert/`,
+      { webhook_url: webhookUrl, platform }
+    );
+  }
 }
+

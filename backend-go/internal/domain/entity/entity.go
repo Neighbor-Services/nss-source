@@ -73,6 +73,8 @@ type User struct {
 	AdminRoleID      *uuid.UUID     `gorm:"type:uuid;index" json:"admin_role_id,omitempty"`
 	OTPCode          string         `gorm:"size:6" json:"otp_code,omitempty"`
 	OTPExpiry        *time.Time     `json:"otp_expiry,omitempty"`
+	SuspensionReason string         `gorm:"type:text" json:"suspension_reason,omitempty"`
+	SuspendedAt      *time.Time     `json:"suspended_at,omitempty"`
 	CreatedAt        time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt        time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	LastLogin        *time.Time     `json:"last_login,omitempty"`
@@ -123,6 +125,11 @@ type Profile struct {
 	MaxCatalogServices   int        `gorm:"default:1" json:"max_catalog_services"`
 	SearchRadiusKm       float64    `gorm:"default:25.0" json:"search_radius_km"`
 	DistanceUnit         string     `gorm:"size:10;default:'MILES'" json:"distance_unit"` // MILES, KM
+	ProviderType         string     `gorm:"size:50;default:'INDEPENDENT'" json:"provider_type"` // INDEPENDENT, BUSINESS
+	ServiceLocation      string     `gorm:"size:50;default:'CUSTOMER_LOCATION'" json:"service_location"` // CUSTOMER_LOCATION, PROVIDER_LOCATION, ONLINE
+	Availability         string     `gorm:"size:50;default:'SCHEDULED'" json:"availability"` // SCHEDULED, SAME_DAY, EMERGENCY
+	Specialties          JSONSlice  `gorm:"type:json" json:"specialties,omitempty"`
+	Qualifications       string     `gorm:"type:text" json:"qualifications,omitempty"`
 	CreatedAt            time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt            time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 
@@ -334,13 +341,15 @@ type Category struct {
 func (Category) TableName() string { return "services_category" }
 
 type CatalogService struct {
-	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	CategoryID  uuid.UUID `gorm:"type:uuid;index;not null" json:"category_id"`
-	Name        string    `gorm:"size:255;not null" json:"name"`
-	Description string    `gorm:"type:text" json:"description"`
-	BasePrice   *float64  `json:"base_price,omitempty"`
-	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID                     uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	CategoryID             uuid.UUID `gorm:"type:uuid;index;not null" json:"category_id"`
+	Name                   string    `gorm:"size:255;not null" json:"name"`
+	Description            string    `gorm:"type:text" json:"description"`
+	BasePrice              *float64  `json:"base_price,omitempty"`
+	Specialties            JSONSlice `gorm:"type:json" json:"specialties,omitempty"`
+	DefaultServiceLocation string    `gorm:"size:50;default:'CUSTOMER_LOCATION'" json:"default_service_location,omitempty"`
+	CreatedAt              time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt              time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 
 	Category *Category `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
 }
@@ -358,6 +367,9 @@ type ServiceRequest struct {
 	Status               string     `gorm:"size:20;default:'OPEN'" json:"status"`
 	PreferredPaymentMode string     `gorm:"size:20;default:'IN_APP'" json:"preferred_payment_mode"`
 	ServiceType          string     `gorm:"size:255" json:"service_type,omitempty"`
+	Specialty            string     `gorm:"size:100" json:"specialty,omitempty"`
+	ServiceLocation      string     `gorm:"size:50;default:'CUSTOMER_LOCATION'" json:"service_location,omitempty"`
+	Urgency              string     `gorm:"size:50;default:'SCHEDULED'" json:"urgency,omitempty"`
 	WithImage            bool       `gorm:"default:false" json:"with_image"`
 	Image                string     `gorm:"size:500" json:"image,omitempty"`
 	Longitude            *float64   `gorm:"type:numeric(100,50)" json:"longitude,omitempty"`
@@ -645,7 +657,7 @@ type Notification struct {
 	ID               uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID           uuid.UUID  `gorm:"type:uuid;index;not null" json:"user"`
 	SenderID         *uuid.UUID `gorm:"type:uuid;index" json:"sender,omitempty"`
-	NotificationType string     `gorm:"size:20;not null" json:"notification_type"`
+	NotificationType string     `gorm:"size:50;not null" json:"notification_type"`
 	Title            string     `gorm:"size:255;not null" json:"title"`
 	Message          string     `gorm:"type:text;not null" json:"message"`
 	Data             JSONMap    `gorm:"type:text" json:"data"`
@@ -728,6 +740,50 @@ type PayoutRequest struct {
 }
 
 func (PayoutRequest) TableName() string { return "payments_payoutrequest" }
+
+type LedgerAccount struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Code      string    `gorm:"size:64;uniqueIndex;not null" json:"code"` // e.g. ESCROW_HOLD, PLATFORM_REVENUE, PROVIDER_WALLET_{ID}
+	Name      string    `gorm:"size:255;not null" json:"name"`
+	Type      string    `gorm:"size:32;not null" json:"type"` // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+	Currency  string    `gorm:"size:3;default:'USD'" json:"currency"`
+	Balance   float64   `gorm:"default:0.00" json:"balance"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+func (LedgerAccount) TableName() string { return "payments_ledgeraccount" }
+
+type LedgerEntry struct {
+	ID              uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	TransactionID   uuid.UUID `gorm:"type:uuid;index;not null" json:"transaction_id"`
+	DebitAccountID  uuid.UUID `gorm:"type:uuid;index;not null" json:"debit_account_id"`
+	CreditAccountID uuid.UUID `gorm:"type:uuid;index;not null" json:"credit_account_id"`
+	Amount          float64   `gorm:"not null" json:"amount"`
+	Currency        string    `gorm:"size:3;default:'USD'" json:"currency"`
+	Description     string    `gorm:"size:255;not null" json:"description"`
+	ReferenceType   string    `gorm:"size:64;not null" json:"reference_type"` // ESCROW_HOLD, ESCROW_RELEASE, DISPUTE_REFUND, PLATFORM_FEE, PAYOUT_WITHDRAWAL, DEPOSIT
+	ReferenceID     string    `gorm:"size:128" json:"reference_id"`
+	CreatedAt       time.Time `gorm:"autoCreateTime" json:"created_at"`
+
+	DebitAccount  *LedgerAccount `gorm:"foreignKey:DebitAccountID" json:"debit_account,omitempty"`
+	CreditAccount *LedgerAccount `gorm:"foreignKey:CreditAccountID" json:"credit_account,omitempty"`
+}
+
+func (LedgerEntry) TableName() string { return "payments_ledgerentry" }
+
+type PlatformLedgerReport struct {
+	TotalAssets       float64         `json:"total_assets"`
+	TotalLiabilities  float64         `json:"total_liabilities"`
+	TotalEquity       float64         `json:"total_equity"`
+	TotalRevenue      float64         `json:"total_revenue"`
+	TotalExpenses     float64         `json:"total_expenses"`
+	NetIncome         float64         `json:"net_income"`
+	EscrowHeld        float64         `json:"escrow_held"`
+	PlatformFeeEarned float64         `json:"platform_fee_earned"`
+	Accounts          []LedgerAccount `json:"accounts"`
+	RecentEntries     []LedgerEntry   `json:"recent_entries"`
+}
 
 type SubscriptionPlan struct {
 	ID                 uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
@@ -1308,6 +1364,210 @@ type SystemMetricsSummary struct {
 	CacheHitRatePct     float64 `json:"cache_hit_rate_pct"`
 	UptimeSeconds       int64   `json:"uptime_seconds"`
 }
+
+// ─── ADMIN CATALOG IMPORT / EXPORT ──────────────────────────────────────────
+
+type CatalogImportItem struct {
+	CategoryName           string   `json:"category_name"`
+	CategoryDescription    string   `json:"category_description"`
+	ServiceName            string   `json:"service_name"`
+	ServiceDescription     string   `json:"service_description"`
+	DefaultServiceLocation string   `json:"default_service_location"`
+	Specialties            []string `json:"specialties"`
+}
+
+type CatalogExportItem struct {
+	CategoryID             string   `json:"category_id"`
+	CategoryName           string   `json:"category_name"`
+	ServiceID              string   `json:"service_id"`
+	ServiceName            string   `json:"service_name"`
+	ServiceDescription     string   `json:"service_description"`
+	DefaultServiceLocation string   `json:"default_service_location"`
+	Specialties            []string `json:"specialties"`
+}
+
+// ─── GEOSPATIAL HEATMAP ─────────────────────────────────────────────────────
+
+type HeatmapCluster struct {
+	Latitude      float64 `json:"latitude"`
+	Longitude     float64 `json:"longitude"`
+	RequestCount  int     `json:"request_count"`
+	ProviderCount int     `json:"provider_count"`
+	SupplyDeficit float64 `json:"supply_deficit"` // ratio or shortage score
+	ZipCode       string  `json:"zip_code"`
+	City          string  `json:"city"`
+}
+
+type OperationsHeatmapData struct {
+	Clusters       []HeatmapCluster `json:"clusters"`
+	TotalRequests  int              `json:"total_requests"`
+	TotalProviders int              `json:"total_providers"`
+	UnderservedPct float64          `json:"underserved_pct"`
+}
+
+// ─── LEAKAGE & SAFETY SNIFFER ───────────────────────────────────────────────
+
+type LeakageAlert struct {
+	ID             uuid.UUID `json:"id"`
+	SenderID       uuid.UUID `json:"sender_id"`
+	SenderName     string    `json:"sender_name"`
+	ReceiverID     uuid.UUID `json:"receiver_id"`
+	ReceiverName   string    `json:"receiver_name"`
+	MessageSnippet string    `json:"message_snippet"`
+	MatchedKeyword string    `json:"matched_keyword"`
+	RiskScore      int       `json:"risk_score"`
+	DetectedAt     time.Time `json:"detected_at"`
+	Status         string    `json:"status"` // PENDING, REVIEWED, SHADOWBANNED, DISMISSED
+}
+
+// ─── EXPIRING CREDENTIALS ───────────────────────────────────────────────────
+
+type ExpiringCredential struct {
+	ID             uuid.UUID `json:"id"`
+	ProviderID     uuid.UUID `json:"provider_id"`
+	ProviderName   string    `json:"provider_name"`
+	ProviderEmail  string    `json:"provider_email"`
+	CredentialType string    `json:"credential_type"` // LICENSE, INSURANCE, BACKGROUND_CHECK
+	DocumentNumber string    `json:"document_number"`
+	ExpiresAt      time.Time `json:"expires_at"`
+	DaysRemaining  int       `json:"days_remaining"`
+	Status         string    `json:"status"` // EXPIRING_SOON, EXPIRED
+}
+
+// ─── DISPUTE MEDIATION ──────────────────────────────────────────────────────
+
+type DisputeMediationInput struct {
+	ResolutionType  string  `json:"resolution_type"` // FULL_REFUND, PARTIAL_SPLIT, RELEASE_TO_PROVIDER, ISSUE_CREDIT
+	RefundAmount    float64 `json:"refund_amount"`
+	ProviderPayout  float64 `json:"provider_payout"`
+	CreditVoucher   float64 `json:"credit_voucher"`
+	Notes           string  `json:"notes"`
+}
+
+// ─── FINANCIAL ESCROW & COHORTS ─────────────────────────────────────────────
+
+type EscrowSummary struct {
+	TotalHeldInEscrow float64 `json:"total_held_in_escrow"`
+	ActiveJobsCount   int64   `json:"active_jobs_count"`
+	PendingClearance  float64 `json:"pending_clearance"`
+	DisputedFunds     float64 `json:"disputed_funds"`
+	EscrowVelocityAvg float64 `json:"escrow_velocity_avg_hours"`
+}
+
+type SubscriptionCohortStats struct {
+	TotalSubscribers  int64              `json:"total_subscribers"`
+	SilverCount       int64              `json:"silver_count"`
+	GoldCount         int64              `json:"gold_count"`
+	PlatinumCount     int64              `json:"platinum_count"`
+	MRR               float64            `json:"mrr"`
+	ARR               float64            `json:"arr"`
+	ChurnRatePct      float64            `json:"churn_rate_pct"`
+	TierConversionPct map[string]float64 `json:"tier_conversion_pct"`
+}
+
+// ─── MAKER-CHECKER (DUAL APPROVAL) ──────────────────────────────────────────
+
+type ApprovalRequest struct {
+	ID              uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	RequesterID     uuid.UUID  `gorm:"type:uuid;index;not null" json:"requester_id"`
+	RequesterEmail  string     `gorm:"size:255" json:"requester_email"`
+	ApproverID      *uuid.UUID `gorm:"type:uuid;index" json:"approver_id,omitempty"`
+	ApproverEmail   string     `gorm:"size:255" json:"approver_email,omitempty"`
+	ActionType      string     `gorm:"size:50;not null" json:"action_type"` // HIGH_VALUE_REFUND, USER_BAN, ESCROW_RELEASE, SURGE_OVERRIDE
+	TargetResource  string     `gorm:"size:255;not null" json:"target_resource"`
+	TargetID        string     `gorm:"size:255;not null" json:"target_id"`
+	PayloadJSON     string     `gorm:"type:text" json:"payload_json"`
+	Amount          float64    `gorm:"default:0.00" json:"amount"`
+	Status          string     `gorm:"size:20;default:'PENDING'" json:"status"` // PENDING, APPROVED, REJECTED
+	RejectionReason string     `gorm:"type:text" json:"rejection_reason,omitempty"`
+	CreatedAt       time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	ResolvedAt      *time.Time `json:"resolved_at,omitempty"`
+}
+
+func (ApprovalRequest) TableName() string { return "system_approval_requests" }
+
+// ─── CHARGEBACK EVIDENCE PACKAGE ────────────────────────────────────────────
+
+type ChargebackEvidencePackage struct {
+	DisputeID             uuid.UUID `json:"dispute_id"`
+	AppointmentID         uuid.UUID `json:"appointment_id"`
+	SeekerName            string    `json:"seeker_name"`
+	SeekerEmail           string    `json:"seeker_email"`
+	ProviderName          string    `json:"provider_name"`
+	ProviderEmail         string    `json:"provider_email"`
+	AppointmentDate       string    `json:"appointment_date"`
+	TotalAmount           float64   `json:"total_amount"`
+	SecurityCodeVerified  bool      `json:"security_code_verified"`
+	GeofenceVerified      bool      `json:"geofence_verified"`
+	CheckInTimestamp      string    `json:"check_in_timestamp"`
+	ChatTranscriptSnippet string    `json:"chat_transcript_snippet"`
+	BeforePhotos          []string  `json:"before_photos"`
+	AfterPhotos           []string  `json:"after_photos"`
+	EvidenceSummary       string    `json:"evidence_summary"`
+	StripeDisputeID       string    `json:"stripe_dispute_id,omitempty"`
+}
+
+// ─── ADMIN SAFE IMPERSONATION ───────────────────────────────────────────────
+
+type ImpersonationSession struct {
+	AdminID        uuid.UUID `json:"admin_id"`
+	AdminEmail     string    `json:"admin_email"`
+	TargetUserID   uuid.UUID `json:"target_user_id"`
+	TargetUserRole string    `json:"target_user_role"`
+	TargetEmail    string    `json:"target_email"`
+	Token          string    `json:"token"`
+	ExpiresAt      time.Time `json:"expires_at"`
+	Reason         string    `json:"reason"`
+}
+
+// ─── PREDICTIVE SLA DISPATCH ALERT ──────────────────────────────────────────
+
+type SLADispatchAlert struct {
+	AppointmentID      uuid.UUID `json:"appointment_id"`
+	ServiceName        string    `json:"service_name"`
+	SeekerName         string    `json:"seeker_name"`
+	AddressCity        string    `json:"address_city"`
+	WaitMinutes        int       `json:"wait_minutes"`
+	CurrentRadiusKm    float64   `json:"current_radius_km"`
+	EscalationStage    int       `json:"escalation_stage"` // 1, 2, 3
+	IsSurgeBoosted     bool      `json:"is_surge_boosted"`
+	SurgeMultiplier    float64   `json:"surge_multiplier"`
+	AvailableProsInArea int      `json:"available_pros_in_area"`
+	Status             string    `json:"status"` // AT_RISK, ESCALATED, RESOLVED
+}
+
+// ─── PROVIDER QUALITY HEALTH SCORE (PQHS) ───────────────────────────────────
+
+type ProviderQualityHealth struct {
+	ProviderID           uuid.UUID `json:"provider_id"`
+	ProviderName         string    `json:"provider_name"`
+	ProviderEmail        string    `json:"provider_email"`
+	OverallScore         int       `json:"overall_score"` // 0-100
+	OnTimeArrivalPct     float64   `json:"on_time_arrival_pct"`
+	DisputeFrequencyPct  float64   `json:"dispute_frequency_pct"`
+	ResponseTimeMinutes  int       `json:"response_time_minutes"`
+	CustomerSentimentPct float64   `json:"customer_sentiment_pct"`
+	CompletedJobsCount   int64     `json:"completed_jobs_count"`
+	HealthStatus         string    `json:"health_status"` // HEALTHY, WARNING, RETRAINING_REQUIRED
+}
+
+// ─── DYNAMIC SURGE PRICING RULE ─────────────────────────────────────────────
+
+type SurgePricingRule struct {
+	ID                uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	RegionZip         string    `gorm:"size:20;not null" json:"region_zip"`
+	ServiceCategoryID *uuid.UUID `gorm:"type:uuid" json:"service_category_id,omitempty"`
+	CategoryName      string    `gorm:"size:100" json:"category_name,omitempty"`
+	Multiplier        float64   `gorm:"type:numeric(3,2);default:1.00" json:"multiplier"`
+	Reason            string    `gorm:"size:255;not null" json:"reason"` // WEATHER_STORM, PEAK_DEMAND, SPECIAL_EVENT
+	IsActive          bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt         time.Time `gorm:"autoCreateTime" json:"created_at"`
+	ExpiresAt         *time.Time `json:"expires_at,omitempty"`
+}
+
+func (SurgePricingRule) TableName() string { return "pricing_surge_rules" }
+
+
 
 
 

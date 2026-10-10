@@ -205,4 +205,12 @@ export class ReportRepositoryImpl implements ReportRepository {
       }))
     );
   }
+
+  getDoubleEntryLedger(): Observable<any> {
+    return this.http.get<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.ledgerSummary}`);
+  }
+
+  listLedgerEntries(limit: number = 50, offset: number = 0): Observable<any> {
+    return this.http.get<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.ledgerEntries}?limit=${limit}&offset=${offset}`);
+  }
 }

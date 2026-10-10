@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"backend-go/internal/config"
 	"backend-go/internal/domain/entity"
@@ -561,6 +562,73 @@ func (m *mockAdminRepo) GetGeospatialProviderFleet(ctx context.Context) ([]entit
 func (m *mockAdminRepo) GetSystemMetrics(ctx context.Context) (*entity.SystemMetricsSummary, error) {
 	return &entity.SystemMetricsSummary{}, nil
 }
+func (m *mockAdminRepo) ImportCatalogBatch(ctx context.Context, items []entity.CatalogImportItem) (int, error) {
+	return len(items), nil
+}
+func (m *mockAdminRepo) ExportCatalogBatch(ctx context.Context) ([]entity.CatalogExportItem, error) {
+	return []entity.CatalogExportItem{}, nil
+}
+func (m *mockAdminRepo) GetGeospatialHeatmap(ctx context.Context) (*entity.OperationsHeatmapData, error) {
+	return &entity.OperationsHeatmapData{}, nil
+}
+func (m *mockAdminRepo) GetLeakageAlerts(ctx context.Context) ([]entity.LeakageAlert, error) {
+	return []entity.LeakageAlert{}, nil
+}
+func (m *mockAdminRepo) GetExpiringCredentials(ctx context.Context) ([]entity.ExpiringCredential, error) {
+	return []entity.ExpiringCredential{}, nil
+}
+func (m *mockAdminRepo) MediationResolveDispute(ctx context.Context, disputeID uuid.UUID, input entity.DisputeMediationInput, adminID uuid.UUID) error {
+	return nil
+}
+func (m *mockAdminRepo) GetEscrowSummary(ctx context.Context) (*entity.EscrowSummary, error) {
+	return &entity.EscrowSummary{}, nil
+}
+func (m *mockAdminRepo) GetSubscriptionCohortStats(ctx context.Context) (*entity.SubscriptionCohortStats, error) {
+	return &entity.SubscriptionCohortStats{}, nil
+}
+func (m *mockAdminRepo) ListApprovalRequests(ctx context.Context, status string) ([]entity.ApprovalRequest, error) {
+	return []entity.ApprovalRequest{}, nil
+}
+func (m *mockAdminRepo) CreateApprovalRequest(ctx context.Context, req *entity.ApprovalRequest) error {
+	return nil
+}
+func (m *mockAdminRepo) ResolveApprovalRequest(ctx context.Context, id uuid.UUID, approverID uuid.UUID, status string, reason string) error {
+	return nil
+}
+func (m *mockAdminRepo) CompileChargebackEvidence(ctx context.Context, disputeID uuid.UUID) (*entity.ChargebackEvidencePackage, error) {
+	return &entity.ChargebackEvidencePackage{DisputeID: disputeID, TotalAmount: 150.0}, nil
+}
+func (m *mockAdminRepo) GenerateImpersonationToken(ctx context.Context, adminID uuid.UUID, targetUserID uuid.UUID, reason string) (*entity.ImpersonationSession, error) {
+	return &entity.ImpersonationSession{AdminID: adminID, TargetUserID: targetUserID, Token: "mock-token", ExpiresAt: time.Now().Add(30 * time.Minute)}, nil
+}
+func (m *mockAdminRepo) ListSLADispatchAlerts(ctx context.Context) ([]entity.SLADispatchAlert, error) {
+	return []entity.SLADispatchAlert{}, nil
+}
+func (m *mockAdminRepo) EscalateSLADispatch(ctx context.Context, appointmentID uuid.UUID) error {
+	return nil
+}
+func (m *mockAdminRepo) ListProviderQualityHealth(ctx context.Context) ([]entity.ProviderQualityHealth, error) {
+	return []entity.ProviderQualityHealth{}, nil
+}
+func (m *mockAdminRepo) ListSurgePricingRules(ctx context.Context) ([]entity.SurgePricingRule, error) {
+	return []entity.SurgePricingRule{}, nil
+}
+func (m *mockAdminRepo) SaveSurgePricingRule(ctx context.Context, rule *entity.SurgePricingRule) error {
+	return nil
+}
+func (m *mockAdminRepo) DeleteSurgePricingRule(ctx context.Context, id uuid.UUID) error {
+	return nil
+}
+func (m *mockAdminRepo) GetDoubleEntryLedger(ctx context.Context) (*entity.PlatformLedgerReport, error) {
+	return &entity.PlatformLedgerReport{TotalAssets: 1000, TotalRevenue: 500}, nil
+}
+func (m *mockAdminRepo) ListLedgerEntries(ctx context.Context, limit, offset int) ([]entity.LedgerEntry, int64, error) {
+	return []entity.LedgerEntry{}, 0, nil
+}
+func (m *mockAdminRepo) CreateNotification(ctx context.Context, notif *entity.Notification) error {
+	return nil
+}
+
 
 func TestAdminUseCase_DashboardAndUserOperations(t *testing.T) {
 	adminID := uuid.New()

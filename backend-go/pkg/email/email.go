@@ -1533,3 +1533,107 @@ func SendResolutionConfirmationEmail(cfg *Config, toEmail, submitterRole, issueT
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
+func SendAccountSuspensionEmail(cfg *Config, toEmail, recipientName, suspensionReason string) error {
+	subject := "Important Notice: Your Neighbor Service Account Has Been Suspended"
+	if recipientName == "" {
+		recipientName = "Neighbor Service Member"
+	}
+	if suspensionReason == "" {
+		suspensionReason = "Violation of platform terms of service or ongoing safety and compliance review."
+	}
+
+	plainText := fmt.Sprintf("Hello %s,\n\nYour Neighbor Service account has been suspended by administration.\n\nReason for Suspension:\n%s\n\nDuring suspension, you will not be able to log in, accept requests, or book services. If you believe this action was taken in error or wish to submit an appeal, please contact our Trust & Safety Team at support@neighborservice.com.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, suspensionReason)
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Suspension Notice</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b; line-height: 1.6; margin: 0; }
+        .container { max-width: 580px; margin: 20px auto; background-color: #ffffff; padding: 36px; border-radius: 12px; border: 1px solid #fee2e2; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.05); }
+        .badge { display: inline-block; padding: 6px 14px; background: #fee2e2; color: #dc2626; border-radius: 20px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+        .card { background: #fef2f2; border-radius: 8px; padding: 18px 20px; margin: 20px 0; border-left: 4px solid #ef4444; }
+        .reason-title { font-weight: 700; color: #991b1b; margin-bottom: 6px; font-size: 13px; text-transform: uppercase; }
+        .reason-text { color: #7f1d1d; font-size: 14px; margin: 0; }
+        .btn { display: inline-block; padding: 12px 24px; background: #dc2626; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 14px; margin-top: 16px; }
+        .footer { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">Account Notice</span>
+        <h2 style="margin-top: 14px; color: #0f172a;">Your Account Has Been Suspended</h2>
+        <p>Hello <strong>%s</strong>,</p>
+        <p>This email is to notify you that your Neighbor Service account has been suspended by an administrator.</p>
+        
+        <div class="card">
+            <div class="reason-title">Reason for Action</div>
+            <p class="reason-text">%s</p>
+        </div>
+
+        <p>While your account is suspended:</p>
+        <ul style="color: #475569; font-size: 14px; padding-left: 20px;">
+            <li>You will be unable to log in to the mobile application or website.</li>
+            <li>Active appointments or service bookings have been temporarily paused or escalated for admin review.</li>
+            <li>New customer inquiries and dispatch requests are halted.</li>
+        </ul>
+
+        <p>If you believe this suspension is a mistake or wish to appeal this decision, please reach out to our Trust &amp; Safety Compliance Team:</p>
+        <div style="text-align: center;">
+            <a href="mailto:support@neighborservice.com?subject=Account%%20Suspension%%20Appeal" class="btn">Submit Appeal / Contact Support</a>
+        </div>
+
+        <div class="footer">
+            <p>Neighbor Service Trust &amp; Safety Team &bull; support@neighborservice.com</p>
+            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`, recipientName, suspensionReason)
+
+	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
+}
+
+func SendAccountReinstatedEmail(cfg *Config, toEmail, recipientName string) error {
+	subject := "Good News: Your Neighbor Service Account Has Been Reinstated"
+	if recipientName == "" {
+		recipientName = "Neighbor Service Member"
+	}
+
+	plainText := fmt.Sprintf("Hello %s,\n\nYour Neighbor Service account has been reviewed and reinstated by administration. You may now log in to the mobile app and resume booking or offering services.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName)
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Reinstated</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b; line-height: 1.6; margin: 0; }
+        .container { max-width: 580px; margin: 20px auto; background-color: #ffffff; padding: 36px; border-radius: 12px; border: 1px solid #dcfce7; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.05); }
+        .badge { display: inline-block; padding: 6px 14px; background: #dcfce7; color: #15803d; border-radius: 20px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+        .btn { display: inline-block; padding: 12px 24px; background: #16a34a; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 14px; margin-top: 16px; }
+        .footer { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">Account Reinstated</span>
+        <h2 style="margin-top: 14px; color: #0f172a;">Welcome Back! Your Account is Active</h2>
+        <p>Hello <strong>%s</strong>,</p>
+        <p>Your Neighbor Service account has been successfully reviewed and reinstated by our Trust &amp; Safety team.</p>
+        <p>All platform privileges, listings, and wallet features have been fully restored. You can now log into your mobile application and resume normal activity.</p>
+        <div class="footer">
+            <p>Neighbor Service Team &bull; support@neighborservice.com</p>
+            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`, recipientName)
+
+	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
+}
+
+

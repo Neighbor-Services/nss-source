@@ -20,4 +20,9 @@ export class DisputeUseCase {
   rejectDispute(id: string, reason: string): Observable<{ success: boolean }> {
     return this.disputeRepo.rejectDispute(id, reason);
   }
+
+  mediateDispute(id: string, input: any): Observable<{ status: string }> {
+    return this.disputeRepo.mediateDispute(id, input);
+  }
 }
+

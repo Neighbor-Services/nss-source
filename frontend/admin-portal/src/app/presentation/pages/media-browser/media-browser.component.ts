@@ -25,7 +25,6 @@ export class MediaBrowserComponent implements OnInit {
   private http = inject(HttpClient);
 
   readonly buckets = signal<string[]>([
-    'neighborservice',
     'profiles',
     'chat',
     'evidence',
@@ -34,7 +33,9 @@ export class MediaBrowserComponent implements OnInit {
     'portfolio'
   ]);
 
-  readonly activeBucket = signal<string>('neighborservice');
+  readonly activeBucket = signal<string>('');
+  readonly customBucketInput = signal<string>('');
+  readonly showAddBucketModal = signal<boolean>(false);
   readonly searchQuery = signal<string>('');
   readonly selectedFilter = signal<'all' | 'images' | 'documents' | 'audio'>('all');
   readonly viewMode = signal<'grid' | 'list'>('grid');
@@ -80,22 +81,44 @@ export class MediaBrowserComponent implements OnInit {
     this.fetchObjects();
   }
 
+  addCustomBucket(): void {
+    const name = this.customBucketInput().trim().toLowerCase();
+    if (!name) return;
+    if (!this.buckets().includes(name)) {
+      this.buckets.update(list => [name, ...list]);
+    }
+    this.activeBucket.set(name);
+    this.customBucketInput.set('');
+    this.showAddBucketModal.set(false);
+    this.fetchObjects();
+  }
+
   fetchObjects(): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    const bucket = this.activeBucket();
-    const apiUrl = `${ADMIN_API_CONFIG.baseUrl}/admin/media/browser?bucket=${encodeURIComponent(bucket)}`;
+    const bucketParam = this.activeBucket() ? `?bucket=${encodeURIComponent(this.activeBucket())}` : '';
+    const apiUrl = `${ADMIN_API_CONFIG.baseUrl}/admin/media/browser${bucketParam}`;
 
-    this.http.get<{ items?: StorageObject[]; data?: any; source?: string }>(apiUrl).subscribe({
+    this.http.get<{ items?: StorageObject[]; data?: any; source?: string; bucket?: string; default_bucket?: string }>(apiUrl).subscribe({
       next: (res) => {
         this.isLoading.set(false);
+        const resolvedBucket = res.bucket || res.default_bucket || this.activeBucket() || 'default';
+        
+        // Sync active bucket and ensure it is in the bucket pills
+        if (!this.activeBucket()) {
+          this.activeBucket.set(resolvedBucket);
+        }
+        if (!this.buckets().includes(resolvedBucket)) {
+          this.buckets.update(list => [resolvedBucket, ...list]);
+        }
+
         if (res.items) {
           this.objects.set(res.items);
         } else if (res.data && Array.isArray(res.data.items)) {
           this.objects.set(res.data.items.map((i: any) => ({
             name: i.name || i.path,
-            bucket: bucket,
+            bucket: resolvedBucket,
             size: i.size || 0,
             updated: i.updated_at || i.updated || new Date().toISOString(),
             content_type: i.content_type || i.contentType,
@@ -106,7 +129,7 @@ export class MediaBrowserComponent implements OnInit {
           this.objects.set([]);
         }
       },
-      error: (err) => {
+      error: () => {
         this.isLoading.set(false);
         this.errorMessage.set('Failed to load storage objects from GoStore appliance.');
       }

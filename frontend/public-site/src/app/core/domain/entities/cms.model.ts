@@ -48,6 +48,8 @@ export interface CatalogService {
   suggestedMaxPrice?: number;
   pricingType?: 'hourly' | 'fixed' | 'quote';
   popular?: boolean;
+  specialties?: string[];
+  defaultServiceLocation?: string;
 }
 
 export interface Testimonial {

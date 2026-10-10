@@ -1,45 +1,62 @@
-version: '3.8'
-
 services:
   backend:
-    build: ./backend
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./backend:/app
+    build:
+      context: ./backend-go
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend-go/media:/app/media
+      - ./backend-go/backups:/app/backups
+    env_file:
+      - ./backend-go/.env
     environment:
-      - DEBUG=1
-      - POSTGRES_DB=neighbor_service_db
-      - POSTGRES_USER=ns_user
-      - POSTGRES_PASSWORD=ns_password
       - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - DATABASE=postgres
       - REDIS_HOST=redis
-      - DJANGO_SUPERUSER_PASSWORD=gyenyame
-      - DJANGO_SUPERUSER_EMAIL=afari@thinkce.org
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-nsapp}?sslmode=disable
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   db:
-    image: postgres:15-alpine
-    restart: always
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      - POSTGRES_DB=neighbor_service_db
-      - POSTGRES_USER=ns_user
-      - POSTGRES_PASSWORD=ns_password
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-nsapp}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-nsapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    restart: always
+    restart: unless-stopped
     ports:
-      - "6380:6379"
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+  redis_data:

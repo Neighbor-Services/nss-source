@@ -240,6 +240,21 @@ var conceptOntology = map[string][]string{
 		"app development", "virtual assistant", "online course creation", "e-book publishing",
 		"print on demand", "dropshipping", "ecommerce store",
 	},
+	// ─── 12. EVENTS, ENTERTAINMENT & PHOTOGRAPHY ───
+	"events_entertainment_creative": {
+		"photography", "photographer", "wedding photography", "family portraits", "newborn photos",
+		"headshots", "videography", "videographer", "wedding film", "drone footage", "video editing",
+		"photo editing", "retouching", "graphic design", "branding", "logo design", "copywriting",
+		"event planning", "wedding planning", "party decorator", "balloon arch", "event rentals",
+		"party tent", "dj", "wedding dj", "live band", "musician", "magician", "face painter",
+		"bounce house", "bartender", "bartending", "mixologist", "cocktail bar",
+	},
+	// ─── 13. SPECIALTY BAKERY & FOOD ───
+	"bakery_specialty_food": {
+		"bakery", "baker", "birthday cake", "wedding cake", "donuts", "pastries", "artisan bread",
+		"gluten-free", "cupcakes", "ice cream cart", "dessert table", "churros", "smoothie bar",
+		"espresso bar", "boba tea", "personal chef", "meal prep", "buffet catering", "bbq catering",
+	},
 }
 
 var nonAlphanumericRegex = regexp.MustCompile(`[^a-zA-Z0-9\s\-]+`)

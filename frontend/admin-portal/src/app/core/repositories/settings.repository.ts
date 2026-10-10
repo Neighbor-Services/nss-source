@@ -6,4 +6,6 @@ export abstract class SettingsRepository {
   abstract updatePlatformSettings(settings: Partial<PlatformSettings>): Observable<PlatformSettings>;
   abstract clearCache(): Observable<{ success: boolean; message: string }>;
   abstract broadcastNotification(targetUserType: string, title: string, message: string): Observable<{ success: boolean; recipients: number }>;
+  abstract testAlertWebhook(webhookUrl: string, platform: string): Observable<{ status: string; message: string }>;
 }
+

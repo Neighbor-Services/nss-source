@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"backend-go/internal/delivery/http/handler"
 	"backend-go/internal/domain/entity"
@@ -520,6 +521,94 @@ func (m *mockAdminUseCase) GetGeospatialProviderFleet(ctx context.Context, admin
 
 func (m *mockAdminUseCase) GetSystemMetrics(ctx context.Context, adminID uuid.UUID) (*entity.SystemMetricsSummary, error) {
 	return &entity.SystemMetricsSummary{}, m.err
+}
+
+func (m *mockAdminUseCase) ImportCatalogBatch(ctx context.Context, adminID uuid.UUID, items []entity.CatalogImportItem) (int, error) {
+	return len(items), m.err
+}
+
+func (m *mockAdminUseCase) ExportCatalogBatch(ctx context.Context, adminID uuid.UUID) ([]entity.CatalogExportItem, error) {
+	return []entity.CatalogExportItem{}, m.err
+}
+
+func (m *mockAdminUseCase) GetAISynonyms(ctx context.Context, adminID uuid.UUID) (map[string][]string, error) {
+	return map[string][]string{"plumber": {"pipe"}}, m.err
+}
+
+func (m *mockAdminUseCase) AddAISynonym(ctx context.Context, adminID uuid.UUID, key string, synonyms []string) error {
+	return m.err
+}
+
+func (m *mockAdminUseCase) DeleteAISynonym(ctx context.Context, adminID uuid.UUID, key string) error {
+	return m.err
+}
+
+func (m *mockAdminUseCase) GetGeospatialHeatmap(ctx context.Context, adminID uuid.UUID) (*entity.OperationsHeatmapData, error) {
+	return &entity.OperationsHeatmapData{}, m.err
+}
+
+func (m *mockAdminUseCase) GetLeakageAlerts(ctx context.Context, adminID uuid.UUID) ([]entity.LeakageAlert, error) {
+	return []entity.LeakageAlert{}, m.err
+}
+
+func (m *mockAdminUseCase) GetExpiringCredentials(ctx context.Context, adminID uuid.UUID) ([]entity.ExpiringCredential, error) {
+	return []entity.ExpiringCredential{}, m.err
+}
+
+func (m *mockAdminUseCase) MediationResolveDispute(ctx context.Context, adminID, disputeID uuid.UUID, input entity.DisputeMediationInput) error {
+	return m.err
+}
+
+func (m *mockAdminUseCase) GetEscrowSummary(ctx context.Context, adminID uuid.UUID) (*entity.EscrowSummary, error) {
+	return &entity.EscrowSummary{}, m.err
+}
+
+func (m *mockAdminUseCase) GetSubscriptionCohortStats(ctx context.Context, adminID uuid.UUID) (*entity.SubscriptionCohortStats, error) {
+	return &entity.SubscriptionCohortStats{}, m.err
+}
+
+func (m *mockAdminUseCase) TestAlertWebhook(ctx context.Context, adminID uuid.UUID, webhookURL, platform string) error {
+	return m.err
+}
+
+func (m *mockAdminUseCase) ListApprovalRequests(ctx context.Context, adminID uuid.UUID, status string) ([]entity.ApprovalRequest, error) {
+	return []entity.ApprovalRequest{}, m.err
+}
+func (m *mockAdminUseCase) CreateApprovalRequest(ctx context.Context, adminID uuid.UUID, req *entity.ApprovalRequest) error {
+	return m.err
+}
+func (m *mockAdminUseCase) ResolveApprovalRequest(ctx context.Context, adminID, id uuid.UUID, status, reason string) error {
+	return m.err
+}
+func (m *mockAdminUseCase) CompileChargebackEvidence(ctx context.Context, adminID, disputeID uuid.UUID) (*entity.ChargebackEvidencePackage, error) {
+	return &entity.ChargebackEvidencePackage{DisputeID: disputeID, TotalAmount: 150.0}, m.err
+}
+func (m *mockAdminUseCase) GenerateImpersonationToken(ctx context.Context, adminID, targetUserID uuid.UUID, reason string) (*entity.ImpersonationSession, error) {
+	return &entity.ImpersonationSession{AdminID: adminID, TargetUserID: targetUserID, Token: "mock-token", ExpiresAt: time.Now().Add(30 * time.Minute)}, m.err
+}
+func (m *mockAdminUseCase) ListSLADispatchAlerts(ctx context.Context, adminID uuid.UUID) ([]entity.SLADispatchAlert, error) {
+	return []entity.SLADispatchAlert{}, m.err
+}
+func (m *mockAdminUseCase) EscalateSLADispatch(ctx context.Context, adminID, appointmentID uuid.UUID) error {
+	return m.err
+}
+func (m *mockAdminUseCase) ListProviderQualityHealth(ctx context.Context, adminID uuid.UUID) ([]entity.ProviderQualityHealth, error) {
+	return []entity.ProviderQualityHealth{}, m.err
+}
+func (m *mockAdminUseCase) ListSurgePricingRules(ctx context.Context, adminID uuid.UUID) ([]entity.SurgePricingRule, error) {
+	return []entity.SurgePricingRule{}, m.err
+}
+func (m *mockAdminUseCase) SaveSurgePricingRule(ctx context.Context, adminID uuid.UUID, rule *entity.SurgePricingRule) error {
+	return m.err
+}
+func (m *mockAdminUseCase) DeleteSurgePricingRule(ctx context.Context, adminID, id uuid.UUID) error {
+	return m.err
+}
+func (m *mockAdminUseCase) GetDoubleEntryLedger(ctx context.Context, adminID uuid.UUID) (*entity.PlatformLedgerReport, error) {
+	return &entity.PlatformLedgerReport{TotalAssets: 1000, TotalRevenue: 500}, m.err
+}
+func (m *mockAdminUseCase) ListLedgerEntries(ctx context.Context, adminID uuid.UUID, limit, offset int) ([]entity.LedgerEntry, int64, error) {
+	return []entity.LedgerEntry{}, 0, m.err
 }
 
 func setupAdminTestRouter(uc domainUsecase.AdminUseCase) (*gin.Engine, *handler.AdminHandler) {

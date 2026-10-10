@@ -100,6 +100,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.Wallet{},
 		&entity.WalletTransaction{},
 		&entity.PayoutRequest{},
+		&entity.LedgerAccount{},
+		&entity.LedgerEntry{},
 		&entity.SubscriptionPlan{},
 		&entity.Subscription{},
 
@@ -258,6 +260,15 @@ func cleanOrphanRecords(db *gorm.DB) {
 				WHERE wallet_id NOT IN (SELECT id FROM payments_wallet)
 			`).Error
 		}
+	}
+
+	if db.Migrator().HasTable("notifications_notification") {
+		_ = db.Exec("ALTER TABLE notifications_notification ALTER COLUMN notification_type TYPE VARCHAR(50)").Error
+	}
+
+	if db.Migrator().HasTable("accounts_user") {
+		_ = db.Exec("ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS suspension_reason TEXT").Error
+		_ = db.Exec("ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP WITH TIME ZONE").Error
 	}
 }
 

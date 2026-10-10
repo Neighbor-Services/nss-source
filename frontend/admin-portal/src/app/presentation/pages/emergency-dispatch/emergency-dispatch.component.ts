@@ -8,7 +8,9 @@ import { AuditService } from '../../../core/services/audit.service';
 import { PiiMaskComponent } from '../../../core/components/pii-mask/pii-mask.component';
 import { HasPermissionDirective } from '../../../core/directives/has-permission.directive';
 import { DispatchUseCase } from '../../../core/usecases/dispatch.usecase';
+import { GovernanceUseCase } from '../../../core/usecases/governance.usecase';
 import { DispatchIncidentSummary, ProviderFleetTelemetry } from '../../../core/domain/entities/dispatch.model';
+import { SLADispatchAlert } from '../../../core/domain/entities/governance.model';
 
 export type IncidentStatus = 'BROADCASTING' | 'ACCEPTED' | 'EN_ROUTE' | 'COMPLETED' | 'CANCELLED_FRAUD';
 
@@ -54,11 +56,13 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
   private ws = inject(WebSocketService);
   private audit = inject(AuditService);
   private dispatchUC = inject(DispatchUseCase);
+  private governanceUC = inject(GovernanceUseCase);
 
   private timerInterval: any;
   private pollInterval: any;
   private wsSub?: Subscription;
 
+  activeMainTab = signal<'RADAR' | 'SLA_QUEUE' | 'FLEET'>('RADAR');
   selectedIncident = signal<EmergencyIncident | null>(null);
   filterStatus = signal<string>('ALL');
   searchQuery = signal<string>('');
@@ -68,8 +72,9 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
   successMessage = signal<string | null>(null);
 
   providerFleet = signal<ProviderFleetTelemetry[]>([]);
-
   incidents = signal<EmergencyIncident[]>([]);
+  slaAlerts = signal<SLADispatchAlert[]>([]);
+  loadingSLA = signal<boolean>(false);
 
   filteredIncidents = computed(() => {
     const status = this.filterStatus();
@@ -93,6 +98,7 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadIncidents();
     this.loadFleet();
+    this.loadSLAAlerts();
 
     // Connect to real-time events hub
     this.ws.connect();
@@ -101,6 +107,7 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
         if (evt.type?.includes('SOS') || evt.type?.includes('DISPATCH') || evt.type?.includes('EMERGENCY')) {
           this.ws.playIncidentChime();
           this.loadIncidents(false);
+          this.loadSLAAlerts();
         }
       }
     });
@@ -108,6 +115,7 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
     // Background poll every 15s as fallback
     this.pollInterval = setInterval(() => {
       this.loadIncidents(false);
+      this.loadSLAAlerts();
     }, 15000);
 
     // Tick elapsed times every second
@@ -119,6 +127,35 @@ export class EmergencyDispatchComponent implements OnInit, OnDestroy {
         })
       );
     }, 1000);
+  }
+
+  loadSLAAlerts() {
+    this.loadingSLA.set(true);
+    this.governanceUC.listSLADispatchAlerts().subscribe({
+      next: (res) => {
+        this.slaAlerts.set(res.results || []);
+        this.loadingSLA.set(false);
+      },
+      error: () => {
+        this.loadingSLA.set(false);
+      }
+    });
+  }
+
+  escalateSLAAlert(alert: SLADispatchAlert) {
+    this.isActioning.set(true);
+    this.governanceUC.escalateSLADispatch(alert.appointment_id).subscribe({
+      next: () => {
+        this.isActioning.set(false);
+        this.successMessage.set(`Dispatched cascade surge escalation for ${alert.service_name}! Radius extended to 45km.`);
+        this.loadSLAAlerts();
+        setTimeout(() => this.successMessage.set(null), 5000);
+      },
+      error: (err) => {
+        this.isActioning.set(false);
+        this.errorMessage.set(err.error?.message || 'Failed to escalate dispatch.');
+      }
+    });
   }
 
   ngOnDestroy() {

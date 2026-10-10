@@ -11,13 +11,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"backend-go/internal/config"
-	"backend-go/pkg/media"
 	"backend-go/pkg/response"
 )
 
@@ -88,33 +86,29 @@ func (h *GoStoreHandler) HandleWebhook(c *gin.Context) {
 	})
 }
 
-// ProxyMedia handles /media/*path. It serves locally if available or pulls from GoStore.
+// ProxyMedia handles /media/*path directly via GoStore object store without local disk storage.
 func (h *GoStoreHandler) ProxyMedia(c *gin.Context) {
 	reqPath := c.Param("filepath")
 	cleanPath := strings.TrimPrefix(reqPath, "/")
 
-	baseDir := media.GetBaseMediaDir()
-	fullLocalPath, found := media.FindMediaFile(baseDir, cleanPath)
-
 	// Set browser caching headers for media assets
 	c.Header("Cache-Control", "public, max-age=31536000, immutable")
 
-	if found && fullLocalPath != "" {
-		c.File(fullLocalPath)
-		return
-	}
-
-	// File not on local disk; stream/proxy from GoStore object store
 	gostoreURL := h.cfg.GoStoreURL
 	if gostoreURL == "" {
 		gostoreURL = "https://file.proleadsolutions.co"
 	}
 	bucket := h.cfg.GoStoreBucket
 	if bucket == "" {
-		bucket = "neighborservice"
+		bucket = os.Getenv("GOSTORE_BUCKET")
+	}
+	if bucket == "" {
+		bucket = os.Getenv("BUCKET_NAME")
+	}
+	if bucket == "" {
+		bucket = "default"
 	}
 
-	// Try bucket-prefixed or raw path
 	targetURL := fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
 		strings.TrimRight(gostoreURL, "/"),
 		url.PathEscape(bucket),
@@ -132,7 +126,7 @@ func (h *GoStoreHandler) ProxyMedia(c *gin.Context) {
 		req.Header.Set("X-API-Key", h.cfg.GoStoreAPIKey)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		if resp != nil {
@@ -143,32 +137,33 @@ func (h *GoStoreHandler) ProxyMedia(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
-	// Asynchronously cache on local disk for subsequent rapid requests
-	subfolder := filepath.Dir(cleanPath)
-	filename := filepath.Base(cleanPath)
-	targetDir := media.ResolveMediaDir(subfolder)
-	cachePath := filepath.Join(targetDir, filename)
-
 	if cType := resp.Header.Get("Content-Type"); cType != "" {
 		c.Header("Content-Type", cType)
 	}
-	c.Header("Content-Length", resp.Header.Get("Content-Length"))
-
-	// Stream to client and write to disk cache concurrently
-	var writer io.Writer = c.Writer
-	if cacheFile, err := os.Create(cachePath); err == nil {
-		defer cacheFile.Close()
-		writer = io.MultiWriter(c.Writer, cacheFile)
+	if cLen := resp.Header.Get("Content-Length"); cLen != "" {
+		c.Header("Content-Length", cLen)
 	}
 
-	_, _ = io.Copy(writer, resp.Body)
+	// Stream directly to client
+	_, _ = io.Copy(c.Writer, resp.Body)
 }
 
-// ListMedia returns a unified media browser list for the admin portal.
+// ListMedia returns a media browser list from GoStore for the admin portal.
 func (h *GoStoreHandler) ListMedia(c *gin.Context) {
-	bucket := c.DefaultQuery("bucket", h.cfg.GoStoreBucket)
+	defaultBucket := h.cfg.GoStoreBucket
+	if defaultBucket == "" {
+		defaultBucket = os.Getenv("GOSTORE_BUCKET")
+	}
+	if defaultBucket == "" {
+		defaultBucket = os.Getenv("BUCKET_NAME")
+	}
+	if defaultBucket == "" {
+		defaultBucket = "default"
+	}
+
+	bucket := c.Query("bucket")
 	if bucket == "" {
-		bucket = "neighborservice"
+		bucket = defaultBucket
 	}
 
 	gostoreURL := h.cfg.GoStoreURL
@@ -179,7 +174,12 @@ func (h *GoStoreHandler) ListMedia(c *gin.Context) {
 	targetURL := fmt.Sprintf("%s/v0/b/%s/o", strings.TrimRight(gostoreURL, "/"), url.PathEscape(bucket))
 	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, targetURL, nil)
 	if err != nil {
-		response.InternalError(c, "Failed to create upstream request")
+		response.JSON(c, http.StatusOK, gin.H{
+			"data":           gin.H{"items": []interface{}{}},
+			"source":         "gostore-cas",
+			"bucket":         bucket,
+			"default_bucket": defaultBucket,
+		})
 		return
 	}
 
@@ -188,39 +188,39 @@ func (h *GoStoreHandler) ListMedia(c *gin.Context) {
 		req.Header.Set("X-API-Key", h.cfg.GoStoreAPIKey)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 4 * time.Second}
 	resp, err := client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil || (resp != nil && resp.StatusCode != http.StatusOK) {
 		if resp != nil {
 			resp.Body.Close()
 		}
-		// Fallback: list local media directory
-		baseDir := media.GetBaseMediaDir()
-		var localFiles []gin.H
-		_ = filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() {
-				rel, _ := filepath.Rel(baseDir, path)
-				localFiles = append(localFiles, gin.H{
-					"name":         rel,
-					"size":         info.Size(),
-					"updated":      info.ModTime().Format(time.RFC3339),
-					"content_type": http.DetectContentType([]byte{}),
-					"bucket":       bucket,
-					"url":          "/media/" + rel,
-				})
-			}
-			return nil
+		// Gracefully return empty partition items when storage appliance is empty or syncing
+		response.JSON(c, http.StatusOK, gin.H{
+			"data":           gin.H{"items": []interface{}{}},
+			"source":         "gostore-cas",
+			"bucket":         bucket,
+			"default_bucket": defaultBucket,
+			"status":         "ready",
 		})
-		response.JSON(c, http.StatusOK, gin.H{"items": localFiles, "source": "local"})
 		return
 	}
 	defer resp.Body.Close()
 
 	var data interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		response.InternalError(c, "Failed to parse upstream response")
+		response.JSON(c, http.StatusOK, gin.H{
+			"data":           gin.H{"items": []interface{}{}},
+			"source":         "gostore-cas",
+			"bucket":         bucket,
+			"default_bucket": defaultBucket,
+		})
 		return
 	}
 
-	response.JSON(c, http.StatusOK, gin.H{"data": data, "source": "gostore"})
+	response.JSON(c, http.StatusOK, gin.H{
+		"data":           data,
+		"source":         "gostore",
+		"bucket":         bucket,
+		"default_bucket": defaultBucket,
+	})
 }

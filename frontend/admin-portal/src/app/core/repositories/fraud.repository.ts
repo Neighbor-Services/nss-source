@@ -5,4 +5,7 @@ export abstract class FraudRepository {
   abstract listFraudRiskAlerts(status?: string): Observable<{ results: FraudRiskAlert[]; count: number }>;
   abstract evaluateUserRisk(userId: string): Observable<FraudRiskAlert>;
   abstract resolveRiskAlert(alertId: string, action: string): Observable<{ success: boolean }>;
+  abstract getLeakageAlerts(): Observable<{ results: any[]; count: number }>;
+  abstract getExpiringCredentials(): Observable<{ results: any[]; count: number }>;
 }
+

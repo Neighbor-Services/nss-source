@@ -19,6 +19,14 @@ export interface DisputeItem {
   createdAt: string;
   updatedAt?: string;
   evidenceUrls?: string[];
-  evidence?: string;
   resolutionNotes?: string;
 }
+
+export interface DisputeMediationInput {
+  resolution_type: 'FULL_REFUND' | 'PARTIAL_SPLIT' | 'RELEASE_TO_PROVIDER' | 'ISSUE_CREDIT';
+  refund_amount: number;
+  provider_payout: number;
+  credit_voucher: number;
+  notes: string;
+}
+

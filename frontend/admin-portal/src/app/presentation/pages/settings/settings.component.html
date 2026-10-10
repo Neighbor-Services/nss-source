@@ -43,6 +43,14 @@
       <span>Cache &amp; Infrastructure Mesh</span>
     </button>
 
+    <button class="hero-tab-btn" [class.active]="activeTab() === 'SURGE_PRICING'" (click)="activeTab.set('SURGE_PRICING')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      <span>Dynamic Surge Pricing Rules</span>
+      <span class="tab-badge">{{ surgeRules().length }}</span>
+    </button>
+
     <button class="hero-tab-btn" [class.active]="activeTab() === 'ADMIN_SECURITY'" (click)="activeTab.set('ADMIN_SECURITY')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -284,6 +292,43 @@
           </p>
         </div>
       </div>
+
+      <div class="card deck-card">
+        <div class="deck-header">
+          <div class="deck-icon icon-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Slack &amp; Discord Incident Webhooks</h4>
+            <p class="deck-sub">Instant high-priority operational alert routing to external SecOps channels</p>
+          </div>
+        </div>
+        <div class="deck-body">
+          <p class="deck-description mb-3">
+            Configure external channel webhooks to trigger instant incident notifications for critical fraud flags, dispute escalations, and payment anomalies.
+          </p>
+          <div class="form-group mb-2">
+            <label class="form-label">Platform Destination</label>
+            <select [(ngModel)]="webhookPlatform" class="form-control select-control">
+              <option value="SLACK">Slack Incoming Webhook</option>
+              <option value="DISCORD">Discord Channel Webhook</option>
+            </select>
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label">Webhook URL Endpoint</label>
+            <input type="url" [(ngModel)]="webhookUrl" placeholder="https://hooks.slack.com/services/... or https://discord.com/api/webhooks/..." class="form-control font-mono" />
+          </div>
+          <button class="btn btn-primary" (click)="sendWebhookTest()" [disabled]="testingWebhook() || !webhookUrl">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="testingWebhook()">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            <span>{{ testingWebhook() ? 'Sending Test Alert...' : 'Dispatch Test Alert Ping' }}</span>
+          </button>
+        </div>
+      </div>
     </div>
   }
 
@@ -470,6 +515,112 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 5: DYNAMIC SURGE PRICING RULES -->
+  @if (activeTab() === 'SURGE_PRICING') {
+    <div class="card form-panel-card" style="margin-bottom: 24px;">
+      <div class="panel-header">
+        <div class="panel-icon-badge purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Create Regional Surge Pricing Corridor</h3>
+          <p class="sub-text">Define localized demand multiplier rules triggered by weather anomalies, high demand, or emergency events</p>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <form (ngSubmit)="saveSurgeRule()">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label font-bold">Postal Code / Region Pattern *</label>
+              <input type="text" [(ngModel)]="newSurgeRule.region_zip" name="surgeZip" class="form-control font-mono" placeholder="e.g. 77001, 10001, 90210, 77*" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label font-bold">Price Multiplier (e.g. 1.25 = +25%) *</label>
+              <input type="number" step="0.05" min="1.0" max="5.0" [(ngModel)]="newSurgeRule.multiplier" name="surgeMultiplier" class="form-control" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label font-bold">Trigger Reason / Weather Justification</label>
+            <input type="text" [(ngModel)]="newSurgeRule.reason" name="surgeReason" class="form-control" placeholder="e.g. Category 2 Storm advisory / High peak lead demand" />
+          </div>
+
+          <div class="panel-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="savingSurgeRule()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span>{{ savingSurgeRule() ? 'Activating Surge...' : 'Deploy Surge Corridor Rule' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Active Surge Pricing Rules Table -->
+    <div class="card table-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Active Surge Pricing Corridors</h3>
+            <p class="card-subtitle">{{ surgeRules().length }} Configured Regional Rules</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Postal Code / Region</th>
+              <th>Surge Multiplier</th>
+              <th>Trigger Reason</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rule of surgeRules(); track rule.id) {
+              <tr>
+                <td><code class="mono-badge font-bold">{{ rule.region_zip }}</code></td>
+                <td><span class="badge badge-warning font-mono font-bold">{{ rule.multiplier }}x</span></td>
+                <td><span class="text-sm text-dim">{{ rule.reason || 'General demand spike' }}</span></td>
+                <td>
+                  <span class="badge" [class.badge-success]="rule.is_active" [class.badge-secondary]="!rule.is_active">
+                    <span class="dot-indicator"></span> {{ rule.is_active ? 'ACTIVE' : 'INACTIVE' }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <button class="btn btn-xs btn-danger" (click)="deleteSurgeRule(rule.id!)">Decommission</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                  <div class="empty-state">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-muted mb-2">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    <h4 class="empty-title">Standard Base Pricing Across All Corridors</h4>
+                    <p class="empty-sub">No dynamic surge pricing rules are active at this time.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     </div>
   }

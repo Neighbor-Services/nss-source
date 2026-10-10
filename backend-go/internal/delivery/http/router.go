@@ -7,7 +7,6 @@ import (
 	"backend-go/internal/delivery/http/handler"
 	"backend-go/internal/domain/repository"
 	"backend-go/internal/middleware"
-	"backend-go/pkg/media"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,16 +38,10 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS(deps.Config))
 
-	// Unified Media Serving with GoStore CAS Proxy & Local Disk Fallback
+	// Unified Media Serving via GoStore CAS Proxy
 	mediaHandler := func(c *gin.Context) {
 		if deps.GoStoreHandler != nil {
 			deps.GoStoreHandler.ProxyMedia(c)
-			return
-		}
-		reqPath := c.Param("filepath")
-		baseDir := media.GetBaseMediaDir()
-		if foundPath, ok := media.FindMediaFile(baseDir, reqPath); ok {
-			c.File(foundPath)
 			return
 		}
 		c.Status(http.StatusNotFound)
@@ -830,6 +823,72 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 				admin.GET("/media/browser", deps.GoStoreHandler.ListMedia)
 				admin.GET("/media/browser/", deps.GoStoreHandler.ListMedia)
 			}
+
+			// Advanced Operations & Intelligence
+			admin.POST("/catalog/batch-import", deps.AdminHandler.ImportCatalogBatch)
+			admin.POST("/catalog/batch-import/", deps.AdminHandler.ImportCatalogBatch)
+			admin.GET("/catalog/batch-export", deps.AdminHandler.ExportCatalogBatch)
+			admin.GET("/catalog/batch-export/", deps.AdminHandler.ExportCatalogBatch)
+			admin.GET("/ai-synonyms", deps.AdminHandler.GetAISynonyms)
+			admin.GET("/ai-synonyms/", deps.AdminHandler.GetAISynonyms)
+			admin.POST("/ai-synonyms", deps.AdminHandler.AddAISynonym)
+			admin.POST("/ai-synonyms/", deps.AdminHandler.AddAISynonym)
+			admin.DELETE("/ai-synonyms/:key", deps.AdminHandler.DeleteAISynonym)
+			admin.DELETE("/ai-synonyms/:key/", deps.AdminHandler.DeleteAISynonym)
+			admin.GET("/heatmap", deps.AdminHandler.GetGeospatialHeatmap)
+			admin.GET("/heatmap/", deps.AdminHandler.GetGeospatialHeatmap)
+			admin.GET("/leakage/alerts", deps.AdminHandler.GetLeakageAlerts)
+			admin.GET("/leakage/alerts/", deps.AdminHandler.GetLeakageAlerts)
+			admin.GET("/credentials/expiring", deps.AdminHandler.GetExpiringCredentials)
+			admin.GET("/credentials/expiring/", deps.AdminHandler.GetExpiringCredentials)
+			admin.POST("/disputes/:id/mediate", deps.AdminHandler.MediationResolveDispute)
+			admin.POST("/disputes/:id/mediate/", deps.AdminHandler.MediationResolveDispute)
+			admin.GET("/escrow/summary", deps.AdminHandler.GetEscrowSummary)
+			admin.GET("/escrow/summary/", deps.AdminHandler.GetEscrowSummary)
+			admin.GET("/cohorts/subscriptions", deps.AdminHandler.GetSubscriptionCohortStats)
+			admin.GET("/cohorts/subscriptions/", deps.AdminHandler.GetSubscriptionCohortStats)
+			admin.POST("/webhooks/test-alert", deps.AdminHandler.TestAlertWebhook)
+			admin.POST("/webhooks/test-alert/", deps.AdminHandler.TestAlertWebhook)
+
+			// Enterprise Governance & Maker-Checker
+			admin.GET("/approvals", deps.AdminHandler.ListApprovalRequests)
+			admin.GET("/approvals/", deps.AdminHandler.ListApprovalRequests)
+			admin.POST("/approvals", deps.AdminHandler.CreateApprovalRequest)
+			admin.POST("/approvals/", deps.AdminHandler.CreateApprovalRequest)
+			admin.POST("/approvals/:id/resolve", deps.AdminHandler.ResolveApprovalRequest)
+			admin.POST("/approvals/:id/resolve/", deps.AdminHandler.ResolveApprovalRequest)
+
+			// Chargeback Defense Kit
+			admin.GET("/disputes/:id/chargeback-evidence", deps.AdminHandler.CompileChargebackEvidence)
+			admin.GET("/disputes/:id/chargeback-evidence/", deps.AdminHandler.CompileChargebackEvidence)
+
+			// Safe Impersonation Token Generator
+			admin.POST("/users/impersonate-token", deps.AdminHandler.GenerateImpersonationToken)
+			admin.POST("/users/impersonate-token/", deps.AdminHandler.GenerateImpersonationToken)
+
+			// Predictive SLA Dispatch & Auto-Escalation
+			admin.GET("/dispatch/sla-alerts", deps.AdminHandler.ListSLADispatchAlerts)
+			admin.GET("/dispatch/sla-alerts/", deps.AdminHandler.ListSLADispatchAlerts)
+			admin.POST("/dispatch/sla-alerts/:id/escalate", deps.AdminHandler.EscalateSLADispatch)
+			admin.POST("/dispatch/sla-alerts/:id/escalate/", deps.AdminHandler.EscalateSLADispatch)
+
+			// Provider Quality Health Scores
+			admin.GET("/providers/quality-health", deps.AdminHandler.ListProviderQualityHealth)
+			admin.GET("/providers/quality-health/", deps.AdminHandler.ListProviderQualityHealth)
+
+			// Dynamic Surge Pricing Rules
+			admin.GET("/pricing/surge-rules", deps.AdminHandler.ListSurgePricingRules)
+			admin.GET("/pricing/surge-rules/", deps.AdminHandler.ListSurgePricingRules)
+			admin.POST("/pricing/surge-rules", deps.AdminHandler.SaveSurgePricingRule)
+			admin.POST("/pricing/surge-rules/", deps.AdminHandler.SaveSurgePricingRule)
+			admin.DELETE("/pricing/surge-rules/:id", deps.AdminHandler.DeleteSurgePricingRule)
+			admin.DELETE("/pricing/surge-rules/:id/", deps.AdminHandler.DeleteSurgePricingRule)
+
+			// Double-Entry Financial Ledger
+			admin.GET("/financial/ledger/summary", deps.AdminHandler.GetDoubleEntryLedger)
+			admin.GET("/financial/ledger/summary/", deps.AdminHandler.GetDoubleEntryLedger)
+			admin.GET("/financial/ledger/entries", deps.AdminHandler.ListLedgerEntries)
+			admin.GET("/financial/ledger/entries/", deps.AdminHandler.ListLedgerEntries)
 		}
 	}
 

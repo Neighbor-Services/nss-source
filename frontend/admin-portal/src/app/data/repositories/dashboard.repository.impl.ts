@@ -36,4 +36,17 @@ export class DashboardRepositoryImpl implements DashboardRepository {
       }))
     );
   }
+
+  getEscrowSummary(): Observable<any> {
+    return this.http.get<any>(`${ADMIN_API_CONFIG.baseUrl}/admin/escrow/summary/`);
+  }
+
+  getSubscriptionCohortStats(): Observable<any> {
+    return this.http.get<any>(`${ADMIN_API_CONFIG.baseUrl}/admin/cohorts/subscriptions/`);
+  }
+
+  getGeospatialHeatmap(): Observable<any> {
+    return this.http.get<any>(`${ADMIN_API_CONFIG.baseUrl}/admin/heatmap/`);
+  }
 }
+

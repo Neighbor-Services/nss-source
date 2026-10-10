@@ -89,10 +89,13 @@ export class DashboardComponent implements OnInit {
     { name: 'Landscaping & Lawn Care', percentage: 8, jobsCount: 11, revenue: 1220, color: '#7c3aed' }
   ]);
 
+  heatmapData = signal<{ clusters: any[]; total_active_supply: number; total_open_demand: number; coverage_ratio: number } | null>(null);
+
   constructor(private dashboardUC: DashboardUseCase) {}
 
   ngOnInit() {
     this.loadStats();
+    this.loadHeatmap();
   }
 
   loadStats() {
@@ -108,6 +111,15 @@ export class DashboardComponent implements OnInit {
         this.isLoading.set(false);
         this.errorMessage.set(err?.error?.error || err?.message || 'Failed to load dashboard metrics.');
       }
+    });
+  }
+
+  loadHeatmap() {
+    this.dashboardUC.getGeospatialHeatmap().subscribe({
+      next: (data) => {
+        this.heatmapData.set(data);
+      },
+      error: () => {}
     });
   }
 }

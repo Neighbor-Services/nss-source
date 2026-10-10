@@ -4,9 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { SettingsUseCase } from '../../../core/usecases/settings.usecase';
 import { AuthService } from '../../../data/datasources/auth.service';
+import { GovernanceUseCase } from '../../../core/usecases/governance.usecase';
 import { PlatformSettings } from '../../../core/domain/entities/settings.model';
+import { SurgePricingRule } from '../../../core/domain/entities/governance.model';
 
-export type SettingsMainTab = 'PARAMETERS' | 'BROADCAST' | 'INFRA_MESH' | 'ADMIN_SECURITY';
+export type SettingsMainTab = 'PARAMETERS' | 'BROADCAST' | 'INFRA_MESH' | 'ADMIN_SECURITY' | 'SURGE_PRICING';
 
 @Component({
   selector: 'app-settings',
@@ -25,6 +27,17 @@ export class SettingsComponent implements OnInit {
     disableDistanceFilter: false
   });
 
+  // Surge Pricing Rules State
+  surgeRules = signal<SurgePricingRule[]>([]);
+  loadingSurgeRules = signal<boolean>(false);
+  savingSurgeRule = signal<boolean>(false);
+  newSurgeRule: SurgePricingRule = {
+    region_zip: '',
+    multiplier: 1.25,
+    reason: '',
+    is_active: true
+  };
+
   // Broadcast state
   broadcastTarget = 'ALL';
   broadcastTitle = '';
@@ -41,6 +54,11 @@ export class SettingsComponent implements OnInit {
   changePasswordSuccess = signal<string | null>(null);
   changePasswordError = signal<string | null>(null);
 
+  // Webhook Alert State
+  webhookUrl = '';
+  webhookPlatform = 'SLACK';
+  testingWebhook = signal<boolean>(false);
+
   loadingSettings = signal<boolean>(false);
   savingSettings = signal<boolean>(false);
   broadcasting = signal<boolean>(false);
@@ -51,6 +69,7 @@ export class SettingsComponent implements OnInit {
 
   constructor(
     private settingsUseCase: SettingsUseCase,
+    private governanceUseCase: GovernanceUseCase,
     public authService: AuthService,
     private route: ActivatedRoute
   ) {}
@@ -62,6 +81,61 @@ export class SettingsComponent implements OnInit {
       }
     });
     this.fetchSettings();
+    this.fetchSurgeRules();
+  }
+
+  fetchSurgeRules(): void {
+    this.loadingSurgeRules.set(true);
+    this.governanceUseCase.listSurgePricingRules().subscribe({
+      next: (res: { results: SurgePricingRule[]; count: number }) => {
+        this.surgeRules.set(res.results || []);
+        this.loadingSurgeRules.set(false);
+      },
+      error: () => {
+        this.loadingSurgeRules.set(false);
+      }
+    });
+  }
+
+  saveSurgeRule(): void {
+    if (!this.newSurgeRule.region_zip.trim()) {
+      this.errorMessage.set('Postal code / region pattern is required.');
+      return;
+    }
+
+    this.savingSurgeRule.set(true);
+    this.errorMessage.set(null);
+    this.governanceUseCase.saveSurgePricingRule(this.newSurgeRule).subscribe({
+      next: () => {
+        this.savingSurgeRule.set(false);
+        this.successMessage.set(`Surge pricing corridor rule for "${this.newSurgeRule.region_zip}" active!`);
+        this.newSurgeRule = {
+          region_zip: '',
+          multiplier: 1.25,
+          reason: '',
+          is_active: true
+        };
+        this.fetchSurgeRules();
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err: any) => {
+        this.savingSurgeRule.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to create surge pricing rule.');
+      }
+    });
+  }
+
+  deleteSurgeRule(id: string): void {
+    this.governanceUseCase.deleteSurgePricingRule(id).subscribe({
+      next: () => {
+        this.successMessage.set('Surge pricing rule decommissioned.');
+        this.fetchSurgeRules();
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err: any) => {
+        this.errorMessage.set(err?.error?.message || 'Failed to remove surge rule.');
+      }
+    });
   }
 
   fetchSettings(): void {
@@ -186,6 +260,29 @@ export class SettingsComponent implements OnInit {
         this.changingPassword.set(false);
         const msg = err?.error?.detail || err?.error?.message || err?.error?.error || err?.message || 'Failed to change password. Please check your current password.';
         this.changePasswordError.set(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
+    });
+  }
+
+  sendWebhookTest(): void {
+    if (!this.webhookUrl.trim()) {
+      this.errorMessage.set('Please enter a valid incoming Webhook URL');
+      return;
+    }
+
+    this.testingWebhook.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.settingsUseCase.testAlertWebhook(this.webhookUrl.trim(), this.webhookPlatform).subscribe({
+      next: (res) => {
+        this.testingWebhook.set(false);
+        this.successMessage.set(`Webhook test delivered successfully: ${res.message}`);
+        setTimeout(() => this.successMessage.set(null), 5000);
+      },
+      error: (err) => {
+        this.testingWebhook.set(false);
+        this.errorMessage.set(err.error?.message || 'Failed to dispatch webhook payload. Verify the incoming webhook URL.');
       }
     });
   }

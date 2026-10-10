@@ -63,4 +63,17 @@ export class FraudRepositoryImpl implements FraudRepository {
       map(() => ({ success: true }))
     );
   }
+
+  getLeakageAlerts(): Observable<{ results: any[]; count: number }> {
+    return this.http.get<{ results: any[]; count: number }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/leakage/alerts/`
+    );
+  }
+
+  getExpiringCredentials(): Observable<{ results: any[]; count: number }> {
+    return this.http.get<{ results: any[]; count: number }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/credentials/expiring/`
+    );
+  }
 }
+

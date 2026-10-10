@@ -93,7 +93,7 @@
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
       </div>
-      <div>
+      <div class="banner-text-block">
         <h3>Data Streaming &amp; Accounting Exports</h3>
         <p class="sub-text">Generate on-demand sanitized CSV packages of platform entities for tax, bookkeeping, and external auditing.</p>
       </div>
@@ -126,12 +126,12 @@
     </div>
   </div>
 
-  <!-- Stripe Live Account Balance -->
-  <div class="card stripe-balance-card">
+  <!-- Stripe Live Account Balance Card -->
+  <div class="card stripe-container-card">
     <div class="stripe-balance-header">
       <div class="stripe-balance-title">
-        <div class="stripe-badge">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <div class="stripe-logo-badge">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
           <span>Stripe Live Account Balance</span>
         </div>
         <div class="balance-refresh-badge" [class.spinning]="isLoadingBalance()">
@@ -139,42 +139,47 @@
           <span>{{ isLoadingBalance() ? 'Refreshing...' : 'Auto-refresh 30s' }}</span>
         </div>
       </div>
-      <button class="btn-soft-light btn-xs" (click)="loadStripeBalance()" [disabled]="isLoadingBalance()" title="Force refresh Stripe balance">
+      <button class="btn btn-secondary btn-sm" (click)="loadStripeBalance()" [disabled]="isLoadingBalance()" title="Force refresh Stripe balance">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoadingBalance()"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        <span>Sync Now</span>
       </button>
     </div>
+
     @if (stripeBalance()) {
       <div class="stripe-balance-grid">
-        <div class="stripe-balance-item">
-          <div class="stripe-balance-icon available"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
-          <div class="stripe-balance-data">
-            <p class="stripe-balance-label">Available (Payout-Ready)</p>
-            <p class="stripe-balance-amount available">{{ formatCurrency((stripeBalance()?.available || 0) / 100) }}</p>
-            <p class="stripe-balance-sub">Immediately withdrawable</p>
+        <div class="stripe-deck-item green-accent">
+          <div class="stripe-deck-icon green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
+          <div class="stripe-deck-data">
+            <span class="stripe-deck-label">Available (Payout-Ready)</span>
+            <div class="stripe-deck-amount text-success font-mono">{{ formatCurrency((stripeBalance()?.available || 0) / 100) }}</div>
+            <span class="stripe-deck-sub">Immediately withdrawable</span>
           </div>
         </div>
-        <div class="stripe-balance-item">
-          <div class="stripe-balance-icon pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <div class="stripe-balance-data">
-            <p class="stripe-balance-label">Pending (In Transit)</p>
-            <p class="stripe-balance-amount pending">{{ formatCurrency((stripeBalance()?.pending || 0) / 100) }}</p>
-            <p class="stripe-balance-sub">Clearing in 1–2 business days</p>
+
+        <div class="stripe-deck-item amber-accent">
+          <div class="stripe-deck-icon amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div class="stripe-deck-data">
+            <span class="stripe-deck-label">Pending (In Transit)</span>
+            <div class="stripe-deck-amount text-warning font-mono">{{ formatCurrency((stripeBalance()?.pending || 0) / 100) }}</div>
+            <span class="stripe-deck-sub">Clearing in 1–2 business days</span>
           </div>
         </div>
-        <div class="stripe-balance-item">
-          <div class="stripe-balance-icon reserved"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-          <div class="stripe-balance-data">
-            <p class="stripe-balance-label">Reserved (Risk Hold)</p>
-            <p class="stripe-balance-amount reserved">{{ formatCurrency((stripeBalance()?.reserved || 0) / 100) }}</p>
-            <p class="stripe-balance-sub">Held for chargebacks</p>
+
+        <div class="stripe-deck-item red-accent">
+          <div class="stripe-deck-icon red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <div class="stripe-deck-data">
+            <span class="stripe-deck-label">Reserved (Risk Hold)</span>
+            <div class="stripe-deck-amount text-danger font-mono">{{ formatCurrency((stripeBalance()?.reserved || 0) / 100) }}</div>
+            <span class="stripe-deck-sub">Held for dispute buffers</span>
           </div>
         </div>
-        <div class="stripe-balance-item total-col">
-          <div class="stripe-balance-icon total"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-          <div class="stripe-balance-data">
-            <p class="stripe-balance-label">Total Stripe Balance</p>
-            <p class="stripe-balance-amount total">{{ formatCurrency(((stripeBalance()?.available || 0) + (stripeBalance()?.pending || 0) + (stripeBalance()?.reserved || 0)) / 100) }}</p>
-            <p class="stripe-balance-sub">{{ stripeBalance()?.currency?.toUpperCase() }} · Refreshed {{ stripeBalance()?.lastRefreshed | date:'shortTime' }}</p>
+
+        <div class="stripe-deck-item total-accent">
+          <div class="stripe-deck-icon purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="stripe-deck-data">
+            <span class="stripe-deck-label">Total Stripe Balance</span>
+            <div class="stripe-deck-amount text-primary font-mono">{{ formatCurrency(((stripeBalance()?.available || 0) + (stripeBalance()?.pending || 0) + (stripeBalance()?.reserved || 0)) / 100) }}</div>
+            <span class="stripe-deck-sub">{{ stripeBalance()?.currency?.toUpperCase() }} · Refreshed {{ stripeBalance()?.lastRefreshed | date:'shortTime' }}</span>
           </div>
         </div>
       </div>
@@ -191,11 +196,11 @@
     }
   </div>
 
-  <!-- 4-Pillar Financial Metrics -->
+  <!-- 4-Pillar Financial Metrics Grid -->
   <div class="stats-grid">
     <div class="card kpi-card">
       <div class="kpi-card-top">
-        <span class="badge badge-info">Net Platform Revenue</span>
+        <span class="badge badge-primary">Net Platform Revenue</span>
         <div class="kpi-circle-widget blue">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
@@ -204,7 +209,7 @@
       </div>
       <div class="kpi-card-body">
         <span class="kpi-label">Gross Platform Take-Rate</span>
-        <h2 class="kpi-value">{{ formatCurrency(report()?.totalRevenue) }}</h2>
+        <h2 class="kpi-value font-mono">{{ formatCurrency(report()?.totalRevenue) }}</h2>
       </div>
       <div class="kpi-card-footer">
         <span class="text-success font-semibold">15% Take-Rate</span> on completed service bookings
@@ -222,7 +227,7 @@
       </div>
       <div class="kpi-card-body">
         <span class="kpi-label">Gross Merchandise Value (GMV)</span>
-        <h2 class="kpi-value">{{ formatCurrency(report()?.grossMerchandiseValue) }}</h2>
+        <h2 class="kpi-value font-mono">{{ formatCurrency(report()?.grossMerchandiseValue) }}</h2>
       </div>
       <div class="kpi-card-footer">
         Total customer payments processed through escrow
@@ -240,7 +245,7 @@
       </div>
       <div class="kpi-card-body">
         <span class="kpi-label">Net Payouts Disbursed</span>
-        <h2 class="kpi-value">{{ formatCurrency(report()?.totalPayouts) }}</h2>
+        <h2 class="kpi-value font-mono">{{ formatCurrency(report()?.totalPayouts) }}</h2>
       </div>
       <div class="kpi-card-footer">
         <span class="text-muted">Direct Stripe transfers to bank accounts</span>
@@ -258,7 +263,7 @@
       </div>
       <div class="kpi-card-body">
         <span class="kpi-label">Held in Escrow</span>
-        <h2 class="kpi-value">{{ formatCurrency(report()?.heldInEscrow) }}</h2>
+        <h2 class="kpi-value font-mono">{{ formatCurrency(report()?.heldInEscrow) }}</h2>
       </div>
       <div class="kpi-card-footer">
         Active appointments awaiting seeker sign-off
@@ -266,64 +271,165 @@
     </div>
   </div>
 
-  <!-- Secondary Financial Breakdown -->
-  <div class="stats-grid mt-4">
-    <div class="card kpi-card">
+  <!-- Secondary Financial Breakdown Grid -->
+  <div class="stats-grid">
+    <div class="card kpi-card sub-kpi">
       <div class="kpi-card-top">
         <span class="kpi-label">Subscription ARR &amp; MRR</span>
         <span class="badge badge-primary">SaaS</span>
       </div>
       <div class="kpi-card-body">
-        <h3 class="kpi-value">{{ formatCurrency(report()?.subscriptionRevenue) }}</h3>
+        <h3 class="kpi-value font-mono">{{ formatCurrency(report()?.subscriptionRevenue) }}</h3>
         <span class="sub-text">Silver &amp; Gold Provider Subscriptions</span>
       </div>
     </div>
 
-    <div class="card kpi-card">
+    <div class="card kpi-card sub-kpi">
       <div class="kpi-card-top">
         <span class="kpi-label">Background Check Fees</span>
         <span class="badge badge-info">Checkr</span>
       </div>
       <div class="kpi-card-body">
-        <h3 class="kpi-value">{{ formatCurrency(report()?.backgroundCheckFees) }}</h3>
+        <h3 class="kpi-value font-mono">{{ formatCurrency(report()?.backgroundCheckFees) }}</h3>
         <span class="sub-text">Screening pass-through revenue</span>
       </div>
     </div>
 
-    <div class="card kpi-card">
+    <div class="card kpi-card sub-kpi">
       <div class="kpi-card-top">
         <span class="kpi-label">Refunds &amp; Disputes</span>
         <span class="badge badge-danger">Deductions</span>
       </div>
       <div class="kpi-card-body">
-        <h3 class="kpi-value text-danger">{{ formatCurrency(report()?.refundedAmount) }}</h3>
+        <h3 class="kpi-value font-mono text-danger">{{ formatCurrency(report()?.refundedAmount) }}</h3>
         <span class="sub-text">Chargebacks and mediation reversals</span>
       </div>
     </div>
 
-    <div class="card kpi-card">
+    <div class="card kpi-card sub-kpi net-margin-highlight">
       <div class="kpi-card-top">
-        <span class="kpi-label">Net Margin</span>
+        <span class="kpi-label">Net Operating Margin</span>
         <span class="badge badge-success">GAAP</span>
       </div>
       <div class="kpi-card-body">
-        <h3 class="kpi-value text-success">{{ formatCurrency(report()?.netMargin) }}</h3>
+        <h3 class="kpi-value font-mono text-success">{{ formatCurrency(report()?.netMargin) }}</h3>
         <span class="sub-text">Take-rate after processing deductions</span>
       </div>
     </div>
   </div>
 
-  <!-- 1099-K Tax Compliance & Ledger Deck -->
-  <div class="deck-grid mt-4">
+  <!-- Real-Time Escrow Pipeline Vault -->
+  @if (escrowSummary(); as esc) {
+    <div class="card escrow-container-card">
+      <div class="card-header border-bottom-0 pb-0">
+        <div class="header-left">
+          <div class="header-icon-box blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Real-Time Escrow Vault Pipeline</h3>
+            <p class="card-subtitle">Live collateral held across active milestones and pending dispute releases</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-body pt-3">
+        <div class="stripe-balance-grid">
+          <div class="stripe-deck-item green-accent">
+            <div class="stripe-deck-icon green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="stripe-deck-data">
+              <span class="stripe-deck-label">Total Escrow Held</span>
+              <div class="stripe-deck-amount text-success font-mono">{{ formatCurrency(esc.total_escrow_held) }}</div>
+              <span class="stripe-deck-sub">{{ esc.active_jobs_count }} active bookings secured</span>
+            </div>
+          </div>
+          <div class="stripe-deck-item amber-accent">
+            <div class="stripe-deck-icon amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
+            <div class="stripe-deck-data">
+              <span class="stripe-deck-label">Clearing in 24h</span>
+              <div class="stripe-deck-amount text-warning font-mono">{{ formatCurrency(esc.clearing_within_24h) }}</div>
+              <span class="stripe-deck-sub">Completing dispute review window</span>
+            </div>
+          </div>
+          <div class="stripe-deck-item red-accent">
+            <div class="stripe-deck-icon red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="stripe-deck-data">
+              <span class="stripe-deck-label">Disputed Escrow Holds</span>
+              <div class="stripe-deck-amount text-danger font-mono">{{ formatCurrency(esc.disputed_escrow_amount) }}</div>
+              <span class="stripe-deck-sub">Under active admin mediation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Subscription Cohorts & Retention Deck -->
+  @if (cohortStats(); as cohorts) {
+    <div class="card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Provider Subscription Cohorts &amp; Retention</h3>
+            <p class="card-subtitle">Monthly Recurring Revenue (MRR) and Tier Segmentation</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="stripe-balance-grid mb-4">
+          <div class="stripe-deck-item green-accent">
+            <div class="stripe-deck-data">
+              <span class="stripe-deck-label">Total MRR</span>
+              <div class="stripe-deck-amount text-success font-mono">{{ formatCurrency(cohorts.total_mrr) }}</div>
+            </div>
+          </div>
+          <div class="stripe-deck-item total-accent">
+            <div class="stripe-deck-data">
+              <span class="stripe-deck-label">Annualized ARR</span>
+              <div class="stripe-deck-amount text-primary font-mono">{{ formatCurrency(cohorts.total_arr) }}</div>
+            </div>
+          </div>
+          <div class="stripe-deck-item red-accent">
+            <div class="stripe-deck-data">
+              <span class="stripe-deck-label">Monthly Churn Rate</span>
+              <div class="stripe-deck-amount text-danger font-mono">{{ cohorts.monthly_churn_rate }}%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="plan-distribution-block">
+          <span class="distribution-title">Active Plan Distribution</span>
+          <div class="plan-badge-list">
+            @for (entry of (cohorts.tier_breakdown | keyvalue); track entry.key) {
+              <div class="plan-pill">
+                <span class="plan-name">{{ entry.key | uppercase }}</span>
+                <span class="plan-count">{{ entry.value }} subscribers</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 1099-K Tax Compliance & Stripe Reconciliation Deck -->
+  <div class="deck-grid">
     <div class="card deck-card">
       <div class="deck-header">
-        <div class="deck-icon icon-blue">
+        <div class="header-icon-box blue">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/>
           </svg>
         </div>
         <div>
-          <h4>IRS 1099-K Annual Tax Generation</h4>
+          <h4 class="card-title">IRS 1099-K Annual Tax Generation</h4>
           <span class="deck-sub">Quarterly compliance for US providers exceeding $600/yr gross threshold</span>
         </div>
       </div>
@@ -363,14 +469,14 @@
 
     <div class="card deck-card">
       <div class="deck-header">
-        <div class="deck-icon icon-emerald">
+        <div class="header-icon-box green">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             <path d="m9 12 2 2 4-4"/>
           </svg>
         </div>
         <div>
-          <h4>Stripe Double-Entry Ledger Reconciliation</h4>
+          <h4 class="card-title">Stripe Double-Entry Ledger Reconciliation</h4>
           <span class="deck-sub">Real-time discrepancy check against platform balance and escrow deposits</span>
         </div>
       </div>
@@ -381,7 +487,7 @@
             <span class="pulse-dot"></span>
             <span>Ledger Integrity Status: <b>Synchronized</b></span>
           </div>
-          <p class="deck-text">
+          <p class="deck-text mb-0">
             Double-entry platform journal automatically verifies that total Stripe customer payments equal provider escrow liabilities plus platform take-rate.
           </p>
           <div class="audit-btn-wrap">
@@ -396,4 +502,114 @@
       </div>
     </div>
   </div>
+
+  <!-- DOUBLE-ENTRY GENERAL LEDGER BALANCE SHEET & JOURNAL -->
+  @if (ledgerReport(); as ledger) {
+    <div class="card ledger-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Double-Entry General Ledger &amp; Balance Sheet</h3>
+            <p class="card-subtitle">GAAP standard chart of accounts &amp; real-time double-entry journal postings</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" (click)="loadLedgerReport()" [disabled]="isLoadingLedger()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoadingLedger()"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <span>{{ isLoadingLedger() ? 'Syncing...' : 'Refresh Ledger' }}</span>
+        </button>
+      </div>
+
+      <!-- 4-Card Balance Sheet Summary -->
+      <div class="ledger-summary-grid">
+        <div class="ledger-summary-item green-border">
+          <div class="ledger-summary-top">
+            <span class="badge badge-success">Assets</span>
+          </div>
+          <div class="ledger-summary-body">
+            <span class="ledger-summary-label">TOTAL ASSETS (CASH &amp; CLEARING)</span>
+            <h2 class="ledger-summary-val text-success font-mono">{{ formatCurrency(ledger.total_assets) }}</h2>
+          </div>
+        </div>
+
+        <div class="ledger-summary-item amber-border">
+          <div class="ledger-summary-top">
+            <span class="badge badge-warning">Liabilities</span>
+          </div>
+          <div class="ledger-summary-body">
+            <span class="ledger-summary-label">ESCROW &amp; PAYOUT LIABILITIES</span>
+            <h2 class="ledger-summary-val text-warning font-mono">{{ formatCurrency(ledger.total_liabilities) }}</h2>
+          </div>
+        </div>
+
+        <div class="ledger-summary-item blue-border">
+          <div class="ledger-summary-top">
+            <span class="badge badge-primary">Revenue</span>
+          </div>
+          <div class="ledger-summary-body">
+            <span class="ledger-summary-label">PLATFORM FEE REVENUE</span>
+            <h2 class="ledger-summary-val text-primary font-mono">{{ formatCurrency(ledger.platform_fee_earned) }}</h2>
+          </div>
+        </div>
+
+        <div class="ledger-summary-item purple-border">
+          <div class="ledger-summary-top">
+            <span class="badge badge-purple">Net Retained</span>
+          </div>
+          <div class="ledger-summary-body">
+            <span class="ledger-summary-label">NET GAAP RETAINED EARNINGS</span>
+            <h2 class="ledger-summary-val text-success font-mono">{{ formatCurrency(ledger.net_income) }}</h2>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Ledger Journal Postings with Standard Clean Line Drawing -->
+      <div class="table-section">
+        <div class="table-section-header">
+          <span class="table-section-title">RECENT DOUBLE-ENTRY JOURNAL POSTINGS</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Entry Date</th>
+                <th>Transaction ID</th>
+                <th>Debit Account</th>
+                <th>Credit Account</th>
+                <th>Reference Type</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of ledger.recent_entries; track entry.id) {
+                <tr>
+                  <td class="font-mono text-muted">{{ entry.created_at | date:'short' }}</td>
+                  <td>
+                    <span class="id-pill font-mono">{{ entry.transaction_id | slice:0:8 }}</span>
+                  </td>
+                  <td><span class="badge badge-success">{{ entry.debit_account?.name || 'Cash/Clearing' }}</span></td>
+                  <td><span class="badge badge-warning">{{ entry.credit_account?.name || 'Escrow Liability' }}</span></td>
+                  <td><span class="badge badge-info">{{ entry.reference_type }}</span></td>
+                  <td class="font-mono font-bold text-success text-right">{{ formatCurrency(entry.amount) }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td class="font-mono text-muted">Active</td>
+                  <td><span class="id-pill font-mono">GENESIS</span></td>
+                  <td><span class="badge badge-success">Stripe Clearing (USD)</span></td>
+                  <td><span class="badge badge-warning">Provider Escrow Hold</span></td>
+                  <td><span class="badge badge-info">ESCROW_HOLD</span></td>
+                  <td class="font-mono font-bold text-success text-right">{{ formatCurrency(escrowSummary()?.total_escrow_held || 0) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
 </div>

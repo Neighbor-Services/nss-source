@@ -99,4 +99,12 @@ export class DisputeRepositoryImpl implements DisputeRepository {
       map(() => ({ success: true }))
     );
   }
+
+  mediateDispute(id: string, input: any): Observable<{ status: string }> {
+    return this.http.post<{ status: string }>(
+      `${ADMIN_API_CONFIG.baseUrl}/admin/disputes/${id}/mediate/`,
+      input
+    );
+  }
 }
+

@@ -8,6 +8,7 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { AuthService } from '../../../data/datasources/auth.service';
 import { LayoutService } from '../../../core/services/layout.service';
 import { AdminNotificationItem } from '../../../core/domain/entities/user.model';
+import { ADMIN_API_CONFIG } from '../../../data/datasources/admin-api.config';
 
 export interface CommandItem {
   id: string;
@@ -118,9 +119,19 @@ export class TopbarComponent implements OnInit, OnDestroy {
     if (typeof window === 'undefined') return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host;
-      const wsUrl = `${protocol}//${host}/ws/admin/events`;
+      const base = ADMIN_API_CONFIG.baseUrl;
+      const isSsl = base.startsWith('https://');
+      const host = base.replace(/^https?:\/\//, '').split('/api')[0];
+      const protocol = isSsl ? 'wss://' : 'ws://';
+      const token = localStorage.getItem('admin_access_token') || localStorage.getItem('token') || '';
+
+      if (!token) {
+        // Wait until authenticated before connecting to admin stream
+        this.wsReconnectTimer = setTimeout(() => this.initWebSocket(), 5000);
+        return;
+      }
+
+      const wsUrl = `${protocol}${host}/ws/admin/events?token=${encodeURIComponent(token)}`;
 
       this.ws = new WebSocket(wsUrl);
 

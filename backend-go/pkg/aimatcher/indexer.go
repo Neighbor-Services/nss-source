@@ -152,6 +152,51 @@ func (s *DynamicOntologyStore) GetAllLearnedConcepts() map[string][]string {
 	return res
 }
 
+func (s *DynamicOntologyStore) AddConceptSynonyms(concept string, keywords []string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	conceptLower := strings.ToLower(strings.TrimSpace(concept))
+	for _, kw := range keywords {
+		kwClean := strings.ToLower(strings.TrimSpace(kw))
+		if kwClean == "" {
+			continue
+		}
+		exists := false
+		for _, e := range s.concepts[conceptLower] {
+			if e == kwClean {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			s.concepts[conceptLower] = append(s.concepts[conceptLower], kwClean)
+		}
+	}
+}
+
+func (s *DynamicOntologyStore) RemoveConcept(concept string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.concepts, strings.ToLower(strings.TrimSpace(concept)))
+}
+
+func (s *DynamicOntologyStore) GetAllConceptsMerged() map[string][]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make(map[string][]string)
+	// Base static ontology
+	for k, v := range conceptOntology {
+		copied := make([]string, len(v))
+		copy(copied, v)
+		res[k] = copied
+	}
+	// Dynamic ontology overlay
+	for k, v := range s.concepts {
+		res[k] = append(res[k], v...)
+	}
+	return res
+}
+
 // GetQueryPatterns returns all active search query patterns learned from the catalog.
 func (s *DynamicOntologyStore) GetQueryPatterns() []entity.CatalogKnowledgeIndex {
 	s.mu.RLock()

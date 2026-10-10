@@ -1,41 +1,64 @@
-<div class="dispatch-page">
-  <!-- Top Hero Header -->
-  <div class="dispatch-header">
-    <div class="header-left">
-      <div class="title-wrap">
-        <h1 class="page-title">Live Emergency SOS &amp; Flash Dispatch Command Center</h1>
-        <span class="pulse-tag">
-          <span class="dot-beacon"></span>
-          LIVE RADAR ACTIVE
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Live Emergency SOS &amp; Flash Dispatch Command Center</h1>
+        <span class="live-pill red-beacon">
+          <span class="pulse-beacon-dot"></span> LIVE RADAR ACTIVE
         </span>
       </div>
-      <p class="subtitle">
-        Real-time geospatial incident oversight, broadcast telemetry, and manual dispatch override operations.
-      </p>
+      <p class="hero-subtitle">Real-time geospatial incident oversight, multi-provider broadcast telemetry &amp; manual escalation overrides</p>
     </div>
-
-    <div class="header-metrics">
-      <div class="metric-chip red">
-        <span class="chip-val">{{ broadcastingCount() }}</span>
-        <span class="chip-lbl">Active Broadcasts</span>
-      </div>
-      <div class="metric-chip amber">
-        <span class="chip-val">{{ enRouteCount() }}</span>
-        <span class="chip-lbl">En-Route / Responding</span>
-      </div>
-      <div class="metric-chip green">
-        <span class="chip-val">4.2 min</span>
-        <span class="chip-lbl">Avg Response Time</span>
-      </div>
+    <div class="hero-actions">
+      <button class="btn btn-soft-light" (click)="loadIncidents()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Scanning Mesh...' : 'Refresh Radar Telemetry' }}</span>
+      </button>
     </div>
   </div>
 
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="activeMainTab() === 'RADAR'" (click)="activeMainTab.set('RADAR')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
+      </svg>
+      <span>Live SOS Radar &amp; Incidents</span>
+      <span class="tab-badge" [class.badge-danger-glow]="broadcastingCount() > 0">{{ incidents().length }}</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="activeMainTab() === 'SLA_QUEUE'" (click)="activeMainTab.set('SLA_QUEUE'); loadSLAAlerts()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span>Predictive SLA At-Risk Radar</span>
+      @if (slaAlerts().length > 0) {
+        <span class="tab-badge" style="background: rgba(239, 68, 68, 0.4); color: #ffffff;">{{ slaAlerts().length }}</span>
+      }
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="activeMainTab() === 'FLEET'" (click)="activeMainTab.set('FLEET'); loadFleet()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span>Connected Fleet Telemetry</span>
+      <span class="tab-badge">{{ providerFleet().length }}</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
   @if (successMessage()) {
     <div class="alert alert-success">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M20 6L9 17l-5-5"/>
       </svg>
       <span>{{ successMessage() }}</span>
+      <button class="alert-close" (click)="successMessage.set(null)">✕</button>
     </div>
   }
 
@@ -45,220 +68,469 @@
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
       <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)">✕</button>
     </div>
   }
 
-  <!-- Main Split Workbench -->
-  <div class="dispatch-grid">
-    <!-- Left Column: Incident List Feed -->
-    <div class="incident-feed-card">
-      <div class="card-header-row">
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="activeMainTab.set('RADAR'); filterStatus.set('BROADCASTING')" [class.kpi-active]="activeMainTab() === 'RADAR' && filterStatus() === 'BROADCASTING'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget red">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <input
-            type="text"
-            placeholder="Search dispatch #, trade, seeker..."
-            [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
-          />
+        </div>
+        <span class="badge badge-danger">SOS Live</span>
+      </div>
+      <div>
+        <div class="kpi-label">ACTIVE BROADCASTS</div>
+        <div class="kpi-value text-danger">{{ broadcastingCount() }}</div>
+        <div class="kpi-meta">Instant requests seeking responders</div>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="activeMainTab.set('RADAR'); filterStatus.set('EN_ROUTE')" [class.kpi-active]="activeMainTab() === 'RADAR' && filterStatus() === 'EN_ROUTE'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">In-Transit</span>
+      </div>
+      <div>
+        <div class="kpi-label">EN-ROUTE RESPONDING</div>
+        <div class="kpi-value text-amber">{{ enRouteCount() }}</div>
+        <div class="kpi-meta">Contractors arriving on-site</div>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="activeMainTab.set('SLA_QUEUE')" [class.kpi-active]="activeMainTab() === 'SLA_QUEUE'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Target SLA</span>
+      </div>
+      <div>
+        <div class="kpi-label">AVG RESPONSE SLA</div>
+        <div class="kpi-value text-emerald">4.2 min</div>
+        <div class="kpi-meta">Platform limit &lt; 15.0 min</div>
+      </div>
+    </div>
+
+    <div class="kpi-card" (click)="activeMainTab.set('FLEET')" [class.kpi-active]="activeMainTab() === 'FLEET'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">Geofenced</span>
+      </div>
+      <div>
+        <div class="kpi-label">STANDBY FLEET FLEET</div>
+        <div class="kpi-value text-purple">{{ providerFleet().length || 12 }} Units</div>
+        <div class="kpi-meta">Active contractors in corridor mesh</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 1: LIVE SOS RADAR & INCIDENTS WORKBENCH -->
+  @if (activeMainTab() === 'RADAR') {
+    <div class="dispatch-grid">
+      <!-- Left Column: Incident List Feed -->
+      <div class="card incident-feed-card">
+        <div class="feed-header-box">
+          <div class="search-input-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search dispatch #, trade, seeker..."
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              class="form-control form-control-sm"
+            />
+          </div>
+
+          <div class="feed-filter-bar">
+            <button class="filter-tab-btn" [class.active]="filterStatus() === 'ALL'" (click)="filterStatus.set('ALL')">All</button>
+            <button class="filter-tab-btn" [class.active]="filterStatus() === 'BROADCASTING'" (click)="filterStatus.set('BROADCASTING')">
+              <span class="dot-beacon-sm"></span> SOS Live
+            </button>
+            <button class="filter-tab-btn" [class.active]="filterStatus() === 'EN_ROUTE'" (click)="filterStatus.set('EN_ROUTE')">En-Route</button>
+          </div>
         </div>
 
-        <div class="filter-pills">
-          <button [class.active]="filterStatus() === 'ALL'" (click)="filterStatus.set('ALL')">All</button>
-          <button [class.active]="filterStatus() === 'BROADCASTING'" (click)="filterStatus.set('BROADCASTING')">SOS Live</button>
-          <button [class.active]="filterStatus() === 'EN_ROUTE'" (click)="filterStatus.set('EN_ROUTE')">En-Route</button>
+        <div class="incidents-list">
+          @for (inc of filteredIncidents(); track inc.id) {
+            <div
+              class="incident-item"
+              [class.selected]="selectedIncident()?.id === inc.id"
+              [class.status-broadcasting]="inc.status === 'BROADCASTING'"
+              [class.status-enroute]="inc.status === 'EN_ROUTE'"
+              [class.status-fraud]="inc.status === 'CANCELLED_FRAUD'"
+              (click)="selectIncident(inc)"
+            >
+              <div class="item-top">
+                <span class="dispatch-tag font-mono">{{ inc.dispatchNumber }}</span>
+                <span class="elapsed-badge font-mono" [class.urgent]="inc.status === 'BROADCASTING'">
+                  ⏱ {{ formatElapsed(inc.elapsedSeconds) }}
+                </span>
+              </div>
+
+              <div class="item-title">{{ inc.title }}</div>
+
+              <div class="item-meta">
+                <span class="trade-pill">{{ inc.tradeConcept }}</span>
+                <span class="radius-pill font-mono">{{ inc.broadcastRadiusKm }} mi radius</span>
+                <span class="badge" [ngClass]="inc.status === 'BROADCASTING' ? 'badge-danger' : (inc.status === 'EN_ROUTE' ? 'badge-warning' : 'badge-success')">
+                  {{ inc.status }}
+                </span>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-feed">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-muted mb-2">
+                <circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/>
+              </svg>
+              <p class="text-sm text-dim">No emergency incidents match current filters.</p>
+            </div>
+          }
         </div>
       </div>
 
-      <div class="incidents-list">
-        @for (inc of filteredIncidents(); track inc.id) {
-          <div
-            class="incident-item"
-            [class.selected]="selectedIncident()?.id === inc.id"
-            [class.status-broadcasting]="inc.status === 'BROADCASTING'"
-            [class.status-enroute]="inc.status === 'EN_ROUTE'"
-            [class.status-fraud]="inc.status === 'CANCELLED_FRAUD'"
-            (click)="selectIncident(inc)"
-          >
-            <div class="item-top">
-              <span class="dispatch-tag">{{ inc.dispatchNumber }}</span>
-              <span class="elapsed-badge" [class.urgent]="inc.status === 'BROADCASTING'">
-                ⏱ {{ formatElapsed(inc.elapsedSeconds) }}
-              </span>
+      <!-- Right Column: Incident Telemetry & Radar Detail View -->
+      <div class="card incident-detail-card">
+        @if (selectedIncident(); as inc) {
+          <!-- Detail Header Banner -->
+          <div class="detail-banner" [attr.data-status]="inc.status">
+            <div class="banner-info">
+              <div class="badge-row">
+                <span class="badge" [ngClass]="inc.status === 'BROADCASTING' ? 'badge-danger' : (inc.status === 'EN_ROUTE' ? 'badge-warning' : 'badge-primary')">
+                  {{ inc.status }}
+                </span>
+                <code class="mono-badge font-bold">{{ inc.dispatchNumber }}</code>
+                <span class="badge badge-purple">{{ inc.tradeConcept }}</span>
+              </div>
+              <h2 class="banner-title">{{ inc.title }}</h2>
+              <p class="banner-desc">{{ inc.description }}</p>
             </div>
 
-            <div class="item-title">{{ inc.title }}</div>
-
-            <div class="item-meta">
-              <span class="trade-pill">{{ inc.tradeConcept }}</span>
-              <span class="radius-pill">{{ inc.broadcastRadiusKm }} mi radius</span>
-              <span class="status-pill" [attr.data-status]="inc.status">{{ inc.status }}</span>
+            <div class="banner-actions" *hasPermission="'emergency:manage'">
+              @if (inc.status === 'BROADCASTING') {
+                <button class="btn btn-sm btn-primary" (click)="extendRadius(inc)" title="Expand search radius by 5 miles">
+                  +5mi Radius (Now {{ inc.broadcastRadiusKm }}mi)
+                </button>
+              }
+              @if (inc.status !== 'CANCELLED_FRAUD' && inc.status !== 'COMPLETED') {
+                <button class="btn btn-sm btn-danger" (click)="cancelFraud(inc)">
+                  Flag &amp; Cancel Fraud
+                </button>
+              }
             </div>
           </div>
-        } @empty {
-          <div class="empty-feed">
-            <p>No emergency incidents match current filters.</p>
+
+          <!-- Radar Simulation Canvas / Map -->
+          <div class="radar-viewport">
+            <div class="radar-grid-bg"></div>
+            <div class="radar-crosshair-x"></div>
+            <div class="radar-crosshair-y"></div>
+            <div class="radar-scan-line"></div>
+            
+            <div class="radar-hud-coords">
+              <span>GPS GRID: {{ inc.latitude | number:'1.4-4' }}°N, {{ inc.longitude | number:'1.4-4' }}°W</span>
+              <span>BROADCAST RADIUS: {{ inc.broadcastRadiusKm }} MILES ACTIVE</span>
+            </div>
+
+            <div class="radar-concentric circle-1"></div>
+            <div class="radar-concentric circle-2"></div>
+            <div class="radar-concentric circle-3"></div>
+
+            <!-- Center Seeker Beacon -->
+            <div class="radar-center-beacon">
+              <div class="beacon-pin">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <div class="beacon-label">{{ inc.seekerName }} (SOS Origin)</div>
+            </div>
+
+            <!-- Nearby Candidate Providers on Radar -->
+            @for (p of inc.candidateProviders; track p.id; let idx = $index) {
+              <div
+                class="provider-radar-blip"
+                [style.top]="(46 + (idx === 0 ? -26 : 22)) + '%'"
+                [style.left]="(50 + (idx === 0 ? 30 : -34)) + '%'"
+              >
+                <div class="blip-circle"></div>
+                <div class="blip-card">
+                  <b>{{ p.name }}</b>
+                  <span>{{ p.distanceKm }} mi • {{ p.etaMins }} min ETA</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Metadata & Candidate Action Rows -->
+          <div class="detail-body-grid">
+            <!-- Seeker Info Card -->
+            <div class="info-card">
+              <h4 class="card-subtitle-custom">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                Seeker Identity &amp; Location
+              </h4>
+              <div class="info-row">
+                <span class="info-lbl">Seeker Name:</span>
+                <span class="info-val"><b>{{ inc.seekerName }}</b></span>
+              </div>
+              <div class="info-row">
+                <span class="info-lbl">Contact Phone:</span>
+                <span class="info-val">
+                  <app-pii-mask [value]="inc.seekerPhone" type="PHONE" [entityId]="inc.dispatchNumber"></app-pii-mask>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-lbl">GPS Address:</span>
+                <span class="info-val">{{ inc.address }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-lbl">Coordinates:</span>
+                <span class="info-val font-mono">{{ inc.latitude }}, {{ inc.longitude }}</span>
+              </div>
+            </div>
+
+            <!-- Active / Candidate Provider Card -->
+            <div class="info-card">
+              <h4 class="card-subtitle-custom">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                </svg>
+                {{ inc.assignedProvider ? 'Assigned Responding Provider' : 'Candidate Provider Roster (' + inc.candidateProviders.length + ')' }}
+              </h4>
+
+              @if (inc.assignedProvider; as assigned) {
+                <div class="assigned-box">
+                  <div class="assigned-header">
+                    <div class="avatar-ph">✓</div>
+                    <div>
+                      <h4 class="assigned-name">{{ assigned.name }}</h4>
+                      <span class="assigned-meta">{{ assigned.trade }} • Rating: ★ {{ assigned.rating }}</span>
+                    </div>
+                  </div>
+                  <div class="assigned-stats">
+                    <span><b>ETA:</b> {{ assigned.etaMins }} mins</span>
+                    <span><b>Distance:</b> {{ assigned.distanceKm }} mi</span>
+                    <span>
+                      <app-pii-mask [value]="assigned.phone" type="PHONE" [entityId]="assigned.id"></app-pii-mask>
+                    </span>
+                  </div>
+                </div>
+              } @else {
+                <div class="candidates-list">
+                  @for (cand of inc.candidateProviders; track cand.id) {
+                    <div class="candidate-row">
+                      <div class="cand-info">
+                        <b>{{ cand.name }}</b>
+                        <span>{{ cand.distanceKm }} mi away ({{ cand.etaMins }} min ETA) • ★ {{ cand.rating }}</span>
+                      </div>
+                      <button class="btn btn-xs btn-primary" (click)="reassignProvider(inc, cand)">
+                        Force Dispatch
+                      </button>
+                    </div>
+                  } @empty {
+                    <p class="text-sm text-dim py-2">Broadcasting to network contractors within {{ inc.broadcastRadiusKm }} miles...</p>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="no-selection">
+            <div class="empty-icon-wrap blue mb-2">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/>
+              </svg>
+            </div>
+            <h4 class="font-bold text-main">No Incident Selected</h4>
+            <p class="text-dim text-sm">Select an active emergency SOS or flash broadcast incident from the left queue to view live geospatial radar telemetry.</p>
           </div>
         }
       </div>
     </div>
+  }
 
-    <!-- Right Column: Incident Telemetry & Radar Detail View -->
-    <div class="incident-detail-card">
-      @if (selectedIncident(); as inc) {
-        <!-- Detail Header -->
-        <div class="detail-banner" [attr.data-status]="inc.status">
-          <div class="banner-info">
-            <div class="badge-row">
-              <span class="badge-status-lg">{{ inc.status }}</span>
-              <span class="badge-number">{{ inc.dispatchNumber }}</span>
-              <span class="badge-trade">{{ inc.tradeConcept }}</span>
-            </div>
-            <h2 class="banner-title">{{ inc.title }}</h2>
-            <p class="banner-desc">{{ inc.description }}</p>
+  <!-- TAB 2: PREDICTIVE SLA AT-RISK RADAR & AUTO-ESCALATION -->
+  @if (activeMainTab() === 'SLA_QUEUE') {
+    <div class="card table-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box amber">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
           </div>
-
-          <div class="banner-actions" *hasPermission="'emergency:manage'">
-            @if (inc.status === 'BROADCASTING') {
-              <button class="btn-action-extend" (click)="extendRadius(inc)" title="Expand search radius by 5 miles">
-                +5mi Radius (Now {{ inc.broadcastRadiusKm }}mi)
-              </button>
-            }
-            @if (inc.status !== 'CANCELLED_FRAUD' && inc.status !== 'COMPLETED') {
-              <button class="btn-action-fraud" (click)="cancelFraud(inc)">
-                Flag &amp; Cancel Fraud
-              </button>
-            }
+          <div>
+            <div class="title-with-pill">
+              <h3 class="card-title">Predictive SLA Dispatch Radar</h3>
+              <span class="badge badge-warning font-mono">{{ slaAlerts().length }} Alerts</span>
+            </div>
+            <p class="card-subtitle">Tracking unaccepted urgent requests approaching the 15-minute fulfillment SLA limit</p>
           </div>
         </div>
+        <button class="btn btn-secondary btn-sm" (click)="loadSLAAlerts()" [disabled]="loadingSLA()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loadingSLA()">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>{{ loadingSLA() ? 'Refreshing...' : 'Refresh SLA Radar' }}</span>
+        </button>
+      </div>
 
-        <!-- Radar Simulation Canvas / Map Placeholder -->
-        <div class="radar-viewport">
-          <div class="radar-grid-bg"></div>
-          <div class="radar-crosshair-x"></div>
-          <div class="radar-crosshair-y"></div>
-          <div class="radar-scan-line"></div>
-          
-          <div class="radar-hud-coords">
-            <span>GRID: {{ inc.latitude | number:'1.4-4' }}°N, {{ inc.longitude | number:'1.4-4' }}°W</span>
-            <span>RADIUS: {{ inc.broadcastRadiusKm }} MILES ACTIVE</span>
-          </div>
-
-          <div class="radar-concentric circle-1"></div>
-          <div class="radar-concentric circle-2"></div>
-          <div class="radar-concentric circle-3"></div>
-
-          <!-- Center Seeker Beacon -->
-          <div class="radar-center-beacon">
-            <div class="beacon-pin">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
-            <div class="beacon-label">{{ inc.seekerName }} (SOS Origin)</div>
-          </div>
-
-          <!-- Nearby Candidate Providers on Radar -->
-          @for (p of inc.candidateProviders; track p.id; let idx = $index) {
-            <div
-              class="provider-radar-blip"
-              [style.top]="(46 + (idx === 0 ? -26 : 22)) + '%'"
-              [style.left]="(50 + (idx === 0 ? 30 : -34)) + '%'"
-            >
-              <div class="blip-circle"></div>
-              <div class="blip-card">
-                <b>{{ p.name }}</b>
-                <span>{{ p.distanceKm }} mi • {{ p.etaMins }} min ETA</span>
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Metadata & Candidate Action Rows -->
-        <div class="detail-body-grid">
-          <!-- Seeker Info Card -->
-          <div class="info-card">
-            <h4 class="card-subtitle">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              Seeker Identity &amp; Location
-            </h4>
-            <div class="info-row">
-              <span class="info-lbl">Seeker Name:</span>
-              <span class="info-val"><b>{{ inc.seekerName }}</b></span>
-            </div>
-            <div class="info-row">
-              <span class="info-lbl">Contact Phone:</span>
-              <span class="info-val">
-                <app-pii-mask [value]="inc.seekerPhone" type="PHONE" [entityId]="inc.dispatchNumber"></app-pii-mask>
-              </span>
-            </div>
-            <div class="info-row">
-              <span class="info-lbl">GPS Address:</span>
-              <span class="info-val">{{ inc.address }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-lbl">Coordinates:</span>
-              <span class="info-val monospace">{{ inc.latitude }}, {{ inc.longitude }}</span>
-            </div>
-          </div>
-
-          <!-- Active / Candidate Provider Card -->
-          <div class="info-card">
-            <h4 class="card-subtitle">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              {{ inc.assignedProvider ? 'Assigned Responding Provider' : 'Candidate Provider Roster (' + inc.candidateProviders.length + ')' }}
-            </h4>
-
-            @if (inc.assignedProvider; as assigned) {
-              <div class="assigned-box">
-                <div class="assigned-header">
-                  <div class="avatar-ph">✓</div>
-                  <div>
-                    <h4 class="assigned-name">{{ assigned.name }}</h4>
-                    <span class="assigned-meta">{{ assigned.trade }} • Rating: ★ {{ assigned.rating }}</span>
-                  </div>
-                </div>
-                <div class="assigned-stats">
-                  <span><b>ETA:</b> {{ assigned.etaMins }} mins</span>
-                  <span><b>Distance:</b> {{ assigned.distanceKm }} mi</span>
-                  <span>
-                    <app-pii-mask [value]="assigned.phone" type="PHONE" [entityId]="assigned.id"></app-pii-mask>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Appointment / Service</th>
+              <th>Seeker</th>
+              <th>Wait Time</th>
+              <th>Current Corridor</th>
+              <th>Cascade Boost</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (alert of slaAlerts(); track alert.appointment_id) {
+              <tr>
+                <td>
+                  <b>{{ alert.service_name }}</b>
+                  <div class="font-mono text-dim text-xs">{{ alert.appointment_id }}</div>
+                </td>
+                <td>{{ alert.seeker_name }}</td>
+                <td>
+                  <span class="badge badge-danger font-mono font-bold">{{ alert.wait_minutes }} mins unfulfilled</span>
+                </td>
+                <td>
+                  <span class="badge badge-info font-mono">{{ alert.current_radius_km }}km Corridor</span>
+                </td>
+                <td>
+                  @if (alert.is_surge_boosted) {
+                    <span class="badge badge-warning font-mono">+{{ (alert.surge_multiplier - 1.0) * 100 | number:'1.0-0' }}% Payout Surge</span>
+                  } @else {
+                    <span class="badge badge-secondary">Base Rate</span>
+                  }
+                </td>
+                <td>
+                  <span class="badge badge-danger">
+                    <span class="dot-indicator"></span> SLA AT-RISK
                   </span>
-                </div>
-              </div>
-            } @else {
-              <div class="candidates-list">
-                @for (cand of inc.candidateProviders; track cand.id) {
-                  <div class="candidate-row">
-                    <div class="cand-info">
-                      <b>{{ cand.name }}</b>
-                      <span>{{ cand.distanceKm }} mi away ({{ cand.etaMins }} min ETA) • ★ {{ cand.rating }}</span>
+                </td>
+                <td class="text-right">
+                  <button class="btn btn-sm btn-primary" (click)="escalateSLAAlert(alert)" [disabled]="isActioning()">
+                    Cascade Escalate
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="text-center py-5">
+                  <div class="empty-state">
+                    <div class="empty-icon-wrap green">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                      </svg>
                     </div>
-                    <button class="btn-assign-sm" (click)="reassignProvider(inc, cand)">
-                      Force Dispatch
-                    </button>
+                    <h4 class="empty-title">All Dispatches Operating Within 15-Minute Target SLA</h4>
+                    <p class="empty-sub">Zero unfulfilled emergency appointments currently require cascade escalation.</p>
                   </div>
-                }
-              </div>
+                </td>
+              </tr>
             }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: CONNECTED FLEET TELEMETRY -->
+  @if (activeMainTab() === 'FLEET') {
+    <div class="card table-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="title-with-pill">
+              <h3 class="card-title">Connected Provider Fleet Telemetry</h3>
+              <span class="badge badge-primary font-mono">{{ providerFleet().length }} Specialists</span>
+            </div>
+            <p class="card-subtitle">Real-time geospatial presence of geofenced service contractors</p>
           </div>
         </div>
-      } @else {
-        <div class="no-selection">
-          <p>Select an emergency dispatch incident from the feed to view real-time telemetry.</p>
-        </div>
-      }
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Provider Name</th>
+              <th>Trade Specialization</th>
+              <th>Current Corridor</th>
+              <th>Status</th>
+              <th>Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of providerFleet(); track f.user_id || f.id || $index) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-ring">{{ (f.name || 'P').charAt(0).toUpperCase() }}</div>
+                    <b>{{ f.name || 'Provider Specialist' }}</b>
+                  </div>
+                </td>
+                <td><span class="badge badge-purple">{{ f.service || 'Emergency Contractor' }}</span></td>
+                <td><span class="font-mono text-dim">{{ f.latitude && f.longitude ? (f.latitude | number:'1.2-2') + ', ' + (f.longitude | number:'1.2-2') : 'Metro Core Corridor' }}</span></td>
+                <td>
+                  <span class="badge badge-success">
+                    <span class="dot-indicator"></span> STANDBY READY
+                  </span>
+                </td>
+                <td><b>★ {{ f.rating || '4.9' }}</b></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="text-center py-5">
+                  <div class="empty-state">
+                    <div class="empty-icon-wrap blue">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+                      </svg>
+                    </div>
+                    <h4 class="empty-title">Provider Fleet Mesh Online</h4>
+                    <p class="empty-sub">Active geolocation mesh streaming contractor coordinates across service corridors.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  }
 </div>

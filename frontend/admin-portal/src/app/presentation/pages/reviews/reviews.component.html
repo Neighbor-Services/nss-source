@@ -27,18 +27,19 @@
 
   <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
   <div class="hero-nav-tabs">
-    <button class="hero-tab-btn" [class.active]="selectedVisibility() === 'ALL'" (click)="setVisibilityFilter('ALL')">
-      <span>All Reviews</span>
+    <button class="hero-tab-btn" [class.active]="activeMainTab() === 'REVIEWS'" (click)="activeMainTab.set('REVIEWS')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      <span>Customer Reviews Moderation</span>
       <span class="tab-badge">{{ totalReviews() }}</span>
     </button>
-    <button class="hero-tab-btn" [class.active]="selectedVisibility() === 'VISIBLE'" (click)="setVisibilityFilter('VISIBLE')">
-      <span>Publicly Visible</span>
-    </button>
-    <button class="hero-tab-btn" [class.active]="selectedVisibility() === 'HIDDEN'" (click)="setVisibilityFilter('HIDDEN')">
-      <span>Hidden / Moderated</span>
-      @if (hiddenCount() > 0) {
-        <span class="tab-badge text-danger">{{ hiddenCount() }}</span>
-      }
+    <button class="hero-tab-btn" [class.active]="activeMainTab() === 'PQHS'" (click)="activeMainTab.set('PQHS'); fetchProviderQualityHealth()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+      <span>Provider Health (PQHS) &amp; Retraining</span>
+      <span class="tab-badge" style="background: rgba(16, 185, 129, 0.2);">{{ pqhsList().length }}</span>
     </button>
   </div>
 </div>
@@ -62,6 +63,8 @@
       <span>{{ errorMessage() }}</span>
     </div>
   }
+
+  @if (activeMainTab() === 'REVIEWS') {
 
   <!-- TOP KPI METRIC CARDS -->
   <div class="kpi-grid">
@@ -249,6 +252,113 @@
       </div>
     </div>
   </div>
+  } <!-- END activeMainTab === 'REVIEWS' -->
+
+  <!-- TAB 2: PROVIDER QUALITY HEALTH SCORE (PQHS) & RETRAINING -->
+  @if (activeMainTab() === 'PQHS') {
+    <div class="card table-card">
+      <div class="card-header">
+        <div class="header-left">
+          <div class="header-icon-box purple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="card-title">Provider Quality Health Score (PQHS) &amp; Retraining Engine</h3>
+            <p class="card-subtitle">Continuous performance scoring tracking dispute ratios, sentiment, on-time arrivals &amp; retraining flags</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" (click)="fetchProviderQualityHealth()" [disabled]="loadingPqhs()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loadingPqhs()">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>Recalculate Radar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Provider Profile</th>
+              <th>Composite PQHS</th>
+              <th>Jobs Completed</th>
+              <th>Dispute Rate</th>
+              <th>On-Time Arrival</th>
+              <th>Sentiment Index</th>
+              <th>Health Status &amp; Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pq of pqhsList(); track pq.provider_id) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar-ring">{{ (pq.provider_name || 'P').charAt(0).toUpperCase() }}</div>
+                    <div>
+                      <b>{{ pq.provider_name || 'Service Provider' }}</b>
+                      <div class="text-xs text-dim font-mono">{{ pq.provider_email || pq.provider_id }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge" [ngClass]="pq.overall_score >= 80 ? 'badge-success' : (pq.overall_score >= 60 ? 'badge-warning' : 'badge-danger')" style="font-size: 13px; font-weight: 700;">
+                      {{ pq.overall_score | number:'1.0-0' }} / 100
+                    </span>
+                  </div>
+                </td>
+                <td><span class="font-bold">{{ pq.completed_jobs_count }}</span></td>
+                <td>
+                  <span [class.text-danger]="pq.dispute_frequency_pct > 5" class="font-mono">
+                    {{ pq.dispute_frequency_pct | number:'1.1-1' }}%
+                  </span>
+                </td>
+                <td>
+                  <span [class.text-success]="pq.on_time_arrival_pct >= 90" class="font-mono">
+                    {{ pq.on_time_arrival_pct | number:'1.1-1' }}%
+                  </span>
+                </td>
+                <td>
+                  <span class="font-mono">{{ pq.customer_sentiment_pct | number:'1.0-0' }}% pos</span>
+                </td>
+                <td>
+                  @if (pq.health_status === 'RETRAINING_REQUIRED') {
+                    <span class="badge badge-danger">
+                      <span class="dot-indicator"></span> Retraining Required
+                    </span>
+                  } @else if (pq.health_status === 'WARNING') {
+                    <span class="badge badge-warning">
+                      <span class="dot-indicator"></span> Warning
+                    </span>
+                  } @else {
+                    <span class="badge badge-success">
+                      <span class="dot-indicator"></span> In Good Standing
+                    </span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                  <div class="empty-state">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-muted mb-2">
+                      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                    <h4 class="empty-title">All Providers Operating Within Normal Tolerances</h4>
+                    <p class="empty-sub">No anomalous dispute spikes or low punctuality scores detected across active contractors.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
 
   <!-- CREATE REVIEW MODAL -->
   @if (showCreateModal()) {

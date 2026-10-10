@@ -79,7 +79,9 @@ export const ADMIN_API_CONFIG = {
     dispatchIncidents: '/admin/dispatch/incidents',
     dispatchOverride: '/admin/dispatch/incidents',
     telemetryProviders: '/admin/telemetry/providers',
-    systemWorkers: '/admin/system/workers'
+    systemWorkers: '/admin/system/workers',
+    ledgerSummary: '/admin/financial/ledger/summary',
+    ledgerEntries: '/admin/financial/ledger/entries'
   }
 };
 

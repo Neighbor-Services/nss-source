@@ -3,19 +3,23 @@
   <div class="sidebar-header">
     <div class="brand-link-group" (click)="layoutService.toggleSidebar()" title="Neighbor Service Admin Operations">
       <div class="brand-logo-box">
-        <img src="images/logo.png" alt="Neighbor Service" class="brand-logo-img">
-        <span class="brand-live-pulse" title="System Online"></span>
+        <svg class="brand-logo-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="brand-live-pulse" title="Node Mesh Online"></span>
       </div>
       
       @if (!layoutService.isDesktopCollapsed()) {
         <div class="brand-info">
           <div class="brand-title-row">
             <span class="brand-name">Neighbor Service</span>
-            <span class="brand-badge-admin">Admin</span>
+            <span class="brand-badge-admin">PRO</span>
           </div>
           <div class="brand-status-row">
             <span class="brand-status-dot"></span>
-            <span class="brand-engine">Operations Portal</span>
+            <span class="brand-engine">OPERATIONS PORTAL</span>
           </div>
         </div>
       }
@@ -28,7 +32,7 @@
       [title]="layoutService.isDesktopCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'"
       aria-label="Toggle desktop sidebar"
     >
-      <svg class="toggle-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" [class.flipped]="layoutService.isDesktopCollapsed()">
+      <svg class="toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [class.flipped]="layoutService.isDesktopCollapsed()">
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
     </button>

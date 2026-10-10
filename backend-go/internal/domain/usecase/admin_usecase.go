@@ -34,6 +34,7 @@ type AdminUpdateUserInput struct {
 	Service              *string  `json:"service,omitempty"`
 	WalletBalanceDelta   *float64 `json:"wallet_balance_delta,omitempty"`
 	RoleID               *string  `json:"role_id,omitempty"`
+	SuspensionReason     *string  `json:"suspension_reason,omitempty"`
 }
 
 type AdminCreateUserInput struct {
@@ -252,6 +253,47 @@ type AdminUseCase interface {
 	OverrideDispatchIncident(ctx context.Context, adminID, incidentID uuid.UUID, action string, targetProviderID *uuid.UUID, extendRadiusKm float64, reason string) error
 	GetGeospatialProviderFleet(ctx context.Context, adminID uuid.UUID) ([]entity.ProviderFleetTelemetry, error)
 	GetSystemMetrics(ctx context.Context, adminID uuid.UUID) (*entity.SystemMetricsSummary, error)
+
+	// Advanced Operations & Intelligence
+	ImportCatalogBatch(ctx context.Context, adminID uuid.UUID, items []entity.CatalogImportItem) (int, error)
+	ExportCatalogBatch(ctx context.Context, adminID uuid.UUID) ([]entity.CatalogExportItem, error)
+	GetAISynonyms(ctx context.Context, adminID uuid.UUID) (map[string][]string, error)
+	AddAISynonym(ctx context.Context, adminID uuid.UUID, key string, synonyms []string) error
+	DeleteAISynonym(ctx context.Context, adminID uuid.UUID, key string) error
+	GetGeospatialHeatmap(ctx context.Context, adminID uuid.UUID) (*entity.OperationsHeatmapData, error)
+	GetLeakageAlerts(ctx context.Context, adminID uuid.UUID) ([]entity.LeakageAlert, error)
+	GetExpiringCredentials(ctx context.Context, adminID uuid.UUID) ([]entity.ExpiringCredential, error)
+	MediationResolveDispute(ctx context.Context, adminID, disputeID uuid.UUID, input entity.DisputeMediationInput) error
+	GetEscrowSummary(ctx context.Context, adminID uuid.UUID) (*entity.EscrowSummary, error)
+	GetSubscriptionCohortStats(ctx context.Context, adminID uuid.UUID) (*entity.SubscriptionCohortStats, error)
+	TestAlertWebhook(ctx context.Context, adminID uuid.UUID, webhookURL, platform string) error
+
+	// Enterprise Governance & Maker-Checker
+	ListApprovalRequests(ctx context.Context, adminID uuid.UUID, status string) ([]entity.ApprovalRequest, error)
+	CreateApprovalRequest(ctx context.Context, adminID uuid.UUID, req *entity.ApprovalRequest) error
+	ResolveApprovalRequest(ctx context.Context, adminID, id uuid.UUID, status, reason string) error
+
+	// Chargeback Defense Kit
+	CompileChargebackEvidence(ctx context.Context, adminID, disputeID uuid.UUID) (*entity.ChargebackEvidencePackage, error)
+
+	// Safe Impersonation
+	GenerateImpersonationToken(ctx context.Context, adminID, targetUserID uuid.UUID, reason string) (*entity.ImpersonationSession, error)
+
+	// Predictive SLA Dispatch
+	ListSLADispatchAlerts(ctx context.Context, adminID uuid.UUID) ([]entity.SLADispatchAlert, error)
+	EscalateSLADispatch(ctx context.Context, adminID, appointmentID uuid.UUID) error
+
+	// Provider Quality Health Score
+	ListProviderQualityHealth(ctx context.Context, adminID uuid.UUID) ([]entity.ProviderQualityHealth, error)
+
+	// Dynamic Surge Pricing
+	ListSurgePricingRules(ctx context.Context, adminID uuid.UUID) ([]entity.SurgePricingRule, error)
+	SaveSurgePricingRule(ctx context.Context, adminID uuid.UUID, rule *entity.SurgePricingRule) error
+	DeleteSurgePricingRule(ctx context.Context, adminID, id uuid.UUID) error
+
+	// Double-Entry Financial Ledger
+	GetDoubleEntryLedger(ctx context.Context, adminID uuid.UUID) (*entity.PlatformLedgerReport, error)
+	ListLedgerEntries(ctx context.Context, adminID uuid.UUID, limit, offset int) ([]entity.LedgerEntry, int64, error)
 }
 
 type AssignSubscriptionInput struct {

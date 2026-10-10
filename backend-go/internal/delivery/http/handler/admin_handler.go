@@ -2592,3 +2592,416 @@ func (h *AdminHandler) GetSystemMetrics(c *gin.Context) {
 	}
 	response.JSON(c, http.StatusOK, metrics)
 }
+
+// ─── ADVANCED OPERATIONS & INTELLIGENCE HANDLERS ────────────────────────────
+
+func (h *AdminHandler) ImportCatalogBatch(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var req struct {
+		Items []entity.CatalogImportItem `json:"items" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid batch import payload. Array of items is required.")
+		return
+	}
+
+	count, err := h.adminUC.ImportCatalogBatch(c.Request.Context(), adminID, req.Items)
+	if err != nil {
+		response.InternalError(c, "Failed to import catalog batch: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"imported_count": count,
+		"message":        fmt.Sprintf("Successfully processed %d catalog items", count),
+	})
+}
+
+func (h *AdminHandler) ExportCatalogBatch(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	items, err := h.adminUC.ExportCatalogBatch(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to export catalog items: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"items": items,
+		"count": len(items),
+	})
+}
+
+func (h *AdminHandler) GetAISynonyms(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	synonyms, err := h.adminUC.GetAISynonyms(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to fetch AI synonyms: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"synonyms": synonyms,
+		"count":    len(synonyms),
+	})
+}
+
+type AddSynonymRequest struct {
+	Key      string   `json:"key" binding:"required"`
+	Synonyms []string `json:"synonyms" binding:"required"`
+}
+
+func (h *AdminHandler) AddAISynonym(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var req AddSynonymRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Key and synonyms array are required")
+		return
+	}
+
+	if err := h.adminUC.AddAISynonym(c.Request.Context(), adminID, req.Key, req.Synonyms); err != nil {
+		response.InternalError(c, "Failed to save synonym: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "AI synonym concept updated successfully"})
+}
+
+func (h *AdminHandler) DeleteAISynonym(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	key := c.Param("key")
+	if key == "" {
+		response.BadRequest(c, "Concept key is required")
+		return
+	}
+
+	if err := h.adminUC.DeleteAISynonym(c.Request.Context(), adminID, key); err != nil {
+		response.InternalError(c, "Failed to delete synonym: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "AI synonym concept removed"})
+}
+
+func (h *AdminHandler) GetGeospatialHeatmap(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	data, err := h.adminUC.GetGeospatialHeatmap(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to compute heatmap: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, data)
+}
+
+func (h *AdminHandler) GetLeakageAlerts(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	alerts, err := h.adminUC.GetLeakageAlerts(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to fetch leakage alerts: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"results": alerts,
+		"count":   len(alerts),
+	})
+}
+
+func (h *AdminHandler) GetExpiringCredentials(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	credentials, err := h.adminUC.GetExpiringCredentials(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to fetch expiring credentials: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"results": credentials,
+		"count":   len(credentials),
+	})
+}
+
+func (h *AdminHandler) MediationResolveDispute(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid dispute ID")
+		return
+	}
+
+	var req entity.DisputeMediationInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid mediation payload: "+err.Error())
+		return
+	}
+
+	if err := h.adminUC.MediationResolveDispute(c.Request.Context(), adminID, id, req); err != nil {
+		response.InternalError(c, "Mediation resolution failed: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "Dispute resolved via mediation studio"})
+}
+
+func (h *AdminHandler) GetEscrowSummary(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	summary, err := h.adminUC.GetEscrowSummary(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to load escrow summary: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, summary)
+}
+
+func (h *AdminHandler) GetSubscriptionCohortStats(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	cohorts, err := h.adminUC.GetSubscriptionCohortStats(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to load cohort stats: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, cohorts)
+}
+
+type TestWebhookRequest struct {
+	WebhookURL string `json:"webhook_url" binding:"required"`
+	Platform   string `json:"platform"`
+}
+
+func (h *AdminHandler) TestAlertWebhook(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var req TestWebhookRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "webhook_url is required")
+		return
+	}
+
+	if err := h.adminUC.TestAlertWebhook(c.Request.Context(), adminID, req.WebhookURL, req.Platform); err != nil {
+		response.InternalError(c, "Webhook delivery failed: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":  "SUCCESS",
+		"message": fmt.Sprintf("Test alert delivered to %s successfully", req.Platform),
+	})
+}
+
+// ─── MAKER-CHECKER APPROVALS ────────────────────────────────────────────────
+
+func (h *AdminHandler) ListApprovalRequests(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	status := c.Query("status")
+	list, err := h.adminUC.ListApprovalRequests(c.Request.Context(), adminID, status)
+	if err != nil {
+		response.InternalError(c, "Failed to list approval requests: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"results": list,
+		"count":   len(list),
+	})
+}
+
+func (h *AdminHandler) CreateApprovalRequest(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var req entity.ApprovalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid approval request payload: "+err.Error())
+		return
+	}
+
+	if err := h.adminUC.CreateApprovalRequest(c.Request.Context(), adminID, &req); err != nil {
+		response.InternalError(c, "Failed to create approval request: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusCreated, req)
+}
+
+type ResolveApprovalInput struct {
+	Status string `json:"status" binding:"required"`
+	Reason string `json:"reason"`
+}
+
+func (h *AdminHandler) ResolveApprovalRequest(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid approval request ID")
+		return
+	}
+
+	var input ResolveApprovalInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		response.BadRequest(c, "Status is required (APPROVED or REJECTED)")
+		return
+	}
+
+	if err := h.adminUC.ResolveApprovalRequest(c.Request.Context(), adminID, id, input.Status, input.Reason); err != nil {
+		response.InternalError(c, "Failed to resolve approval request: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "Approval request updated successfully"})
+}
+
+// ─── CHARGEBACK EVIDENCE KIT ────────────────────────────────────────────────
+
+func (h *AdminHandler) CompileChargebackEvidence(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	disputeID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid dispute ID")
+		return
+	}
+
+	pkg, err := h.adminUC.CompileChargebackEvidence(c.Request.Context(), adminID, disputeID)
+	if err != nil {
+		response.InternalError(c, "Failed to compile chargeback evidence: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, pkg)
+}
+
+// ─── SAFE IMPERSONATION ─────────────────────────────────────────────────────
+
+type ImpersonateInput struct {
+	UserID string `json:"user_id" binding:"required"`
+	Reason string `json:"reason" binding:"required"`
+}
+
+func (h *AdminHandler) GenerateImpersonationToken(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var input ImpersonateInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		response.BadRequest(c, "user_id and reason are required")
+		return
+	}
+
+	targetUID, err := uuid.Parse(input.UserID)
+	if err != nil {
+		response.BadRequest(c, "Invalid target user ID")
+		return
+	}
+
+	session, err := h.adminUC.GenerateImpersonationToken(c.Request.Context(), adminID, targetUID, input.Reason)
+	if err != nil {
+		response.InternalError(c, "Failed to generate impersonation session: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, session)
+}
+
+// ─── SLA DISPATCH & AUTO-ESCALATION ─────────────────────────────────────────
+
+func (h *AdminHandler) ListSLADispatchAlerts(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	alerts, err := h.adminUC.ListSLADispatchAlerts(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to list SLA dispatch alerts: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"results": alerts,
+		"count":   len(alerts),
+	})
+}
+
+func (h *AdminHandler) EscalateSLADispatch(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid appointment ID")
+		return
+	}
+
+	if err := h.adminUC.EscalateSLADispatch(c.Request.Context(), adminID, id); err != nil {
+		response.InternalError(c, "Failed to escalate SLA dispatch: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "Appointment dispatch escalated to wider corridor"})
+}
+
+// ─── PROVIDER QUALITY HEALTH SCORE ──────────────────────────────────────────
+
+func (h *AdminHandler) ListProviderQualityHealth(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	healthList, err := h.adminUC.ListProviderQualityHealth(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to list provider health scores: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"results": healthList,
+		"count":   len(healthList),
+	})
+}
+
+// ─── DYNAMIC SURGE PRICING ──────────────────────────────────────────────────
+
+func (h *AdminHandler) ListSurgePricingRules(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	rules, err := h.adminUC.ListSurgePricingRules(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to list surge rules: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"results": rules,
+		"count":   len(rules),
+	})
+}
+
+func (h *AdminHandler) SaveSurgePricingRule(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	var rule entity.SurgePricingRule
+	if err := c.ShouldBindJSON(&rule); err != nil {
+		response.BadRequest(c, "Invalid surge pricing rule: "+err.Error())
+		return
+	}
+
+	if err := h.adminUC.SaveSurgePricingRule(c.Request.Context(), adminID, &rule); err != nil {
+		response.InternalError(c, "Failed to save surge pricing rule: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, rule)
+}
+
+func (h *AdminHandler) DeleteSurgePricingRule(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid surge rule ID")
+		return
+	}
+
+	if err := h.adminUC.DeleteSurgePricingRule(c.Request.Context(), adminID, id); err != nil {
+		response.InternalError(c, "Failed to delete surge rule: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "Surge rule deleted"})
+}
+
+// ─── DOUBLE-ENTRY FINANCIAL LEDGER HANDLERS ─────────────────────────────────
+
+func (h *AdminHandler) GetDoubleEntryLedger(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	report, err := h.adminUC.GetDoubleEntryLedger(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to fetch double-entry ledger: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, report)
+}
+
+func (h *AdminHandler) ListLedgerEntries(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if limit > 200 {
+		limit = 200
+	}
+
+	entries, total, err := h.adminUC.ListLedgerEntries(c.Request.Context(), adminID, limit, offset)
+	if err != nil {
+		response.InternalError(c, "Failed to list ledger entries: "+err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{
+		"entries": entries,
+		"total":   total,
+		"limit":   limit,
+		"offset":  offset,
+	})
+}
+
+

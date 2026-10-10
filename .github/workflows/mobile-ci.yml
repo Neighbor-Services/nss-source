@@ -1,0 +1,40 @@
+name: Mobile App CI (Flutter)
+
+on:
+  push:
+    branches: [ main, master, develop, staging ]
+    paths:
+      - 'frontend/nsapp/**'
+      - '.github/workflows/mobile-ci.yml'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'frontend/nsapp/**'
+      - '.github/workflows/mobile-ci.yml'
+
+jobs:
+  flutter-test:
+    name: Flutter Analyze & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/nsapp
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Analyze Code
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Unit & Widget Tests
+        run: flutter test

@@ -127,6 +127,89 @@
     </div>
   </div>
 
+  <!-- SEARCH & FILTER BAR -->
+  <div class="card filter-panel mt-4">
+    <!-- Status Filter Tabs -->
+    <div class="tab-pill-bar">
+      <button class="tab-pill" [class.active]="modStatusFilter() === ''" (click)="filterByStatus('')">
+        All Reports <span class="pill-count">{{ moderationReports().length }}</span>
+      </button>
+
+      <button class="tab-pill tab-warning" [class.active]="modStatusFilter() === 'PENDING'" (click)="filterByStatus('PENDING')">
+        <span class="status-dot warning"></span>
+        Pending Triage <span class="pill-count">{{ pendingReportsCount() }}</span>
+      </button>
+
+      <button class="tab-pill tab-success" [class.active]="modStatusFilter() === 'RESOLVED'" (click)="filterByStatus('RESOLVED')">
+        <span class="status-dot success"></span>
+        Resolved &amp; Sanctioned <span class="pill-count">{{ resolvedReportsCount() }}</span>
+      </button>
+
+      <button class="tab-pill" [class.active]="modStatusFilter() === 'DISMISSED'" (click)="filterByStatus('DISMISSED')">
+        Dismissed / Archived <span class="pill-count">{{ dismissedReportsCount() }}</span>
+      </button>
+    </div>
+
+    <!-- Filter Controls Row -->
+    <div class="filter-controls-row">
+      <div class="search-input-box">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Search by reporter, target account, UUID, category, reason or content..."
+          class="form-control filter-input"
+        />
+        @if (searchQuery()) {
+          <button class="clear-btn" (click)="searchQuery.set('')" title="Clear search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        }
+      </div>
+
+      <!-- Category Filter -->
+      @if (availableCategories().length > 0) {
+        <div class="select-box">
+          <select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)" class="form-control select-control">
+            <option value="">All Categories</option>
+            @for (cat of availableCategories(); track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      @if (hasActiveFilters()) {
+        <button class="btn btn-secondary btn-sm" (click)="resetFilters()" title="Reset all active filters">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          <span>Reset</span>
+        </button>
+      }
+
+      <div class="filter-actions-right">
+        <button class="btn btn-secondary btn-sm" (click)="exportReportsCSV()" title="Export CSV list">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Export CSV</span>
+        </button>
+
+        <button class="btn btn-secondary btn-sm" (click)="fetchModerationReports()" [disabled]="loading()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loading()">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- CONTENT MODERATION & ABUSE REPORTS SECTION -->
   <div class="card table-card mt-4">
     <div class="table-header">
@@ -145,57 +228,10 @@
         </div>
       </div>
 
-      <div class="action-row">
-        <!-- Live Search Bar -->
-        <div class="search-input-wrap">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            [(ngModel)]="searchQuery"
-            placeholder="Search reports, users, content..."
-            class="form-control search-control"
-          />
-          @if (searchQuery()) {
-            <button class="clear-search-btn" (click)="searchQuery.set('')" title="Clear search">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          }
-        </div>
-
-        <!-- Category Filter -->
-        @if (availableCategories().length > 0) {
-          <select [(ngModel)]="categoryFilter" class="form-control select-control">
-            <option value="">All Categories</option>
-            @for (cat of availableCategories(); track cat) {
-              <option [value]="cat">{{ cat }}</option>
-            }
-          </select>
+      <div class="table-header-right">
+        @if (filteredReports().length !== moderationReports().length) {
+          <span class="text-xs text-muted">Showing {{ filteredReports().length }} of {{ moderationReports().length }} filtered</span>
         }
-
-        <!-- Status Filter -->
-        <select [(ngModel)]="modStatusFilter" class="form-control select-control">
-          <option value="">All Statuses (All)</option>
-          <option value="PENDING">Pending Triage</option>
-          <option value="RESOLVED">Resolved / Sanctioned</option>
-          <option value="DISMISSED">Dismissed / Archived</option>
-        </select>
-
-        <button class="btn btn-secondary btn-sm" (click)="exportReportsCSV()" title="Export CSV list">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          <span>Export CSV</span>
-        </button>
-
-        <button class="btn btn-secondary btn-sm" (click)="fetchModerationReports()" [disabled]="loading()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="loading()">
-            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-          </svg>
-          <span>Refresh</span>
-        </button>
       </div>
     </div>
 

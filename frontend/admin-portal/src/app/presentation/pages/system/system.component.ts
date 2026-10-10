@@ -2,10 +2,12 @@ import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SystemUseCase } from '../../../core/usecases/system.usecase';
+import { GovernanceUseCase } from '../../../core/usecases/governance.usecase';
 import { DialogService } from '../../../core/services/dialog.service';
 import { SystemHealthItem, AuditLogItem, BackupSnapshot, TOTPSetupResponse } from '../../../core/domain/entities/system.model';
+import { ApprovalRequest, ImpersonationSession } from '../../../core/domain/entities/governance.model';
 
-export type SystemMainTab = 'TELEMETRY' | 'BACKUPS' | 'AUDIT_TRAIL' | 'SECURITY_2FA' | 'WEBHOOKS';
+export type SystemMainTab = 'TELEMETRY' | 'BACKUPS' | 'AUDIT_TRAIL' | 'SECURITY_2FA' | 'WEBHOOKS' | 'MAKER_CHECKER' | 'IMPERSONATION';
 
 export interface MicroserviceNode {
   name: string;
@@ -30,6 +32,17 @@ export class SystemComponent implements OnInit, OnDestroy {
   backups = signal<BackupSnapshot[]>([]);
   totpData = signal<TOTPSetupResponse | null>(null);
   workers = signal<any[]>([]);
+
+  // Maker-Checker State
+  approvalRequests = signal<ApprovalRequest[]>([]);
+  loadingApprovals = signal<boolean>(false);
+  resolvingApprovalId = signal<string | null>(null);
+
+  // Safe Impersonation State
+  impersonationUserId = '';
+  impersonationReason = '';
+  impersonationSession = signal<ImpersonationSession | null>(null);
+  isGeneratingImpersonation = signal(false);
 
   isLoading = signal(false);
   isBackingUp = signal(false);
@@ -150,12 +163,14 @@ export class SystemComponent implements OnInit, OnDestroy {
 
   constructor(
     private systemUC: SystemUseCase,
+    private governanceUC: GovernanceUseCase,
     private dialog: DialogService
   ) {}
 
   ngOnInit() {
     this.loadData();
     this.loadMaintenanceMode();
+    this.loadApprovalRequests();
     // Auto-refresh workers telemetry every 30s
     this.workerRefreshTimer = setInterval(() => {
       this.systemUC.getWorkersStatus().subscribe({
@@ -445,5 +460,62 @@ export class SystemComponent implements OnInit, OnDestroy {
   closeWebhookDetailModal(): void {
     this.showWebhookDetailModal.set(false);
     this.selectedWebhookEvent.set(null);
+  }
+
+  // ─── MAKER-CHECKER (DUAL APPROVAL) ──────────────────────────────────────────
+
+  loadApprovalRequests(): void {
+    this.loadingApprovals.set(true);
+    this.governanceUC.listApprovalRequests().subscribe({
+      next: (res) => {
+        this.approvalRequests.set(res.results || []);
+        this.loadingApprovals.set(false);
+      },
+      error: () => {
+        this.loadingApprovals.set(false);
+      }
+    });
+  }
+
+  resolveApproval(req: ApprovalRequest, status: 'APPROVED' | 'REJECTED'): void {
+    this.resolvingApprovalId.set(req.id);
+    this.governanceUC.resolveApprovalRequest(req.id, status).subscribe({
+      next: () => {
+        this.resolvingApprovalId.set(null);
+        this.successNotice.set(`Approval request for ${req.action_type} marked as ${status}!`);
+        this.loadApprovalRequests();
+        setTimeout(() => this.successNotice.set(null), 5000);
+      },
+      error: (err) => {
+        this.resolvingApprovalId.set(null);
+        this.errorNotice.set(err.error?.message || 'Failed to update approval request.');
+      }
+    });
+  }
+
+  // ─── SAFE IMPERSONATION ─────────────────────────────────────────────────────
+
+  generateImpersonationSession(): void {
+    if (!this.impersonationUserId.trim() || !this.impersonationReason.trim()) {
+      this.errorNotice.set('Target User UUID and Audit Reason are required.');
+      return;
+    }
+
+    this.isGeneratingImpersonation.set(true);
+    this.errorNotice.set(null);
+    this.impersonationSession.set(null);
+
+    this.governanceUC.generateImpersonationToken(this.impersonationUserId.trim(), this.impersonationReason.trim()).subscribe({
+      next: (sess) => {
+        this.isGeneratingImpersonation.set(false);
+        this.impersonationSession.set(sess);
+        this.successNotice.set(`Generated 30-minute shadow access token for ${sess.target_email}. Audit logged.`);
+        setTimeout(() => this.successNotice.set(null), 5000);
+      },
+      error: (err) => {
+        this.isGeneratingImpersonation.set(false);
+        this.errorNotice.set(err.error?.message || 'Failed to generate shadow impersonation token.');
+      }
+    });
   }
 }

@@ -15,7 +15,8 @@ function getWsUrl(): string {
   const isSsl = base.startsWith('https://');
   const host = base.replace(/^https?:\/\//, '').split('/api')[0];
   const protocol = isSsl ? 'wss://' : 'ws://';
-  return `${protocol}${host}/ws`;
+  const token = typeof localStorage !== 'undefined' ? (localStorage.getItem('admin_access_token') || localStorage.getItem('token') || '') : '';
+  return `${protocol}${host}/ws${token ? '?token=' + encodeURIComponent(token) : ''}`;
 }
 
 @Injectable({
@@ -29,13 +30,22 @@ export class WebSocketService {
 
   constructor() {}
 
-  public connect(url = getWsUrl()): void {
+  public connect(url?: string): void {
     if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
       return;
     }
 
+    const token = typeof localStorage !== 'undefined' ? (localStorage.getItem('admin_access_token') || localStorage.getItem('token') || '') : '';
+    if (!token) {
+      // Delay connection until user has logged in
+      this.scheduleReconnect(url || getWsUrl());
+      return;
+    }
+
+    const targetUrl = url || getWsUrl();
+
     try {
-      this.socket = new WebSocket(url);
+      this.socket = new WebSocket(targetUrl);
 
       this.socket.onopen = () => {
         this.isConnected = true;
@@ -56,16 +66,16 @@ export class WebSocketService {
       this.socket.onclose = () => {
         this.isConnected = false;
         console.log('[WebSocketService] Disconnected. Reconnecting in 5s...');
-        this.scheduleReconnect(url);
+        this.scheduleReconnect(targetUrl);
       };
 
       this.socket.onerror = (err) => {
-        console.error('[WebSocketService] WebSocket error:', err);
+        console.warn('[WebSocketService] WebSocket connection retry:', err);
         this.socket?.close();
       };
     } catch (err) {
-      console.error('[WebSocketService] Failed to establish connection:', err);
-      this.scheduleReconnect(url);
+      console.warn('[WebSocketService] Failed to establish connection:', err);
+      this.scheduleReconnect(targetUrl);
     }
   }
 

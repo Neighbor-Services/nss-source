@@ -1,131 +1,233 @@
-<div class="media-container">
-  <!-- Top Header Banner -->
-  <div class="page-header">
-    <div class="header-left">
-      <div class="header-badge">
-        <span class="pulse-dot"></span>
-        <span>GoStore CAS Appliance • Prolead File Engine</span>
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">GoStore CAS &amp; Media Object Storage</h1>
+        <span class="live-pill">
+          <span class="live-dot"></span> GoStore CAS Engine Online
+        </span>
       </div>
-      <h1 class="page-title">Media &amp; Object Storage</h1>
-      <p class="page-subtitle">Inspect Content-Addressed Storage partitions, manage live media assets, and monitor deduplication.</p>
+      <p class="hero-subtitle">Content-addressed storage partitions, SHA-256 asset deduplication, live media thumbnails &amp; CDN distribution</p>
     </div>
-
-    <div class="header-stats">
-      <div class="stat-card">
-        <span class="stat-label">Active Bucket</span>
-        <span class="stat-value text-accent">{{ activeBucket() }}</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Total Objects</span>
-        <span class="stat-value">{{ filteredObjects().length }}</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Volume Usage</span>
-        <span class="stat-value text-purple">{{ formatBytes(totalSize()) }}</span>
-      </div>
+    <div class="hero-actions">
+      <button class="btn btn-soft-light" (click)="fetchObjects()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading() ? 'Syncing...' : 'Refresh Partition' }}</span>
+      </button>
     </div>
   </div>
 
-  <!-- Bucket Navigation Bar -->
-  <div class="bucket-nav">
-    <div class="bucket-tabs">
-      @for (b of buckets(); track b) {
-        <button 
-          class="bucket-tab" 
-          [class.active]="activeBucket() === b"
-          (click)="selectBucket(b)">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-            <path d="m3.3 7 8.7 5 8.7-5"/>
-            <path d="M12 22V12"/>
-          </svg>
-          <span>{{ b }}</span>
-        </button>
-      }
-    </div>
-
-    <button class="btn-refresh" (click)="fetchObjects()" [disabled]="isLoading()" title="Refresh Bucket">
-      <svg [class.spin]="isLoading()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-        <path d="M3 3v5h5"/>
-        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-        <path d="M16 21h5v-5"/>
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    @for (b of buckets(); track b) {
+      <button 
+        class="hero-tab-btn" 
+        [class.active]="activeBucket() === b"
+        (click)="selectBucket(b)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+          <path d="m3.3 7 8.7 5 8.7-5"/>
+          <path d="M12 22V12"/>
+        </svg>
+        <span>{{ b }}</span>
+        @if (activeBucket() === b) {
+          <span class="tab-badge">{{ objects().length }}</span>
+        }
+      </button>
+    }
+    <button 
+      class="hero-tab-btn" 
+      style="border-style: dashed; border-color: rgba(255,255,255,0.4);"
+      (click)="showAddBucketModal.set(!showAddBucketModal())"
+      title="Switch to or add a custom storage partition">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-      <span>Refresh</span>
+      <span>Custom Bucket</span>
     </button>
   </div>
+</div>
 
-  <!-- Filter & Control Toolbar -->
-  <div class="toolbar">
-    <div class="search-box">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input 
-        type="text" 
-        placeholder="Filter by filename, extension, or MIME type..." 
-        [ngModel]="searchQuery()" 
-        (ngModelChange)="searchQuery.set($event)">
+@if (showAddBucketModal()) {
+  <div style="padding: 12px 24px; background: var(--bg-surface-elevated, #1e293b); border-bottom: 1px solid var(--border, #334155); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <span style="font-size: 13px; font-weight: 600; color: var(--text-main, #f8fafc);">Target Bucket / Partition:</span>
+    <input 
+      type="text" 
+      class="form-control" 
+      style="max-width: 260px; height: 36px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border, #475569); background: var(--bg-input, #0f172a); color: var(--text-main, #f8fafc);" 
+      placeholder="e.g. custom-bucket-name" 
+      [ngModel]="customBucketInput()" 
+      (ngModelChange)="customBucketInput.set($event)"
+      (keydown.enter)="addCustomBucket()"
+    />
+    <button class="btn btn-primary btn-sm" (click)="addCustomBucket()" [disabled]="!customBucketInput().trim()">
+      Switch Bucket
+    </button>
+    <button class="btn btn-secondary btn-sm" (click)="showAddBucketModal.set(false)">
+      Cancel
+    </button>
+  </div>
+}
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  <!-- TOP KPI METRIC CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+          </svg>
+        </div>
+        <span class="badge badge-primary">Partition</span>
+      </div>
+      <div>
+        <div class="kpi-label">ACTIVE BUCKET</div>
+        <div class="kpi-value text-primary font-mono">{{ activeBucket() }}</div>
+        <div class="kpi-meta">Isolated GoStore CAS namespace</div>
+      </div>
     </div>
 
-    <div class="filter-group">
-      <button class="filter-chip" [class.active]="selectedFilter() === 'all'" (click)="selectedFilter.set('all')">All</button>
-      <button class="filter-chip" [class.active]="selectedFilter() === 'images'" (click)="selectedFilter.set('images')">Images</button>
-      <button class="filter-chip" [class.active]="selectedFilter() === 'documents'" (click)="selectedFilter.set('documents')">Documents</button>
-      <button class="filter-chip" [class.active]="selectedFilter() === 'audio'" (click)="selectedFilter.set('audio')">Audio</button>
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Index</span>
+      </div>
+      <div>
+        <div class="kpi-label">INDEXED OBJECTS</div>
+        <div class="kpi-value text-emerald">{{ filteredObjects().length }}</div>
+        <div class="kpi-meta">Files located in partition</div>
+      </div>
     </div>
 
-    <div class="view-toggle">
-      <button class="btn-icon" [class.active]="viewMode() === 'grid'" (click)="viewMode.set('grid')" title="Grid View">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-        </svg>
-      </button>
-      <button class="btn-icon" [class.active]="viewMode() === 'list'" (click)="viewMode.set('list')" title="List View">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-        </svg>
-      </button>
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">Volume</span>
+      </div>
+      <div>
+        <div class="kpi-label">VOLUME USAGE</div>
+        <div class="kpi-value text-purple">{{ formatBytes(totalSize()) }}</div>
+        <div class="kpi-meta">Current storage footprint</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">CAS Engine</span>
+      </div>
+      <div>
+        <div class="kpi-label">STORAGE ENGINE</div>
+        <div class="kpi-value text-amber">GoStore CAS</div>
+        <div class="kpi-meta">SHA-256 Deduplication Active</div>
+      </div>
     </div>
   </div>
 
-  <!-- Copy Toast Notification -->
   @if (copyFeedback()) {
-    <div class="toast-feedback">
+    <div class="alert alert-success mt-3">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="20 6 9 17 4 12"/>
       </svg>
       <span>{{ copyFeedback() }}</span>
+      <button class="alert-close" (click)="copyFeedback.set(null)">✕</button>
     </div>
   }
 
-  <!-- Error Banner -->
   @if (errorMessage()) {
-    <div class="error-banner">
+    <div class="alert alert-danger mt-3">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
       <span>{{ errorMessage() }}</span>
+      <button class="alert-close" (click)="errorMessage.set(null)">✕</button>
     </div>
   }
+
+  <!-- SEARCH & FILTER TOOLBAR CARD -->
+  <div class="card filter-panel mt-3">
+    <div class="filter-controls-row">
+      <div class="search-input-box">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input 
+          type="text" 
+          placeholder="Filter by filename, extension, or MIME type..." 
+          [ngModel]="searchQuery()" 
+          (ngModelChange)="searchQuery.set($event)"
+          class="form-control filter-input"
+        />
+        @if (searchQuery()) {
+          <button class="clear-btn" (click)="searchQuery.set('')" title="Clear search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        }
+      </div>
+
+      <div class="tab-pill-bar">
+        <button class="tab-pill" [class.active]="selectedFilter() === 'all'" (click)="selectedFilter.set('all')">All Types</button>
+        <button class="tab-pill" [class.active]="selectedFilter() === 'images'" (click)="selectedFilter.set('images')">Images</button>
+        <button class="tab-pill" [class.active]="selectedFilter() === 'documents'" (click)="selectedFilter.set('documents')">Documents</button>
+        <button class="tab-pill" [class.active]="selectedFilter() === 'audio'" (click)="selectedFilter.set('audio')">Audio</button>
+      </div>
+
+      <div class="view-toggle-btns">
+        <button class="btn-icon" [class.active]="viewMode() === 'grid'" (click)="viewMode.set('grid')" title="Grid View">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </button>
+        <button class="btn-icon" [class.active]="viewMode() === 'list'" (click)="viewMode.set('list')" title="List View">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Loading State -->
   @if (isLoading()) {
-    <div class="loading-state">
+    <div class="card p-5 text-center my-4">
       <div class="spinner"></div>
-      <p>Synchronizing storage partition...</p>
+      <p class="mt-3 text-muted">Synchronizing storage partition from GoStore appliance...</p>
     </div>
   } @else if (filteredObjects().length === 0) {
     <!-- Empty State -->
-    <div class="empty-state">
-      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-        <path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>
-      </svg>
-      <h3>No objects in bucket '{{ activeBucket() }}'</h3>
-      <p>Upload files or trigger actions in the application to populate this partition.</p>
+    <div class="card my-4">
+      <div class="empty-state">
+        <div class="empty-icon-wrap blue">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+            <path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>
+          </svg>
+        </div>
+        <h4 class="empty-title">No objects in partition '{{ activeBucket() }}'</h4>
+        <p class="empty-sub">Files uploaded or generated across this service partition will be indexed and presented here.</p>
+      </div>
     </div>
   } @else {
     <!-- Object Grid View -->
     @if (viewMode() === 'grid') {
-      <div class="object-grid">
+      <div class="object-grid mt-4">
         @for (obj of filteredObjects(); track obj.name) {
           <div class="object-card" (click)="openPreview(obj)">
             <div class="card-preview">
@@ -133,20 +235,20 @@
                 <img [src]="obj.url" [alt]="obj.name" loading="lazy" class="card-img" />
               } @else {
                 <div class="card-doc-placeholder">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
                   </svg>
-                  <span class="doc-ext">{{ obj.name.split('.').pop()?.toUpperCase() }}</span>
+                  <span class="doc-ext font-mono font-bold">{{ obj.name.split('.').pop()?.toUpperCase() }}</span>
                 </div>
               }
               <div class="card-overlay">
-                <button class="overlay-btn" (click)="$event.stopPropagation(); copyLink(obj.url)" title="Copy Link">
+                <button class="overlay-btn" (click)="$event.stopPropagation(); copyLink(obj.url)" title="Copy Direct URL">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
                   </svg>
                 </button>
-                <a [href]="obj.url" target="_blank" (click)="$event.stopPropagation()" class="overlay-btn" title="Open Original">
+                <a [href]="obj.url" target="_blank" (click)="$event.stopPropagation()" class="overlay-btn" title="Open Original File">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                   </svg>
@@ -154,11 +256,11 @@
               </div>
             </div>
 
-            <div class="card-body">
-              <div class="card-title" [title]="obj.name">{{ obj.name }}</div>
-              <div class="card-meta">
-                <span class="meta-size">{{ formatBytes(obj.size) }}</span>
-                <span class="meta-date">{{ obj.updated | date:'shortDate' }}</span>
+            <div class="card-info-box">
+              <div class="card-filename font-bold" [title]="obj.name">{{ obj.name }}</div>
+              <div class="card-meta-row">
+                <span class="badge badge-secondary font-mono">{{ formatBytes(obj.size) }}</span>
+                <span class="text-dim text-xs">{{ obj.updated | date:'shortDate' }}</span>
               </div>
             </div>
           </div>
@@ -166,98 +268,107 @@
       </div>
     } @else {
       <!-- Object List View -->
-      <div class="object-list">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Object Name</th>
-              <th>Type</th>
-              <th>Size</th>
-              <th>Last Modified</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (obj of filteredObjects(); track obj.name) {
-              <tr (click)="openPreview(obj)">
-                <td class="name-cell">
-                  <div class="name-wrap">
-                    @if (isImage(obj.name)) {
-                      <img [src]="obj.url" class="mini-thumb" alt="" />
-                    } @else {
-                      <div class="mini-icon">📄</div>
-                    }
-                    <span class="cell-name">{{ obj.name }}</span>
-                  </div>
-                </td>
-                <td><span class="badge-type">{{ obj.content_type || 'file' }}</span></td>
-                <td>{{ formatBytes(obj.size) }}</td>
-                <td>{{ obj.updated | date:'medium' }}</td>
-                <td class="action-cell" (click)="$event.stopPropagation()">
-                  <button class="btn-action" (click)="copyLink(obj.url)" title="Copy Link">Copy</button>
-                  <a [href]="obj.url" target="_blank" class="btn-action">Open</a>
-                </td>
+      <div class="card table-card mt-4">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Object Name</th>
+                <th>MIME Content-Type</th>
+                <th>Size</th>
+                <th>Last Modified</th>
+                <th class="text-right">Actions</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (obj of filteredObjects(); track obj.name) {
+                <tr (click)="openPreview(obj)" class="clickable-row">
+                  <td>
+                    <div class="user-cell">
+                      @if (isImage(obj.name)) {
+                        <img [src]="obj.url" class="mini-thumb" alt="" />
+                      } @else {
+                        <div class="mini-icon">📄</div>
+                      }
+                      <b class="font-mono text-sm">{{ obj.name }}</b>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-purple font-mono">{{ obj.content_type || 'application/octet-stream' }}</span></td>
+                  <td><code class="mono-badge font-bold">{{ formatBytes(obj.size) }}</code></td>
+                  <td><span class="text-dim font-mono">{{ obj.updated | date:'medium' }}</span></td>
+                  <td class="text-right" (click)="$event.stopPropagation()">
+                    <button class="btn btn-xs btn-secondary mr-2" (click)="copyLink(obj.url)" title="Copy Link">Copy</button>
+                    <a [href]="obj.url" target="_blank" class="btn btn-xs btn-primary">Open</a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     }
   }
 
   <!-- Detail & Image Transformation Preview Modal -->
   @if (previewObject(); as item) {
-    <div class="modal-backdrop" (click)="closePreview()">
-      <div class="preview-modal" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" (click)="closePreview()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-header-title">
-            <h3>{{ item.name }}</h3>
-            <span class="modal-bucket-tag">Bucket: {{ item.bucket }}</span>
+          <div class="modal-title-group">
+            <div class="modal-icon-badge blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title font-mono">{{ item.name }}</h3>
+              <p class="modal-subtitle">Bucket Partition: <span class="badge badge-primary">{{ item.bucket }}</span></p>
+            </div>
           </div>
-          <button class="btn-close" (click)="closePreview()">×</button>
+          <button class="btn-icon-close" (click)="closePreview()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         <div class="modal-body">
-          <div class="modal-visual">
+          <div class="modal-visual-preview mb-4">
             @if (isImage(item.name)) {
-              <img [src]="item.url" [alt]="item.name" class="modal-img" />
+              <img [src]="item.url" [alt]="item.name" class="modal-preview-img" />
             } @else {
-              <div class="modal-doc-box">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <div class="modal-doc-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
-                <p>Preview not available for this format.</p>
+                <p class="text-sm text-dim mt-2">Binary/Document preview not rendered inline.</p>
               </div>
             }
           </div>
 
-          <div class="modal-details">
-            <div class="detail-row">
-              <span class="detail-label">File Size:</span>
-              <span class="detail-val">{{ formatBytes(item.size) }} ({{ item.size }} bytes)</span>
+          <div class="audit-detail-grid">
+            <div class="audit-kv">
+              <span class="kv-key">File Size:</span>
+              <span class="badge badge-secondary font-mono">{{ formatBytes(item.size) }} ({{ item.size }} B)</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Content-Type:</span>
-              <span class="detail-val">{{ item.content_type || 'application/octet-stream' }}</span>
+            <div class="audit-kv">
+              <span class="kv-key">Content-Type:</span>
+              <code class="mono-badge">{{ item.content_type || 'application/octet-stream' }}</code>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Updated:</span>
-              <span class="detail-val">{{ item.updated | date:'medium' }}</span>
+            <div class="audit-kv">
+              <span class="kv-key">Last Modified:</span>
+              <span class="font-mono">{{ item.updated | date:'medium' }}</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Direct URL:</span>
-              <div class="url-copy-box">
-                <input type="text" readonly [value]="item.url" class="url-input" />
-                <button class="btn-copy-url" (click)="copyLink(item.url)">Copy</button>
+            <div class="audit-kv">
+              <span class="kv-key">Direct CDN URL:</span>
+              <div style="display: flex; gap: 6px; width: 100%;">
+                <input type="text" readonly [value]="item.url" class="form-control form-control-sm font-mono text-xs" />
+                <button class="btn btn-sm btn-primary" (click)="copyLink(item.url)">Copy</button>
               </div>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <a [href]="item.url" target="_blank" class="btn-primary">View Full Asset</a>
-          <button class="btn-secondary" (click)="closePreview()">Close</button>
+          <button class="btn btn-secondary" (click)="closePreview()">Close</button>
+          <a [href]="item.url" target="_blank" class="btn btn-primary">Open Asset in New Tab</a>
         </div>
       </div>
     </div>

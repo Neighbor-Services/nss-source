@@ -865,31 +865,47 @@ app-emergency-dispatch {
   color: #ffffff;
 }
 
-/* ─── CARDS & DATA TABLES ─────────────────────────────────────────────────── */
 .card, .table-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 20px -2px rgba(17, 38, 146, 0.05);
+  position: relative;
 }
 
 .card-header, .table-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-surface-elevated);
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface-elevated) 100%);
   flex-wrap: wrap;
   gap: 16px;
 }
 
 .header-left, .table-title-group {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 14px;
 }
+
+.header-icon-box, .table-icon-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-icon-box.blue, .table-icon-badge.blue { background: var(--primary-light); color: var(--primary); }
+.header-icon-box.amber, .table-icon-badge.amber { background: var(--warning-bg); color: var(--warning); }
+.header-icon-box.green, .table-icon-badge.green { background: var(--success-bg); color: var(--success); }
+.header-icon-box.purple, .table-icon-badge.purple { background: var(--purple-bg); color: var(--purple); }
 
 .header-right {
   display: flex;
@@ -900,16 +916,18 @@ app-emergency-dispatch {
 
 .card-title, .table-title {
   font-family: var(--font-heading);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 16.5px;
+  font-weight: 800;
   color: var(--text-main);
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .card-subtitle, .table-subtitle {
   font-size: 12.5px;
   color: var(--text-muted);
-  margin: 0;
+  margin-top: 3px;
+  line-height: 1.4;
 }
 
 .card-body {
@@ -926,29 +944,49 @@ app-emergency-dispatch {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
-.data-table th {
-  background: var(--bg-surface-elevated);
-  color: var(--text-muted);
-  padding: 14px 20px;
-  font-weight: 700;
-  font-size: 11px;
+.data-table thead th, .data-table th {
+  background: #eef2f8;
+  color: #1e293b;
+  padding: 15px 22px;
+  font-weight: 800;
+  font-size: 11.5px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.08em;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 2px solid #cbd5e1;
+  white-space: nowrap;
+  user-select: none;
 }
 
-.data-table td {
-  padding: 16px 20px;
+:root[data-theme="dark"] .data-table thead th,
+.dark-mode .data-table thead th,
+:root[data-theme="dark"] .data-table th,
+.dark-mode .data-table th {
+  background: #1a1e30;
+  color: #e2e8f0;
+  border-bottom: 2px solid #2a324b;
+}
+
+.data-table tbody td, .data-table td {
+  padding: 16px 22px;
   color: var(--text-main);
   border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
 
-.data-table tr:hover td {
-  background: var(--bg-surface-hover);
+.data-table tbody tr:nth-child(even) td {
+  background-color: rgba(248, 250, 252, 0.4);
+}
+
+.data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:hover td {
+  background-color: var(--primary-light) !important;
 }
 
 .table-footer {
@@ -1058,17 +1096,22 @@ app-emergency-dispatch {
 }
 
 .empty-icon-wrap {
-  width: 64px;
-  height: 64px;
+  width: 58px;
+  height: 58px;
   border-radius: var(--radius-full);
   background: var(--bg-surface-elevated);
   color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   border: 1px solid var(--border);
 }
+
+.empty-icon-wrap.blue { background: var(--primary-light); color: var(--primary); border-color: rgba(58, 87, 232, 0.25); }
+.empty-icon-wrap.green { background: var(--success-bg); color: var(--success); border-color: rgba(26, 160, 83, 0.25); }
+.empty-icon-wrap.amber { background: var(--warning-bg); color: var(--warning); border-color: rgba(241, 106, 27, 0.25); }
+.empty-icon-wrap.purple { background: var(--purple-bg); color: var(--purple); border-color: rgba(168, 85, 247, 0.25); }
 
 .empty-title {
   font-size: 16px;

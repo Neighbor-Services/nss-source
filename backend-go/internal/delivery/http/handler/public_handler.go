@@ -139,6 +139,9 @@ func (h *PublicHandler) RenderStaticPage(pageName string) gin.HandlerFunc {
 		paths := []string{
 			pageName + ".html",
 			"../" + pageName + ".html",
+			"templates/" + pageName + ".html",
+			"templates/public_site/" + pageName + ".html",
+			"/app/templates/" + pageName + ".html",
 			"backend/public_site/templates/public_site/" + pageName + ".html",
 			"../backend/public_site/templates/public_site/" + pageName + ".html",
 		}

@@ -114,7 +114,7 @@ func Load() *Config {
 		MediaUploadDir:           getEnv("MEDIA_UPLOAD_DIR", "./media"),
 		GoStoreURL:               getEnv("GOSTORE_URL", "https://file.proleadsolutions.co"),
 		GoStoreAPIKey:            getEnv("GOSTORE_API_KEY", ""),
-		GoStoreBucket:            getEnv("GOSTORE_BUCKET", "default"),
+		GoStoreBucket:            getEnv("GOSTORE_BUCKET", getEnv("BUCKET_NAME", getEnv("MEDIA_BUCKET", "default"))),
 		FirebaseCredentialsFile:  getEnv("FIREBASE_CREDENTIALS_FILE", "./firebase-service-account.json"),
 		FirebaseCredentialsJSON:  getEnv("FIREBASE_CREDENTIALS_JSON", ""),
 		SMTPHost:                 getEnv("EMAIL_HOST", ""),

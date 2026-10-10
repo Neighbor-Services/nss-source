@@ -40,19 +40,19 @@ func (r *publicRepository) ListTestimonials(ctx context.Context) ([]entity.Testi
 
 func (r *publicRepository) ListFAQs(ctx context.Context) ([]entity.FAQ, error) {
 	var list []entity.FAQ
-	err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("order ASC").Find(&list).Error
+	err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("\"order\" ASC").Find(&list).Error
 	return list, err
 }
 
 func (r *publicRepository) ListHowItWorksSteps(ctx context.Context) ([]entity.HowItWorksStep, error) {
 	var list []entity.HowItWorksStep
-	err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("order ASC").Find(&list).Error
+	err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("\"order\" ASC").Find(&list).Error
 	return list, err
 }
 
 func (r *publicRepository) ListSiteStats(ctx context.Context) ([]entity.SiteStat, error) {
 	var list []entity.SiteStat
-	err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("order ASC").Find(&list).Error
+	err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("\"order\" ASC").Find(&list).Error
 	return list, err
 }
 

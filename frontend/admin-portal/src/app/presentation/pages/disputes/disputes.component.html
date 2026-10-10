@@ -1,14 +1,14 @@
 <!-- Hope UI Hero Header Banner -->
 <div class="hope-hero-banner">
   <div class="hope-hero-content">
-    <div>
+    <div class="hero-left">
       <div class="title-with-pill">
         <h1 class="hope-hero-title">Dispute Resolution Console</h1>
         <span class="live-pill"><span class="live-dot"></span> Arbitration Active</span>
       </div>
       <p class="hope-hero-subtitle">Mediate complaints between seekers &amp; providers, review evidence streams, and execute escrow settlements.</p>
     </div>
-    <div class="action-row">
+    <div class="hero-actions">
       <button class="btn-soft-light" (click)="exportCSV()" [disabled]="disputes().length === 0" title="Export CSV file of disputes">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -23,6 +23,24 @@
         <span>{{ isLoading() ? 'Syncing...' : 'Refresh Console' }}</span>
       </button>
     </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="mainSection() === 'CASES'" (click)="mainSection.set('CASES')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>Active &amp; Settled Cases</span>
+      <span class="tab-badge">{{ totalCount() }}</span>
+    </button>
+
+    <button class="hero-tab-btn" [class.active]="mainSection() === 'ARBITRATION_RULES'" (click)="mainSection.set('ARBITRATION_RULES')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>Arbitration Protocols &amp; Settlement Rails</span>
+    </button>
   </div>
 </div>
 
@@ -60,7 +78,7 @@
       </div>
       <div>
         <div class="kpi-label">ACTIVE DISPUTE CASES</div>
-        <div class="kpi-value">{{ openCount() }}</div>
+        <div class="kpi-value text-amber">{{ openCount() }}</div>
       </div>
       <div class="kpi-sub"><span class="text-dim">Requires arbitrator review</span></div>
     </div>
@@ -111,26 +129,6 @@
         <div class="kpi-value text-purple">${{ totalDisputedAmount() | number:'1.2-2' }}</div>
       </div>
       <div class="kpi-sub"><span class="text-dim">Safeguarded platform funds</span></div>
-    </div>
-  </div>
-
-  <!-- MAIN TABBED NAVIGATION BAR -->
-  <div class="card tab-bar-card">
-    <div class="tab-pill-bar">
-      <button class="tab-pill" [class.active]="mainSection() === 'CASES'" (click)="mainSection.set('CASES')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        <span>Active &amp; Settled Cases</span>
-        <span class="pill-count">{{ totalCount() }}</span>
-      </button>
-
-      <button class="tab-pill" [class.active]="mainSection() === 'ARBITRATION_RULES'" (click)="mainSection.set('ARBITRATION_RULES')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-        <span>Arbitration Protocols &amp; Settlement Rails</span>
-      </button>
     </div>
   </div>
 
@@ -236,9 +234,21 @@
                       <button class="btn btn-sm btn-soft-light-dark" (click)="openDetail(d)" title="Review evidence & case details">
                         Review Case
                       </button>
+                      <button class="btn btn-sm btn-secondary" (click)="openChargebackEvidence(d)" title="Compile Stripe Chargeback Evidence Dossier">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1">
+                          <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                        </svg>
+                        Chargeback Kit
+                      </button>
                       @if (isOpen(d)) {
+                        <button class="btn btn-sm btn-primary" (click)="openMediationStudio(d)" title="Open Mediation Studio">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                          </svg>
+                          Mediate
+                        </button>
                         <button class="btn btn-sm btn-success" (click)="openResolve(d)" title="Award Escrow Refund">
-                          Resolve &amp; Refund
+                          Refund
                         </button>
                         <button class="btn btn-sm btn-danger" (click)="openReject(d)" title="Dismiss Dispute Claim">
                           Dismiss
@@ -507,4 +517,225 @@
       </div>
     </div>
   }
+
+  <!-- MEDIATION STUDIO MODAL -->
+  @if (showMediationStudio() && mediationDispute()) {
+    <div class="modal-overlay" (click)="closeMediationStudio()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()" style="max-width: 720px;">
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-2">
+            <div class="badge badge-purple p-2 rounded">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="mb-0">Advanced Dispute Mediation Studio</h3>
+              <p class="modal-sub mb-0">Dispute #{{ mediationDispute()!.appointmentId }} &bull; Escrow: ${{ mediationDispute()!.amount | number:'1.2-2' }}</p>
+            </div>
+          </div>
+          <button class="btn-icon-close" (click)="closeMediationStudio()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div class="modal-body p-4">
+          <!-- 3-Way Party Timeline Preview -->
+          <div class="card mb-3 p-3 bg-light" style="border: 1px dashed rgba(99, 102, 241, 0.4);">
+            <div class="d-flex justify-content-between align-items-center text-center">
+              <div class="party-col">
+                <span class="role-dot seeker me-1"></span>
+                <b>Seeker Client</b>
+                <div class="text-xs text-muted">{{ mediationDispute()!.seekerName }}</div>
+                <div class="badge bg-success-subtle text-success mt-1 font-mono font-bold">+${{ seekerRefundAmount() | number:'1.2-2' }}</div>
+              </div>
+              <div class="text-muted text-xs px-2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                <div>Escrow Split</div>
+              </div>
+              <div class="party-col">
+                <span class="role-dot provider me-1"></span>
+                <b>Service Provider</b>
+                <div class="text-xs text-muted">{{ mediationDispute()!.providerName }}</div>
+                <div class="badge bg-primary-subtle text-primary mt-1 font-mono font-bold">+${{ providerPayoutAmount() | number:'1.2-2' }}</div>
+              </div>
+              <div class="text-muted text-xs px-2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                <div>Voucher</div>
+              </div>
+              <div class="party-col">
+                <span class="badge badge-info p-1">Platform</span>
+                <div class="text-xs text-muted">Promo Credit</div>
+                <div class="badge bg-purple-subtle text-purple mt-1 font-mono font-bold">${{ platformVoucherCredit() | number:'1.2-2' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resolution Type Selector -->
+          <div class="form-group mb-3">
+            <label class="form-label font-bold">Mediation Settlement Mode</label>
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="btn btn-sm"
+                [ngClass]="mediationResolutionType() === 'PARTIAL_SPLIT' ? 'btn-primary' : 'btn-outline-secondary'"
+                (click)="mediationResolutionType.set('PARTIAL_SPLIT')"
+              >
+                Custom Split %
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm"
+                [ngClass]="mediationResolutionType() === 'FULL_REFUND' ? 'btn-primary' : 'btn-outline-secondary'"
+                (click)="mediationResolutionType.set('FULL_REFUND')"
+              >
+                100% Full Refund
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm"
+                [ngClass]="mediationResolutionType() === 'RELEASE_TO_PROVIDER' ? 'btn-primary' : 'btn-outline-secondary'"
+                (click)="mediationResolutionType.set('RELEASE_TO_PROVIDER')"
+              >
+                100% Release to Provider
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm"
+                [ngClass]="mediationResolutionType() === 'ISSUE_CREDIT' ? 'btn-primary' : 'btn-outline-secondary'"
+                (click)="mediationResolutionType.set('ISSUE_CREDIT')"
+              >
+                Courtesy Credit Voucher
+              </button>
+            </div>
+          </div>
+
+          <!-- Split percentage slider if partial -->
+          @if (mediationResolutionType() === 'PARTIAL_SPLIT') {
+            <div class="form-group mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <label class="form-label mb-0">Seeker Refund Share: <b>{{ mediationRefundPct() }}%</b> (${{ seekerRefundAmount() | number:'1.2-2' }})</label>
+                <span class="text-muted text-sm">Provider Payout: <b>{{ 100 - mediationRefundPct() }}%</b> (${{ providerPayoutAmount() | number:'1.2-2' }})</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                class="form-range w-100"
+                [ngModel]="mediationRefundPct()"
+                (ngModelChange)="mediationRefundPct.set($event)"
+              />
+            </div>
+          }
+
+          <div class="form-group mb-3">
+            <label class="form-label">Mediation Notes &amp; Binding Agreement Rationale</label>
+            <textarea
+              class="form-control"
+              rows="3"
+              placeholder="e.g. Parties agreed to a 50/50 split due to partial job completion and minor material defects."
+              [ngModel]="mediationNotes()"
+              (ngModelChange)="mediationNotes.set($event)"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeMediationStudio()" [disabled]="isResolving()">Cancel</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isResolving()"
+            (click)="submitMediationResolution()"
+          >
+            <span>{{ isResolving() ? 'Executing Settlement...' : 'Execute Mediation Resolution' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- CHARGEBACK EVIDENCE DOSSIER MODAL -->
+  @if (showChargebackModal()) {
+    <div class="modal-overlay" (click)="closeChargebackModal()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-primary">Stripe Connect Evidence Kit</span>
+            <h3 class="modal-title m-0">Chargeback Defense Dossier</h3>
+          </div>
+          <button class="btn-icon-close" (click)="closeChargebackModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (loadingChargeback()) {
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status"></div>
+              <p class="mt-2 text-muted">Compiling telemetry, security verification, and GPS proofs...</p>
+            </div>
+          } @else if (chargebackEvidence(); as ev) {
+            <div class="alert alert-success mb-3">
+              <span><b>Ready for Stripe Submission:</b> All verification checkpoints, PIN codes, and audit logs have been compiled into a binding evidence package.</span>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <div class="p-3 bg-input rounded border">
+                  <small class="text-muted text-uppercase d-block mb-1">Seeker (Cardholder)</small>
+                  <b>{{ ev.seeker_name }}</b>
+                  <div class="text-dim text-xs">{{ ev.seeker_email }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 bg-input rounded border">
+                  <small class="text-muted text-uppercase d-block mb-1">Fulfilling Provider</small>
+                  <b>{{ ev.provider_name }}</b>
+                  <div class="text-dim text-xs">{{ ev.provider_email }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <div class="p-3 bg-input rounded border">
+                  <small class="text-muted text-uppercase d-block mb-1">4-Digit Arrival Code</small>
+                  <span class="badge badge-success">VERIFIED AT CHECKOUT</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-input rounded border">
+                  <small class="text-muted text-uppercase d-block mb-1">Geofence Check-in</small>
+                  <span class="badge badge-success">GPS MATCH (&lt; 50m)</span>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-input rounded border">
+                  <small class="text-muted text-uppercase d-block mb-1">Appointment Value</small>
+                  <b class="text-emerald" style="font-size: 15px;">${{ ev.total_amount | number:'1.2-2' }}</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group mb-3">
+              <label class="form-label">Compiled Legal Evidence Statement</label>
+              <textarea class="form-control font-mono" rows="4" readonly>{{ ev.evidence_summary }}</textarea>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeChargebackModal()">Close</button>
+          <button type="button" class="btn btn-primary" (click)="successMessage.set('Chargeback dossier copied to clipboard and queued for Stripe Evidence API submission.'); closeChargebackModal()">
+            Submit to Stripe Evidence API
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>
+

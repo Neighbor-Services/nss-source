@@ -164,6 +164,7 @@ export class UserRepositoryImpl implements UserRepository {
     if (data.gender !== undefined) payload.gender = data.gender;
     if (data.service !== undefined) payload.service = data.service;
     if (data.roleId !== undefined || data.role_id !== undefined) payload.role_id = data.roleId ?? data.role_id;
+    if (data.suspensionReason !== undefined || data.suspension_reason !== undefined) payload.suspension_reason = data.suspensionReason ?? data.suspension_reason;
 
     return this.http.patch<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.users}/${id}`, payload).pipe(
       map(u => ({

@@ -60,4 +60,12 @@ export class ReportUseCase {
   getStripeLiveBalance(): Observable<{ available: number; pending: number; reserved: number; currency: string; lastRefreshed: string }> {
     return this.reportRepo.getStripeLiveBalance();
   }
+
+  getDoubleEntryLedger(): Observable<any> {
+    return this.reportRepo.getDoubleEntryLedger();
+  }
+
+  listLedgerEntries(limit?: number, offset?: number): Observable<any> {
+    return this.reportRepo.listLedgerEntries(limit, offset);
+  }
 }
