@@ -37,6 +37,16 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.Use(middleware.ErrorRecovery())
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS(deps.Config))
+	r.Use(middleware.Anti404Scanner(nil)) // Automatically blocks scanner IPs hitting 10+ 404s in 5m for 7 days
+
+	// Uniform 404 response for non-existent routes
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    "NOT_FOUND",
+			"error":   "Not Found",
+			"message": "The requested endpoint does not exist",
+		})
+	})
 
 	// Unified Media Serving via GoStore CAS Proxy
 	mediaHandler := func(c *gin.Context) {

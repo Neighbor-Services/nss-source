@@ -87,9 +87,9 @@ else
 fi
 
 # Ensure system packages
-echo -e "${YELLOW}Ensuring system packages (git, curl, make, postgresql, nginx, ufw, rsync)...${NC}"
+echo -e "${YELLOW}Ensuring system packages (git, curl, make, postgresql, nginx, ufw, rsync, fail2ban)...${NC}"
 apt-get update -qq
-apt-get install -y -qq git curl make postgresql postgresql-contrib nginx rsync
+apt-get install -y -qq git curl make postgresql postgresql-contrib nginx ufw rsync fail2ban
 
 echo -e "${YELLOW}Phase 2: Directory & Code Placement${NC}"
 
@@ -461,6 +461,9 @@ server {
         return 444;
     }
 
+    access_log /var/log/nginx/access.log combined;
+    error_log /var/log/nginx/error.log warn;
+
     ssl_certificate /etc/nginx/ssl/$API_DOMAIN/cert.pem;
     ssl_certificate_key /etc/nginx/ssl/$API_DOMAIN/key.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -535,6 +538,9 @@ server {
     server_name _;
     server_tokens off;
 
+    access_log /var/log/nginx/access.log combined;
+    error_log /var/log/nginx/error.log warn;
+
     client_max_body_size 50M;
 
     location / {
@@ -581,6 +587,42 @@ if [ "$SETUP_UFW" = "y" ]; then
     ufw allow 443/tcp comment 'HTTPS'
     ufw --force enable
     echo -e "${GREEN}✓ UFW Firewall enabled: ports 22, 80, 443 open. Backend instance ports $(($BASE_PORT + 1))-$(($BASE_PORT + $NUM_INSTANCES)) & PostgreSQL are isolated locally.${NC}"
+fi
+
+echo -e "${YELLOW}Phase 8: Intrusion Prevention & 404 Scanner Auto-Ban (Fail2ban)${NC}"
+read -p "Do you want to configure Fail2ban to automatically block IP addresses hitting 10+ 404 errors in 5m for 7 days? (y/n) [default: y]: " SETUP_FAIL2BAN
+SETUP_FAIL2BAN=${SETUP_FAIL2BAN:-y}
+if [ "$SETUP_FAIL2BAN" = "y" ]; then
+    echo -e "${YELLOW}Configuring Fail2ban 404 scanner detection filter and jail...${NC}"
+
+    mkdir -p /etc/fail2ban/filter.d /etc/fail2ban/jail.d
+
+    # 1. Create Nginx 404 filter
+    cat << 'EOF' > /etc/fail2ban/filter.d/nginx-404.conf
+[Definition]
+# Detect repeated 404 errors (probes for .env, wp-login, hidden configs, exploit paths)
+failregex = ^<HOST> - .* "(GET|POST|HEAD|PUT|DELETE|OPTIONS) .* HTTP/[0-9.]+" 404
+ignoreregex =
+EOF
+
+    # 2. Configure 404 jail (10 attempts in 5 minutes -> ban for 7 days = 604800s)
+    cat << EOF > /etc/fail2ban/jail.d/nginx-404.local
+[nginx-404]
+enabled   = true
+port      = http,https
+filter    = nginx-404
+logpath   = /var/log/nginx/access.log
+maxretry  = 10
+findtime  = 300
+bantime   = 604800
+banaction = ufw
+action    = %(banaction)s[name=%(__name__)s, port="%(port)s", protocol="tcp"]
+EOF
+
+    systemctl enable fail2ban
+    systemctl restart fail2ban
+    echo -e "${GREEN}✓ Fail2ban active: IPs hitting 10+ 404 errors within 5 minutes are banned at firewall level for 7 days (604800s).${NC}"
+    fail2ban-client status nginx-404 2>/dev/null || true
 fi
 
 echo ""
