@@ -120,7 +120,9 @@ func (w *AppointmentNoShowWorker) processNoShows() {
 			if apt.Seeker.Profile != nil && apt.Seeker.Profile.FirstName != "" {
 				seekerName = apt.Seeker.Profile.FirstName
 			}
-			_ = email.SendAppointmentNoShowEmail(w.emailCfg, apt.Seeker.Email, seekerName, "Client", apt.Title, aptDate)
+			if isEmailNotificationEnabled(w.db, apt.SeekerID) {
+				_ = email.SendAppointmentNoShowEmail(w.emailCfg, apt.Seeker.Email, seekerName, "Client", apt.Title, aptDate)
+			}
 		}
 
 		// 2. Notify Provider
@@ -142,13 +144,18 @@ func (w *AppointmentNoShowWorker) processNoShows() {
 			if apt.Provider.Profile != nil && apt.Provider.Profile.FirstName != "" {
 				providerName = apt.Provider.Profile.FirstName
 			}
-			_ = email.SendAppointmentNoShowEmail(w.emailCfg, apt.Provider.Email, providerName, "Provider", apt.Title, aptDate)
+			if isEmailNotificationEnabled(w.db, apt.ProviderID) {
+				_ = email.SendAppointmentNoShowEmail(w.emailCfg, apt.Provider.Email, providerName, "Provider", apt.Title, aptDate)
+			}
 		}
 	}
 }
 
 func (w *AppointmentNoShowWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

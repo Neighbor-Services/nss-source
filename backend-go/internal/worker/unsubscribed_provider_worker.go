@@ -141,8 +141,10 @@ func (w *UnsubscribedProviderWorker) processUnsubscribedProviders() {
 		})
 
 		// 3. Marketing Email
-		serviceName := p.Service
-		_ = email.SendUnsubscribedProviderReminderEmail(w.emailCfg, p.User.Email, displayName, serviceName)
+		if p.EmailNotificationsEnabled {
+			serviceName := p.Service
+			_ = email.SendUnsubscribedProviderReminderEmail(w.emailCfg, p.User.Email, displayName, serviceName)
+		}
 
 		// 4. Log Campaign Send to prevent spam
 		refID := fmt.Sprintf("unsub_prov_%s_%s", p.UserID.String(), now.Format("20060102"))
@@ -161,6 +163,9 @@ func (w *UnsubscribedProviderWorker) processUnsubscribedProviders() {
 
 func (w *UnsubscribedProviderWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

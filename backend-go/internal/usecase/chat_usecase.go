@@ -169,6 +169,10 @@ func (u *chatUseCase) SaveFullMessage(ctx context.Context, msg *entity.Message) 
 					continue
 				}
 
+				if p.Profile != nil && !p.Profile.PushNotificationsEnabled {
+					continue
+				}
+
 				tokens, tErr := u.tokenRepo.ListByUser(context.Background(), p.ID)
 				if tErr != nil || len(tokens) == 0 {
 					continue

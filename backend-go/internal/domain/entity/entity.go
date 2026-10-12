@@ -130,6 +130,8 @@ type Profile struct {
 	Availability         string     `gorm:"size:50;default:'SCHEDULED'" json:"availability"` // SCHEDULED, SAME_DAY, EMERGENCY
 	Specialties          JSONSlice  `gorm:"type:json" json:"specialties,omitempty"`
 	Qualifications       string     `gorm:"type:text" json:"qualifications,omitempty"`
+	EmailNotificationsEnabled bool       `gorm:"default:true" json:"email_notifications_enabled"`
+	PushNotificationsEnabled  bool       `gorm:"default:true" json:"push_notifications_enabled"`
 	CreatedAt            time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt            time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 

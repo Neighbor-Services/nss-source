@@ -124,8 +124,10 @@ func (w *InactiveUserWorker) processInactiveUsers() {
 			})
 
 			// Email re-engagement
-			userName := u.Email
-			_ = email.SendInactiveUserReengagementEmail(w.emailCfg, u.Email, userName, seg.campaignType)
+			if isEmailNotificationEnabled(w.db, u.ID) {
+				userName := u.Email
+				_ = email.SendInactiveUserReengagementEmail(w.emailCfg, u.Email, userName, seg.campaignType)
+			}
 
 			// In-app notification
 			_ = w.db.Create(&entity.Notification{
@@ -156,6 +158,9 @@ func (w *InactiveUserWorker) processInactiveUsers() {
 
 func (w *InactiveUserWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

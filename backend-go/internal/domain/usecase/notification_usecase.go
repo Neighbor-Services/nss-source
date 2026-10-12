@@ -16,4 +16,6 @@ type NotificationUseCase interface {
 	GetDeviceTokens(ctx context.Context, userID uuid.UUID) ([]entity.DeviceToken, error)
 	SendPushNotification(ctx context.Context, userID uuid.UUID, title, body string, data map[string]string) error
 	SendPushToTokens(ctx context.Context, tokens []string, title, body string, data map[string]string) error
+	GetNotificationPreferences(ctx context.Context, userID uuid.UUID) (emailEnabled bool, pushEnabled bool, err error)
+	UpdateNotificationPreferences(ctx context.Context, userID uuid.UUID, emailEnabled *bool, pushEnabled *bool) (emailOut bool, pushOut bool, err error)
 }

@@ -240,15 +240,17 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 			if matchedReq.Price != nil {
 				priceVal = *matchedReq.Price
 			}
-			_ = email.SendNearbyJobAlertEmail(
-				w.emailCfg,
-				profile.User.Email,
-				userName,
-				matchedReq.Title,
-				serviceName,
-				distVal,
-				priceVal,
-			)
+			if profile.EmailNotificationsEnabled {
+				_ = email.SendNearbyJobAlertEmail(
+					w.emailCfg,
+					profile.User.Email,
+					userName,
+					matchedReq.Title,
+					serviceName,
+					distVal,
+					priceVal,
+				)
+			}
 
 			// Record log to prevent duplicate notifications
 			w.db.Create(&entity.EmailCampaignLog{
@@ -265,6 +267,9 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 
 func (w *NearbyRequestWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

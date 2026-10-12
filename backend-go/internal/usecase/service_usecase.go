@@ -85,6 +85,16 @@ func (u *serviceUseCase) sendPush(userID uuid.UUID, title, body string, data map
 	if u.fcmClient == nil || u.tokenRepo == nil {
 		return
 	}
+
+	// Check if recipient opted out of push notifications
+	if u.profileRepo != nil {
+		if prof, err := u.profileRepo.GetByUserID(context.Background(), userID); err == nil && prof != nil {
+			if !prof.PushNotificationsEnabled {
+				return
+			}
+		}
+	}
+
 	go func() {
 		tokens, err := u.tokenRepo.ListByUser(context.Background(), userID)
 		if err != nil || len(tokens) == 0 {
@@ -679,13 +689,15 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 						sched = req.ScheduledTime.Format("January 02, 2006 at 03:04 PM")
 					}
 
-					_ = email.SendDirectRequestEmail(&email.Config{
-						Host:     u.cfg.SMTPHost,
-						Port:     u.cfg.SMTPPort,
-						User:     u.cfg.SMTPUser,
-						Password: u.cfg.SMTPPassword,
-						From:     u.cfg.EmailFrom,
-					}, pUser.Email, providerName, seekerName, req.Title, price, sched, req.Description)
+					if pProfile == nil || pProfile.EmailNotificationsEnabled {
+						_ = email.SendDirectRequestEmail(&email.Config{
+							Host:     u.cfg.SMTPHost,
+							Port:     u.cfg.SMTPPort,
+							User:     u.cfg.SMTPUser,
+							Password: u.cfg.SMTPPassword,
+							From:     u.cfg.EmailFrom,
+						}, pUser.Email, providerName, seekerName, req.Title, price, sched, req.Description)
+					}
 				}
 			}()
 		}
@@ -751,7 +763,7 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 					})
 
 					// Broadcast Email Notification
-					if u.cfg != nil && u.cfg.SMTPHost != "" && p.User != nil && p.User.Email != "" {
+					if u.cfg != nil && u.cfg.SMTPHost != "" && p.User != nil && p.User.Email != "" && p.EmailNotificationsEnabled {
 						providerName := p.FirstName
 						if providerName == "" {
 							providerName = p.User.Email
@@ -948,7 +960,9 @@ func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID
 									Password: u.cfg.SMTPPassword,
 									From:     u.cfg.EmailFrom,
 								}
-								_ = email.SendAppointmentCancelledEmail(emailCfg, pUser.Email, pName, sName, reqTitle, "Cancelled by client")
+								if pProf == nil || pProf.EmailNotificationsEnabled {
+									_ = email.SendAppointmentCancelledEmail(emailCfg, pUser.Email, pName, sName, reqTitle, "Cancelled by client")
+								}
 							}
 						}(providerID, req.Title)
 					}
@@ -1103,11 +1117,17 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 					From:     u.cfg.EmailFrom,
 				}
 
-				_ = email.SendProposalApprovedEmail(emailCfg, pUser.Email, providerName, seekerName, sUser.Email, req.Title, priceVal, sched)
+				if pProfile == nil || pProfile.EmailNotificationsEnabled {
+					_ = email.SendProposalApprovedEmail(emailCfg, pUser.Email, providerName, seekerName, sUser.Email, req.Title, priceVal, sched)
+				}
 
 				if apt != nil {
-					_ = email.SendAppointmentBookedEmail(emailCfg, sUser.Email, seekerName, providerName, req.Title, sched, "")
-					_ = email.SendAppointmentBookedEmail(emailCfg, pUser.Email, providerName, seekerName, req.Title, sched, "")
+					if sProfile == nil || sProfile.EmailNotificationsEnabled {
+						_ = email.SendAppointmentBookedEmail(emailCfg, sUser.Email, seekerName, providerName, req.Title, sched, "")
+					}
+					if pProfile == nil || pProfile.EmailNotificationsEnabled {
+						_ = email.SendAppointmentBookedEmail(emailCfg, pUser.Email, providerName, seekerName, req.Title, sched, "")
+					}
 				}
 			}
 		}()
@@ -1244,13 +1264,15 @@ func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid
 						priceVal = *req.Price
 					}
 
-					_ = email.SendNewProposalEmail(&email.Config{
-						Host:     u.cfg.SMTPHost,
-						Port:     u.cfg.SMTPPort,
-						User:     u.cfg.SMTPUser,
-						Password: u.cfg.SMTPPassword,
-						From:     u.cfg.EmailFrom,
-					}, sUser.Email, seekerName, providerName, req.Title, priceVal, req.Description)
+					if sProfile == nil || sProfile.EmailNotificationsEnabled {
+						_ = email.SendNewProposalEmail(&email.Config{
+							Host:     u.cfg.SMTPHost,
+							Port:     u.cfg.SMTPPort,
+							User:     u.cfg.SMTPUser,
+							Password: u.cfg.SMTPPassword,
+							From:     u.cfg.EmailFrom,
+						}, sUser.Email, seekerName, providerName, req.Title, priceVal, req.Description)
+					}
 				}
 			}()
 		}

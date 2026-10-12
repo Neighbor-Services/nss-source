@@ -43,6 +43,9 @@ func (w *MarketingWorker) sendPush(userID uuid.UUID, title, body string, data ma
 	if w.fcmClient == nil || w.db == nil {
 		return
 	}
+	if !isPushNotificationEnabled(w.db, userID) {
+		return
+	}
 	go func() {
 		var tokens []entity.DeviceToken
 		if err := w.db.Where("user_id = ? AND is_active = ?", userID, true).Find(&tokens).Error; err != nil || len(tokens) == 0 {
@@ -149,15 +152,17 @@ func (w *MarketingWorker) processUpcomingAppointmentReminders() {
 		providerName := provider.Email
 
 		// Send to Seeker
-		_ = email.SendAppointmentUpcomingReminderEmail(
-			w.emailCfg,
-			seeker.Email,
-			seekerName,
-			providerName,
-			apt.Title,
-			schedTimeStr,
-			"SEEKER",
-		)
+		if isEmailNotificationEnabled(w.db, seeker.ID) {
+			_ = email.SendAppointmentUpcomingReminderEmail(
+				w.emailCfg,
+				seeker.Email,
+				seekerName,
+				providerName,
+				apt.Title,
+				schedTimeStr,
+				"SEEKER",
+			)
+		}
 		w.db.Create(&entity.Notification{
 			ID:               uuid.New(),
 			UserID:           seeker.ID,
@@ -173,15 +178,17 @@ func (w *MarketingWorker) processUpcomingAppointmentReminders() {
 		})
 
 		// Send to Provider
-		_ = email.SendAppointmentUpcomingReminderEmail(
-			w.emailCfg,
-			provider.Email,
-			providerName,
-			seekerName,
-			apt.Title,
-			schedTimeStr,
-			"PROVIDER",
-		)
+		if isEmailNotificationEnabled(w.db, provider.ID) {
+			_ = email.SendAppointmentUpcomingReminderEmail(
+				w.emailCfg,
+				provider.Email,
+				providerName,
+				seekerName,
+				apt.Title,
+				schedTimeStr,
+				"PROVIDER",
+			)
+		}
 		w.db.Create(&entity.Notification{
 			ID:               uuid.New(),
 			UserID:           provider.ID,
@@ -241,14 +248,16 @@ func (w *MarketingWorker) processPostJobReviewAndReferrals() {
 		}
 
 		referralCode := fmt.Sprintf("REF-%s", seeker.ID.String()[:6])
-		_ = email.SendPostJobReviewAndReferralEmail(
-			w.emailCfg,
-			seeker.Email,
-			seeker.Email,
-			provider.Email,
-			apt.Title,
-			referralCode,
-		)
+		if isEmailNotificationEnabled(w.db, seeker.ID) {
+			_ = email.SendPostJobReviewAndReferralEmail(
+				w.emailCfg,
+				seeker.Email,
+				seeker.Email,
+				provider.Email,
+				apt.Title,
+				referralCode,
+			)
+		}
 
 		w.db.Create(&entity.Notification{
 			ID:               uuid.New(),
@@ -316,14 +325,16 @@ func (w *MarketingWorker) processWeeklyProviderDigests() {
 
 		profileViews := 15 + int(p.ID.ID()%20) // estimated profile views engagement metric
 
-		_ = email.SendWeeklyProviderDigestEmail(
-			w.emailCfg,
-			p.Email,
-			p.Email,
-			weeklyEarnings,
-			profileViews,
-			int(openJobsCount),
-		)
+		if isEmailNotificationEnabled(w.db, p.ID) {
+			_ = email.SendWeeklyProviderDigestEmail(
+				w.emailCfg,
+				p.Email,
+				p.Email,
+				weeklyEarnings,
+				profileViews,
+				int(openJobsCount),
+			)
+		}
 
 		w.db.Create(&entity.EmailCampaignLog{
 			ID:           uuid.New(),
@@ -358,12 +369,14 @@ func (w *MarketingWorker) processDormantUserWinback() {
 			continue
 		}
 
-		_ = email.SendDormantUserWinbackEmail(
-			w.emailCfg,
-			u.Email,
-			u.Email,
-			"50+",
-		)
+		if isEmailNotificationEnabled(w.db, u.ID) {
+			_ = email.SendDormantUserWinbackEmail(
+				w.emailCfg,
+				u.Email,
+				u.Email,
+				"50+",
+			)
+		}
 
 		w.db.Create(&entity.EmailCampaignLog{
 			ID:           uuid.New(),
@@ -408,13 +421,15 @@ func (w *MarketingWorker) processFavoriteProReengagement() {
 			continue
 		}
 
-		_ = email.SendFavoriteProOpenSlotsEmail(
-			w.emailCfg,
-			seeker.Email,
-			seeker.Email,
-			provider.Email,
-			apt.Title,
-		)
+		if isEmailNotificationEnabled(w.db, seeker.ID) {
+			_ = email.SendFavoriteProOpenSlotsEmail(
+				w.emailCfg,
+				seeker.Email,
+				seeker.Email,
+				provider.Email,
+				apt.Title,
+			)
+		}
 
 		w.db.Create(&entity.EmailCampaignLog{
 			ID:           uuid.New(),

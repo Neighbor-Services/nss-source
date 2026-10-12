@@ -219,6 +219,16 @@ func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, up
 	} else if du, ok := updates["distanceUnit"].(string); ok && du != "" {
 		profile.DistanceUnit = strings.ToUpper(strings.TrimSpace(du))
 	}
+	if ene, ok := updates["email_notifications_enabled"].(bool); ok {
+		profile.EmailNotificationsEnabled = ene
+	} else if ene, ok := updates["emailNotificationsEnabled"].(bool); ok {
+		profile.EmailNotificationsEnabled = ene
+	}
+	if pne, ok := updates["push_notifications_enabled"].(bool); ok {
+		profile.PushNotificationsEnabled = pne
+	} else if pne, ok := updates["pushNotificationsEnabled"].(bool); ok {
+		profile.PushNotificationsEnabled = pne
+	}
 
 	profile.UpdatedAt = time.Now()
 	if err := u.profileRepo.Update(ctx, profile); err != nil {

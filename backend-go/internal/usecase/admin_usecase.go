@@ -606,13 +606,16 @@ func (u *adminUseCase) ApprovePayout(ctx context.Context, adminID, payoutID uuid
 		go func() {
 			if wallet, err := u.walletRepo.GetByID(context.Background(), pr.WalletID); err == nil && wallet != nil {
 				if user, uErr := u.userRepo.GetByID(context.Background(), wallet.UserID); uErr == nil && user != nil {
-					_ = email.SendPayoutStatusEmail(&email.Config{
-						Host:     u.cfg.SMTPHost,
-						Port:     u.cfg.SMTPPort,
-						User:     u.cfg.SMTPUser,
-						Password: u.cfg.SMTPPassword,
-						From:     u.cfg.EmailFrom,
-					}, user.Email, user.Email, pr.Amount, "APPROVED", "")
+					prof, _ := u.profileRepo.GetByUserID(context.Background(), wallet.UserID)
+					if prof == nil || prof.EmailNotificationsEnabled {
+						_ = email.SendPayoutStatusEmail(&email.Config{
+							Host:     u.cfg.SMTPHost,
+							Port:     u.cfg.SMTPPort,
+							User:     u.cfg.SMTPUser,
+							Password: u.cfg.SMTPPassword,
+							From:     u.cfg.EmailFrom,
+						}, user.Email, user.Email, pr.Amount, "APPROVED", "")
+					}
 				}
 			}
 		}()
@@ -648,13 +651,16 @@ func (u *adminUseCase) RejectPayout(ctx context.Context, adminID, payoutID uuid.
 		if u.cfg != nil && u.cfg.SMTPHost != "" && u.userRepo != nil {
 			go func() {
 				if user, uErr := u.userRepo.GetByID(context.Background(), wallet.UserID); uErr == nil && user != nil {
-					_ = email.SendPayoutStatusEmail(&email.Config{
-						Host:     u.cfg.SMTPHost,
-						Port:     u.cfg.SMTPPort,
-						User:     u.cfg.SMTPUser,
-						Password: u.cfg.SMTPPassword,
-						From:     u.cfg.EmailFrom,
-					}, user.Email, user.Email, pr.Amount, "REJECTED", notes)
+					prof, _ := u.profileRepo.GetByUserID(context.Background(), wallet.UserID)
+					if prof == nil || prof.EmailNotificationsEnabled {
+						_ = email.SendPayoutStatusEmail(&email.Config{
+							Host:     u.cfg.SMTPHost,
+							Port:     u.cfg.SMTPPort,
+							User:     u.cfg.SMTPUser,
+							Password: u.cfg.SMTPPassword,
+							From:     u.cfg.EmailFrom,
+						}, user.Email, user.Email, pr.Amount, "REJECTED", notes)
+					}
 				}
 			}()
 		}
@@ -734,9 +740,10 @@ func (u *adminUseCase) AssignSubscription(ctx context.Context, adminID uuid.UUID
 	nextPayment := input.NextPayment
 	if nextPayment == nil {
 		t := time.Now().AddDate(0, 1, 0)
-		if interval == "year" {
+		switch interval {
+case "year":
 			t = time.Now().AddDate(1, 0, 0)
-		} else if interval == "lifetime" {
+		case "lifetime":
 			t = time.Now().AddDate(100, 0, 0)
 		}
 		nextPayment = &t

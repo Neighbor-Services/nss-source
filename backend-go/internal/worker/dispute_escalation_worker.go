@@ -143,7 +143,9 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 				"notification_type": "dispute_escalated",
 				"dispute_id":        dispute.ID.String(),
 			})
-			_ = email.SendDisputeEscalatedEmail(w.emailCfg, dispute.RaisedBy.Email, dispute.RaisedBy.Email, dispute.ID.String()[:8], dispute.Reason)
+			if isEmailNotificationEnabled(w.db, dispute.RaisedByID) {
+				_ = email.SendDisputeEscalatedEmail(w.emailCfg, dispute.RaisedBy.Email, dispute.RaisedBy.Email, dispute.ID.String()[:8], dispute.Reason)
+			}
 		}
 
 		// Notify defendant
@@ -161,7 +163,9 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 				"notification_type": "dispute_escalated",
 				"dispute_id":        dispute.ID.String(),
 			})
-			_ = email.SendDisputeEscalatedEmail(w.emailCfg, dispute.Defendant.Email, dispute.Defendant.Email, dispute.ID.String()[:8], dispute.Reason)
+			if isEmailNotificationEnabled(w.db, *dispute.DefendantID) {
+				_ = email.SendDisputeEscalatedEmail(w.emailCfg, dispute.Defendant.Email, dispute.Defendant.Email, dispute.ID.String()[:8], dispute.Reason)
+			}
 		}
 
 		log.Printf("[DisputeWorker] Escalated dispute %s", dispute.ID)
@@ -170,6 +174,9 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 
 func (w *DisputeEscalationWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

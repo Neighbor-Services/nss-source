@@ -121,9 +121,11 @@ func (w *SubscriptionExpiryWorker) processSubscriptions() {
 			"subscription_id":   sub.ID.String(),
 		})
 
-		userName := sub.User.Email
-		planN := planName
-		_ = email.SendSubscriptionExpiryReminderEmail(w.emailCfg, sub.User.Email, userName, planN, expiryStr)
+		if isEmailNotificationEnabled(w.db, sub.UserID) {
+			userName := sub.User.Email
+			planN := planName
+			_ = email.SendSubscriptionExpiryReminderEmail(w.emailCfg, sub.User.Email, userName, planN, expiryStr)
+		}
 
 		w.db.Create(&entity.EmailCampaignLog{
 			ID:           uuid.New(),
@@ -179,9 +181,11 @@ func (w *SubscriptionExpiryWorker) processSubscriptions() {
 			"subscription_id":   sub.ID.String(),
 		})
 
-		userName := sub.User.Email
-		planN := planName
-		_ = email.SendSubscriptionExpiredEmail(w.emailCfg, sub.User.Email, userName, planN)
+		if isEmailNotificationEnabled(w.db, sub.UserID) {
+			userName := sub.User.Email
+			planN := planName
+			_ = email.SendSubscriptionExpiredEmail(w.emailCfg, sub.User.Email, userName, planN)
+		}
 
 		log.Printf("[SubscriptionWorker] Deactivated expired subscription %s for user %s", sub.ID, sub.UserID)
 	}
@@ -189,6 +193,9 @@ func (w *SubscriptionExpiryWorker) processSubscriptions() {
 
 func (w *SubscriptionExpiryWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

@@ -14,20 +14,23 @@ import (
 )
 
 type notificationUseCase struct {
-	notifRepo repository.NotificationRepository
-	tokenRepo repository.DeviceTokenRepository
-	fcmClient fcm.Client
+	notifRepo   repository.NotificationRepository
+	tokenRepo   repository.DeviceTokenRepository
+	profileRepo repository.ProfileRepository
+	fcmClient   fcm.Client
 }
 
 func NewNotificationUseCase(
 	notifRepo repository.NotificationRepository,
 	tokenRepo repository.DeviceTokenRepository,
+	profileRepo repository.ProfileRepository,
 	fcmClient fcm.Client,
 ) domainUsecase.NotificationUseCase {
 	return &notificationUseCase{
-		notifRepo: notifRepo,
-		tokenRepo: tokenRepo,
-		fcmClient: fcmClient,
+		notifRepo:   notifRepo,
+		tokenRepo:   tokenRepo,
+		profileRepo: profileRepo,
+		fcmClient:   fcmClient,
 	}
 }
 
@@ -62,7 +65,17 @@ func (u *notificationUseCase) GetDeviceTokens(ctx context.Context, userID uuid.U
 }
 
 func (u *notificationUseCase) SendPushNotification(ctx context.Context, userID uuid.UUID, title, body string, data map[string]string) error {
-	// 1. Broadcast over WebSocket immediately to any active sessions (web, Flutter, admin)
+	// 1. Check if user turned off push notifications in their profile
+	if u.profileRepo != nil {
+		if prof, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && prof != nil {
+			if !prof.PushNotificationsEnabled {
+				// User explicitly opted out of device push notifications
+				return nil
+			}
+		}
+	}
+
+	// 2. Broadcast over WebSocket immediately to any active sessions (web, Flutter, admin)
 	websocket.GlobalHub.SendToUser(userID.String(), map[string]interface{}{
 		"type":       "notification",
 		"title":      title,
@@ -128,5 +141,54 @@ func (u *notificationUseCase) UnregisterDeviceToken(ctx context.Context, userID 
 		return nil
 	}
 	return u.tokenRepo.DeleteByToken(ctx, token)
+}
+
+func (u *notificationUseCase) GetNotificationPreferences(ctx context.Context, userID uuid.UUID) (bool, bool, error) {
+	if u.profileRepo == nil {
+		return true, true, nil
+	}
+	prof, err := u.profileRepo.GetByUserID(ctx, userID)
+	if err != nil || prof == nil {
+		return true, true, nil
+	}
+	return prof.EmailNotificationsEnabled, prof.PushNotificationsEnabled, nil
+}
+
+func (u *notificationUseCase) UpdateNotificationPreferences(ctx context.Context, userID uuid.UUID, emailEnabled *bool, pushEnabled *bool) (bool, bool, error) {
+	if u.profileRepo == nil {
+		return true, true, nil
+	}
+	prof, err := u.profileRepo.GetByUserID(ctx, userID)
+	if err != nil || prof == nil {
+		prof = &entity.Profile{
+			ID:                        uuid.New(),
+			UserID:                    userID,
+			UserType:                  "SEEKER",
+			EmailNotificationsEnabled: true,
+			PushNotificationsEnabled:  true,
+		}
+		if emailEnabled != nil {
+			prof.EmailNotificationsEnabled = *emailEnabled
+		}
+		if pushEnabled != nil {
+			prof.PushNotificationsEnabled = *pushEnabled
+		}
+		if createErr := u.profileRepo.Create(ctx, prof); createErr != nil {
+			return false, false, createErr
+		}
+		return prof.EmailNotificationsEnabled, prof.PushNotificationsEnabled, nil
+	}
+
+	if emailEnabled != nil {
+		prof.EmailNotificationsEnabled = *emailEnabled
+	}
+	if pushEnabled != nil {
+		prof.PushNotificationsEnabled = *pushEnabled
+	}
+	prof.UpdatedAt = time.Now()
+	if err := u.profileRepo.Update(ctx, prof); err != nil {
+		return false, false, err
+	}
+	return prof.EmailNotificationsEnabled, prof.PushNotificationsEnabled, nil
 }
 

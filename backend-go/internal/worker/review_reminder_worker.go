@@ -135,7 +135,7 @@ func (w *ReviewReminderWorker) processReviewReminders() {
 		})
 
 		// 3. Email
-		if apt.Seeker != nil && apt.Seeker.Email != "" {
+		if apt.Seeker != nil && apt.Seeker.Email != "" && isEmailNotificationEnabled(w.db, apt.SeekerID) {
 			_ = email.SendReviewReminderEmail(w.emailCfg, apt.Seeker.Email, seekerName, providerName, apt.Title)
 		}
 	}
@@ -143,6 +143,9 @@ func (w *ReviewReminderWorker) processReviewReminders() {
 
 func (w *ReviewReminderWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

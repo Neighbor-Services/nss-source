@@ -151,11 +151,13 @@ func (w *ProviderRankingWorker) recalculateRankings() {
 					"tier":              tier,
 				})
 
-				providerName := profile.FirstName
-				if providerName == "" {
-					providerName = profile.User.Email
+				if profile.EmailNotificationsEnabled {
+					providerName := profile.FirstName
+					if providerName == "" {
+						providerName = profile.User.Email
+					}
+					_ = email.SendProviderRankingEmail(w.emailCfg, profile.User.Email, providerName, tier, finalScore)
 				}
-				_ = email.SendProviderRankingEmail(w.emailCfg, profile.User.Email, providerName, tier, finalScore)
 			}
 		}
 	}
@@ -176,6 +178,9 @@ func getTier(score int) string {
 
 func (w *ProviderRankingWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

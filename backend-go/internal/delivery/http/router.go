@@ -170,6 +170,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			acc.PUT("/profile/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UpdateProfile)
 			acc.PATCH("/profile/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UpdateProfile)
 			acc.PATCH("/profile/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UpdateProfile)
+			acc.GET("/notification-preferences/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.NotifHandler.GetNotificationPreferences)
+			acc.GET("/notification-preferences", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.NotifHandler.GetNotificationPreferences)
+			acc.PATCH("/notification-preferences/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.NotifHandler.UpdateNotificationPreferences)
+			acc.PATCH("/notification-preferences", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.NotifHandler.UpdateNotificationPreferences)
+			acc.PUT("/notification-preferences/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.NotifHandler.UpdateNotificationPreferences)
+			acc.PUT("/notification-preferences", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.NotifHandler.UpdateNotificationPreferences)
 
 			// About ViewSet — GET routes are public for guest browsing
 			acc.GET("/about/", middleware.AuthOptional(deps.Config, deps.UserRepo), deps.ProfileHandler.GetAbout)
@@ -937,6 +943,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 		notifDirect.POST("/tokens/unregister/", deps.NotifHandler.UnregisterDeviceToken)
 		notifDirect.DELETE("/device-token", deps.NotifHandler.UnregisterDeviceToken)
 		notifDirect.DELETE("/device-token/", deps.NotifHandler.UnregisterDeviceToken)
+		notifDirect.GET("/preferences", deps.NotifHandler.GetNotificationPreferences)
+		notifDirect.GET("/preferences/", deps.NotifHandler.GetNotificationPreferences)
+		notifDirect.PATCH("/preferences", deps.NotifHandler.UpdateNotificationPreferences)
+		notifDirect.PATCH("/preferences/", deps.NotifHandler.UpdateNotificationPreferences)
+		notifDirect.PUT("/preferences", deps.NotifHandler.UpdateNotificationPreferences)
+		notifDirect.PUT("/preferences/", deps.NotifHandler.UpdateNotificationPreferences)
 	}
 
 

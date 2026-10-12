@@ -82,6 +82,15 @@ func (u *paymentUseCase) sendPush(userID uuid.UUID, title, body string, data map
 	if u.fcmClient == nil || u.tokenRepo == nil {
 		return
 	}
+
+	// Check if user turned off push notifications in their profile
+	if u.profileRepo != nil {
+		if prof, err := u.profileRepo.GetByUserID(context.Background(), userID); err == nil && prof != nil {
+			if !prof.PushNotificationsEnabled {
+				return
+			}
+		}
+	}
 	go func() {
 		tokens, err := u.tokenRepo.ListByUser(context.Background(), userID)
 		if err != nil || len(tokens) == 0 {
@@ -1244,23 +1253,10 @@ func (u *paymentUseCase) TipProvider(ctx context.Context, senderID, providerID, 
 		CreatedAt:        time.Now(),
 	})
 
-	if u.fcmClient != nil {
-		go func() {
-			tokens, _ := u.tokenRepo.ListByUser(context.Background(), providerID)
-			var tokenStrings []string
-			for _, t := range tokens {
-				if t.Token != "" {
-					tokenStrings = append(tokenStrings, t.Token)
-				}
-			}
-			if len(tokenStrings) > 0 {
-				_, _ = u.fcmClient.SendMulticast(context.Background(), tokenStrings, "🎉 You received a Tip!", fmt.Sprintf("A client tipped you $%.2f!", amount), map[string]string{
-					"notification_type": "tip_received",
-					"appointment_id":    appointmentID.String(),
-				})
-			}
-		}()
-	}
+	u.sendPush(providerID, "🎉 You received a Tip!", fmt.Sprintf("A client tipped you $%.2f!", amount), map[string]string{
+		"notification_type": "tip_received",
+		"appointment_id":    appointmentID.String(),
+	})
 
 	return txCredit.ID.String(), nil
 }

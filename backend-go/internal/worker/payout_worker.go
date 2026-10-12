@@ -122,7 +122,9 @@ func (w *PayoutProcessingWorker) processPayouts() {
 				fmt.Sprintf("Your payout of $%.2f could not be processed: insufficient balance.", payout.Amount),
 				map[string]string{"notification_type": "payout_failed", "payout_id": payout.ID.String()},
 			)
-			_ = email.SendPayoutProcessingEmail(w.emailCfg, user.Email, user.Email, payout.Amount, "FAILED", notes)
+			if isEmailNotificationEnabled(w.db, user.ID) {
+				_ = email.SendPayoutProcessingEmail(w.emailCfg, user.Email, user.Email, payout.Amount, "FAILED", notes)
+			}
 			continue
 		}
 
@@ -189,7 +191,9 @@ func (w *PayoutProcessingWorker) processPayouts() {
 			fmt.Sprintf("Your $%.2f payout is being processed. Expect funds in 2–5 business days.", payout.Amount),
 			map[string]string{"notification_type": "payout_processing", "payout_id": payout.ID.String()},
 		)
-		_ = email.SendPayoutProcessingEmail(w.emailCfg, user.Email, user.Email, payout.Amount, "PROCESSING", "")
+		if isEmailNotificationEnabled(w.db, user.ID) {
+			_ = email.SendPayoutProcessingEmail(w.emailCfg, user.Email, user.Email, payout.Amount, "PROCESSING", "")
+		}
 
 		log.Printf("[PayoutWorker] Payout %s transitioned to PROCESSING ($%.2f for user %s)", payout.ID, payout.Amount, user.ID)
 	}
@@ -197,6 +201,9 @@ func (w *PayoutProcessingWorker) processPayouts() {
 
 func (w *PayoutProcessingWorker) notifyUser(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {

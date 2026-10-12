@@ -134,6 +134,58 @@ func (h *NotificationHandler) UnregisterDeviceToken(c *gin.Context) {
 	response.JSON(c, http.StatusOK, gin.H{"status": "unregistered"})
 }
 
+type NotificationPreferencesRequest struct {
+	EmailNotificationsEnabled *bool `json:"email_notifications_enabled"`
+	PushNotificationsEnabled  *bool `json:"push_notifications_enabled"`
+}
+
+func (h *NotificationHandler) GetNotificationPreferences(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	emailEnabled, pushEnabled, err := h.notifUC.GetNotificationPreferences(c.Request.Context(), userUUID)
+	if err != nil {
+		response.InternalError(c, "Failed to load notification preferences")
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"email_notifications_enabled": emailEnabled,
+		"push_notifications_enabled":  pushEnabled,
+	})
+}
+
+func (h *NotificationHandler) UpdateNotificationPreferences(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	var req NotificationPreferencesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request payload")
+		return
+	}
+
+	emailEnabled, pushEnabled, err := h.notifUC.UpdateNotificationPreferences(c.Request.Context(), userUUID, req.EmailNotificationsEnabled, req.PushNotificationsEnabled)
+	if err != nil {
+		response.InternalError(c, "Failed to update notification preferences")
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"message":                     "Notification preferences updated successfully",
+		"email_notifications_enabled": emailEnabled,
+		"push_notifications_enabled":  pushEnabled,
+	})
+}
+
 
 func (h *NotificationHandler) HandleWebSocket(c *gin.Context) {
 	userID := c.GetString("userID")

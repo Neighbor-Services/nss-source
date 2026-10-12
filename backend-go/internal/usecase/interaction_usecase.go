@@ -68,6 +68,15 @@ func NewInteractionUseCase(
 }
 
 func (u *interactionUseCase) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
+	// Check if user turned off push notifications in their profile
+	if u.profileRepo != nil {
+		if prof, err := u.profileRepo.GetByUserID(context.Background(), userID); err == nil && prof != nil {
+			if !prof.PushNotificationsEnabled {
+				return
+			}
+		}
+	}
+
 	// Broadcast over WebSocket immediately to any active sessions
 	websocket.GlobalHub.SendToUser(userID.String(), map[string]interface{}{
 		"type":       "notification",
@@ -80,6 +89,7 @@ func (u *interactionUseCase) sendPush(userID uuid.UUID, title, body string, data
 	if u.fcmClient == nil || u.tokenRepo == nil {
 		return
 	}
+
 	go func() {
 		tokens, err := u.tokenRepo.ListByUser(context.Background(), userID)
 		if err != nil || len(tokens) == 0 {
@@ -452,8 +462,12 @@ func (u *interactionUseCase) CreateAppointment(ctx context.Context, customerID u
 					From:     u.cfg.EmailFrom,
 				}
 
-				_ = email.SendAppointmentBookedEmail(emailCfg, sUser.Email, seekerName, providerName, apt.Title, sched, "")
-				_ = email.SendAppointmentBookedEmail(emailCfg, pUser.Email, providerName, seekerName, apt.Title, sched, "")
+				if sProfile == nil || sProfile.EmailNotificationsEnabled {
+					_ = email.SendAppointmentBookedEmail(emailCfg, sUser.Email, seekerName, providerName, apt.Title, sched, "")
+				}
+				if pProfile == nil || pProfile.EmailNotificationsEnabled {
+					_ = email.SendAppointmentBookedEmail(emailCfg, pUser.Email, providerName, seekerName, apt.Title, sched, "")
+				}
 			}
 		}()
 	}
@@ -815,8 +829,12 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 					From:     u.cfg.EmailFrom,
 				}
 
-				_ = email.SendAppointmentCompletedEmail(emailCfg, sUser.Email, seekerName, providerName, apt.Title, apt.TotalPrice)
-				_ = email.SendAppointmentCompletedEmail(emailCfg, pUser.Email, providerName, seekerName, apt.Title, apt.TotalPrice)
+				if sProfile == nil || sProfile.EmailNotificationsEnabled {
+					_ = email.SendAppointmentCompletedEmail(emailCfg, sUser.Email, seekerName, providerName, apt.Title, apt.TotalPrice)
+				}
+				if pProfile == nil || pProfile.EmailNotificationsEnabled {
+					_ = email.SendAppointmentCompletedEmail(emailCfg, pUser.Email, providerName, seekerName, apt.Title, apt.TotalPrice)
+				}
 			}
 		}()
 	}
@@ -919,8 +937,12 @@ func (u *interactionUseCase) CancelAppointment(ctx context.Context, userID, appo
 					From:     u.cfg.EmailFrom,
 				}
 
-				_ = email.SendAppointmentCancelledEmail(emailCfg, sUser.Email, seekerName, providerName, apt.Title, "Cancelled by user")
-				_ = email.SendAppointmentCancelledEmail(emailCfg, pUser.Email, providerName, seekerName, apt.Title, "Cancelled by user")
+				if sProfile == nil || sProfile.EmailNotificationsEnabled {
+					_ = email.SendAppointmentCancelledEmail(emailCfg, sUser.Email, seekerName, providerName, apt.Title, "Cancelled by user")
+				}
+				if pProfile == nil || pProfile.EmailNotificationsEnabled {
+					_ = email.SendAppointmentCancelledEmail(emailCfg, pUser.Email, providerName, seekerName, apt.Title, "Cancelled by user")
+				}
 			}
 		}()
 	}
@@ -992,10 +1014,16 @@ func (u *interactionUseCase) CreateDispute(ctx context.Context, initiatorID uuid
 				}
 
 				if sUser != nil {
-					_ = email.SendDisputeFiledEmail(emailCfg, sUser.Email, sUser.Email, apt.ID.String(), dispute.Reason)
+					sProf, _ := u.profileRepo.GetByUserID(context.Background(), sUser.ID)
+					if sProf == nil || sProf.EmailNotificationsEnabled {
+						_ = email.SendDisputeFiledEmail(emailCfg, sUser.Email, sUser.Email, apt.ID.String(), dispute.Reason)
+					}
 				}
 				if pUser != nil {
-					_ = email.SendDisputeFiledEmail(emailCfg, pUser.Email, pUser.Email, apt.ID.String(), dispute.Reason)
+					pProf, _ := u.profileRepo.GetByUserID(context.Background(), pUser.ID)
+					if pProf == nil || pProf.EmailNotificationsEnabled {
+						_ = email.SendDisputeFiledEmail(emailCfg, pUser.Email, pUser.Email, apt.ID.String(), dispute.Reason)
+					}
 				}
 			}
 		}()

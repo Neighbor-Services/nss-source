@@ -169,13 +169,15 @@ func (w *PerformanceBadgeWorker) processBadges() {
 			})
 
 			// Fetch user email for email notification
-			var user entity.User
-			if err := w.db.First(&user, "id = ?", profile.UserID).Error; err == nil {
-				providerName := user.Email
-				if profile.FirstName != "" {
-					providerName = profile.FirstName
+			if profile.EmailNotificationsEnabled {
+				var user entity.User
+				if err := w.db.First(&user, "id = ?", profile.UserID).Error; err == nil {
+					providerName := user.Email
+					if profile.FirstName != "" {
+						providerName = profile.FirstName
+					}
+					_ = email.SendBadgeAwardedEmail(w.emailCfg, user.Email, providerName, criteria.name, criteria.description)
 				}
-				_ = email.SendBadgeAwardedEmail(w.emailCfg, user.Email, providerName, criteria.name, criteria.description)
 			}
 
 			awarded++

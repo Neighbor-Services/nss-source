@@ -141,7 +141,10 @@ func (w *StaleRequestWorker) processStaleRequests() {
 		if err := w.db.Where("user_id = ?", req.UserID).First(&profile).Error; err == nil && profile.FirstName != "" {
 			seekerName = profile.FirstName
 		}
-		_ = email.SendStaleRequestExpiredEmail(w.emailCfg, req.User.Email, seekerName, req.Title)
+		hasProfile := err == nil
+		if !hasProfile || profile.EmailNotificationsEnabled {
+			_ = email.SendStaleRequestExpiredEmail(w.emailCfg, req.User.Email, seekerName, req.Title)
+		}
 
 		log.Printf("[StaleRequestWorker] Auto-closed stale request: %s (%s)", req.Title, req.ID)
 	}
@@ -149,6 +152,9 @@ func (w *StaleRequestWorker) processStaleRequests() {
 
 func (w *StaleRequestWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if w.fcmClient == nil || w.db == nil {
+		return
+	}
+	if !isPushNotificationEnabled(w.db, userID) {
 		return
 	}
 	go func() {
