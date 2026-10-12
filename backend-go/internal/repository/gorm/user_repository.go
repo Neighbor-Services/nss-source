@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"math"
 	"sort"
 
@@ -172,30 +173,33 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 	if params.RatingMin != nil && *params.RatingMin > 0 {
 		query = query.Where("accounts_profile.average_rating >= ?", *params.RatingMin)
 	}
+	// NOTE: Distinct() is intentionally avoided here — GORM cannot resolve Preload
+	// primary keys when Distinct is active, causing panics/500s. We use Group() instead
+	// which deduplicates joined rows without breaking the Preload pipeline.
 	if params.CategorySlug != "" {
 		query = query.Joins("JOIN accounts_profile_catalog_services apcs ON apcs.profile_id = accounts_profile.id").
 			Joins("JOIN services_catalogservice scs ON scs.id = apcs.catalog_service_id").
 			Joins("JOIN services_category sc ON sc.id = scs.category_id").
 			Where("sc.slug = ? OR sc.name ILIKE ?", params.CategorySlug, "%"+params.CategorySlug+"%").
-			Distinct()
+			Group("accounts_profile.id")
 	} else if params.CategoryName != "" {
 		query = query.Joins("JOIN accounts_profile_catalog_services apcs ON apcs.profile_id = accounts_profile.id").
 			Joins("JOIN services_catalogservice scs ON scs.id = apcs.catalog_service_id").
 			Joins("JOIN services_category sc ON sc.id = scs.category_id").
 			Where("sc.name ILIKE ?", "%"+params.CategoryName+"%").
-			Distinct()
+			Group("accounts_profile.id")
 	}
 	if params.ServiceID != "" {
 		if sid, err := uuid.Parse(params.ServiceID); err == nil {
 			query = query.Joins("JOIN accounts_profile_catalog_services apcs_srv ON apcs_srv.profile_id = accounts_profile.id").
 				Where("apcs_srv.catalog_service_id = ?", sid).
-				Distinct()
+				Group("accounts_profile.id")
 		}
 	} else if params.ServiceName != "" {
 		query = query.Joins("JOIN accounts_profile_catalog_services apcs_srv ON apcs_srv.profile_id = accounts_profile.id").
 			Joins("JOIN services_catalogservice scs_srv ON scs_srv.id = apcs_srv.catalog_service_id").
 			Where("scs_srv.name ILIKE ?", "%"+params.ServiceName+"%").
-			Distinct()
+			Group("accounts_profile.id")
 	}
 
 	// Geospatial bounding-box optimization when location is provided
@@ -239,6 +243,14 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 
 	err := query.Find(&profiles).Error
 	if err != nil {
+		slog.Error("profileRepository.List: query failed",
+			"error", err,
+			"user_type", params.UserType,
+			"service_id", params.ServiceID,
+			"service_name", params.ServiceName,
+			"category_slug", params.CategorySlug,
+			"has_location", params.Latitude != nil && params.Longitude != nil,
+		)
 		return nil, err
 	}
 

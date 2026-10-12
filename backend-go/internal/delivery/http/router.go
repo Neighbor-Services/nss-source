@@ -211,7 +211,14 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			srv.GET("/categories/", deps.ServiceHandler.GetCategories)
 			srv.GET("/categories/:id/", deps.ServiceHandler.GetCategories)
 			srv.GET("/catalog-services/", deps.ServiceHandler.GetCatalogServices)
+			srv.GET("/catalog-services", deps.ServiceHandler.GetCatalogServices)
 			srv.GET("/catalog-services/:id/", deps.ServiceHandler.GetCatalogServices)
+			srv.GET("/catalog-services/:id", deps.ServiceHandler.GetCatalogServices)
+			// Alias: /catalog/services/ mirrors /catalog-services/ (client-facing URL)
+			srv.GET("/catalog/services/", deps.ServiceHandler.GetCatalogServices)
+			srv.GET("/catalog/services", deps.ServiceHandler.GetCatalogServices)
+			srv.GET("/catalog/services/:id/", deps.ServiceHandler.GetCatalogServices)
+			srv.GET("/catalog/services/:id", deps.ServiceHandler.GetCatalogServices)
 			srv.POST("/match-providers/", deps.ServiceHandler.MatchProviders)
 
 			// Requests ViewSet
