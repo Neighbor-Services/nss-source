@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -456,69 +457,96 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 	userUUID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		slog.Warn("UploadRequestImage: invalid or missing userID", "userID", userIDStr)
 		response.Unauthorized(c, "Authentication required")
 		return
 	}
 
-	var reqIDStr string
-	dataStr := c.PostForm("data")
-	if dataStr != "" {
-		var d struct {
-			ID string `json:"id"`
-		}
-		if err := json.Unmarshal([]byte(dataStr), &d); err == nil {
-			reqIDStr = d.ID
-		}
-	}
-	if reqIDStr == "" {
-		reqIDStr = c.PostForm("id")
-	}
-	if reqIDStr == "" {
-		reqIDStr = c.Param("id")
-	}
-
-	reqUUID, err := uuid.Parse(reqIDStr)
-	if err != nil {
-		response.BadRequest(c, "Request ID required")
-		return
-	}
-
+	var reqUUID uuid.UUID
 	var imageURL string
-	file, err := c.FormFile("image")
-	if err == nil {
-		relPath, err := media.ValidateAndSaveUploadedFile(file, "requests", 25*1024*1024)
-		if err != nil {
-			response.BadRequest(c, err.Error())
+
+	// Path A: multipart file upload
+	file, fileErr := c.FormFile("image")
+	if fileErr == nil {
+		// Read request ID from form fields (data JSON blob, plain field, or path param)
+		var reqIDStr string
+		if dataStr := c.PostForm("data"); dataStr != "" {
+			var d struct {
+				ID string `json:"id"`
+			}
+			if jsonErr := json.Unmarshal([]byte(dataStr), &d); jsonErr == nil {
+				reqIDStr = d.ID
+			}
+		}
+		if reqIDStr == "" {
+			reqIDStr = c.PostForm("id")
+		}
+		if reqIDStr == "" {
+			reqIDStr = c.Param("id")
+		}
+
+		parsed, parseErr := uuid.Parse(reqIDStr)
+		if parseErr != nil {
+			slog.Warn("UploadRequestImage: missing or invalid request ID in multipart form",
+				"raw_id", reqIDStr, "user_id", userUUID)
+			response.BadRequest(c, "Request ID required")
+			return
+		}
+		reqUUID = parsed
+
+		relPath, saveErr := media.ValidateAndSaveUploadedFile(file, "requests", 25*1024*1024)
+		if saveErr != nil {
+			slog.Warn("UploadRequestImage: file validation/save failed",
+				"error", saveErr.Error(), "request_id", reqUUID)
+			response.BadRequest(c, saveErr.Error())
 			return
 		}
 		imageURL = "/media/" + strings.TrimPrefix(relPath, "/")
+
 	} else {
+		// Path B: JSON body — read both id and image from the body.
+		// NOTE: c.PostForm / c.Param cannot supply the ID here because this route
+		// has no :id segment and the content-type is not multipart/form-data.
 		var body struct {
 			ID    string `json:"id"`
 			Image string `json:"image"`
 		}
-		if err := c.ShouldBindJSON(&body); err == nil && body.Image != "" {
-			imageURL = body.Image
-			if reqUUID == uuid.Nil && body.ID != "" {
-				if parsedID, parseErr := uuid.Parse(body.ID); parseErr == nil {
-					reqUUID = parsedID
-				}
+		if bindErr := c.ShouldBindJSON(&body); bindErr != nil {
+			slog.Warn("UploadRequestImage: could not parse request body",
+				"error", bindErr.Error(), "user_id", userUUID,
+				"content_type", c.ContentType())
+			response.BadRequest(c, "Request ID required")
+			return
+		}
+
+		parsed, parseErr := uuid.Parse(body.ID)
+		if parseErr != nil {
+			// Final fallback: path param (works for /requests/:id/upload_image)
+			if paramID := c.Param("id"); paramID != "" {
+				parsed, parseErr = uuid.Parse(paramID)
+			}
+			if parseErr != nil {
+				slog.Warn("UploadRequestImage: missing or invalid request ID in JSON body",
+					"raw_id", body.ID, "user_id", userUUID)
+				response.BadRequest(c, "Request ID required")
+				return
 			}
 		}
-	}
+		reqUUID = parsed
 
-	if imageURL == "" {
-		response.BadRequest(c, "No image provided")
-		return
-	}
-
-	if reqUUID == uuid.Nil {
-		response.BadRequest(c, "Request ID required")
-		return
+		if body.Image == "" {
+			slog.Warn("UploadRequestImage: no image provided in JSON body",
+				"request_id", reqUUID, "user_id", userUUID)
+			response.BadRequest(c, "No image provided")
+			return
+		}
+		imageURL = body.Image
 	}
 
 	updatedReq, err := h.serviceUC.UploadRequestImage(c.Request.Context(), userUUID, reqUUID, imageURL)
 	if err != nil {
+		slog.Warn("UploadRequestImage: usecase error",
+			"error", err.Error(), "request_id", reqUUID, "user_id", userUUID)
 		response.BadRequest(c, err.Error())
 		return
 	}
