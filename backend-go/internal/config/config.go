@@ -48,6 +48,9 @@ type Config struct {
 	RedisPassword            string
 	RedisDB                  int
 	RedisURL                 string
+	ProleadLoggerURL         string
+	ProleadAPIKey            string
+	ProleadEnabled           bool
 }
 
 func Load() *Config {
@@ -127,6 +130,9 @@ func Load() *Config {
 		RedisPassword:            getEnv("REDIS_PASSWORD", ""),
 		RedisDB:                  redisDB,
 		RedisURL:                 getEnv("REDIS_URL", ""),
+		ProleadLoggerURL:         getEnv("PROLEAD_LOGGER_URL", "http://localhost:8080"),
+		ProleadAPIKey:            getEnv("PROLEAD_API_KEY", ""),
+		ProleadEnabled:           (getEnv("PROLEAD_ENABLED", "true") == "true" || getEnv("PROLEAD_ENABLED", "1") == "1") && getEnv("PROLEAD_API_KEY", "") != "",
 	}
 }
 

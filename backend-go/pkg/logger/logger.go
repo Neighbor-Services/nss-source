@@ -6,12 +6,16 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 var (
 	emailRegex = regexp.MustCompile(`(?i)([a-zA-Z0-9_.+-])[a-zA-Z0-9_.+-]+@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)`)
 	phoneRegex = regexp.MustCompile(`\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b`)
 	tokenRegex = regexp.MustCompile(`(?i)(bearer\s+|token\s+|key=)([a-zA-Z0-9_\-\.]{10,})`)
+
+	globalProleadClient *ProleadClient
+	proleadMu           sync.RWMutex
 )
 
 // MaskPII sanitizes sensitive personal information from strings before writing to logs.
@@ -37,8 +41,9 @@ func MaskPII(input string) string {
 	return out
 }
 
-// InitGlobalLogger initializes Go's standard slog logger with structured JSON output and PII masking.
-func InitGlobalLogger(env string) *slog.Logger {
+// InitGlobalLogger initializes Go's standard slog logger with structured JSON output, PII masking,
+// and optional asynchronous streaming to Prolead Centralized Logger.
+func InitGlobalLogger(env string, proleadCfg ...ProleadConfig) *slog.Logger {
 	var level slog.Level
 	switch strings.ToLower(env) {
 	case "production", "prod":
@@ -61,10 +66,56 @@ func InitGlobalLogger(env string) *slog.Logger {
 		},
 	}
 
-	handler := slog.NewJSONHandler(os.Stdout, opts)
-	l := slog.New(handler)
+	consoleHandler := slog.NewJSONHandler(os.Stdout, opts)
+
+	// Check if Prolead Logger is configured
+	var pCfg ProleadConfig
+	if len(proleadCfg) > 0 {
+		pCfg = proleadCfg[0]
+	} else {
+		pCfg = ProleadConfig{
+			ServerURL:   os.Getenv("PROLEAD_LOGGER_URL"),
+			APIKey:      os.Getenv("PROLEAD_API_KEY"),
+			Service:     "neighbor-services-backend",
+			Environment: env,
+			Enabled:     os.Getenv("PROLEAD_API_KEY") != "" || os.Getenv("PROLEAD_ENABLED") == "true" || os.Getenv("PROLEAD_ENABLED") == "1",
+		}
+	}
+
+	proleadMu.Lock()
+	if globalProleadClient != nil {
+		globalProleadClient.Close()
+		globalProleadClient = nil
+	}
+
+	var rootHandler slog.Handler = consoleHandler
+	if pCfg.Enabled && pCfg.APIKey != "" {
+		globalProleadClient = NewProleadClient(pCfg)
+		proleadHandler := NewProleadSlogHandler(globalProleadClient, level)
+		rootHandler = NewMultiHandler(consoleHandler, proleadHandler)
+	}
+	proleadMu.Unlock()
+
+	l := slog.New(rootHandler)
 	slog.SetDefault(l)
 	return l
+}
+
+// GetProleadClient returns the active Prolead Logger client if configured.
+func GetProleadClient() *ProleadClient {
+	proleadMu.RLock()
+	defer proleadMu.RUnlock()
+	return globalProleadClient
+}
+
+// Close flushes buffered logs and terminates background workers on server shutdown.
+func Close() {
+	proleadMu.Lock()
+	defer proleadMu.Unlock()
+	if globalProleadClient != nil {
+		globalProleadClient.Close()
+		globalProleadClient = nil
+	}
 }
 
 // Info logs an informational message.

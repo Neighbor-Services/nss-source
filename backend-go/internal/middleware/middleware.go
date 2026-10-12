@@ -13,6 +13,7 @@ import (
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
 	"backend-go/pkg/auth"
+	"backend-go/pkg/logger"
 	"backend-go/pkg/response"
 
 	"github.com/gin-contrib/cors"
@@ -99,6 +100,17 @@ func SecurityHeaders() gin.HandlerFunc {
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
+
+		traceID := c.GetHeader("X-Trace-ID")
+		if traceID == "" {
+			traceID = c.GetHeader("traceparent")
+		}
+		if traceID == "" {
+			traceID = "trace_" + uuid.New().String()[:16]
+		}
+		c.Header("X-Trace-ID", traceID)
+		c.Set("trace_id", traceID)
+
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 
@@ -109,18 +121,44 @@ func Logger() gin.HandlerFunc {
 		clientIP := c.ClientIP()
 		method := c.Request.Method
 
+		fullPath := path
 		if raw != "" {
-			path = path + "?" + raw
+			fullPath = path + "?" + raw
 		}
 
-		fmt.Printf("[GIN] %v | %3d | %13v | %15s | %-7s %#v\n",
+		fmt.Printf("[GIN] %v | %3d | %13v | %15s | %-7s %#v | trace:%s\n",
 			time.Now().Format("2006/01/02 - 15:04:05"),
 			statusCode,
 			latency,
 			clientIP,
 			method,
-			path,
+			fullPath,
+			traceID,
 		)
+
+		if client := logger.GetProleadClient(); client != nil {
+			lvl := "INFO"
+			if statusCode >= 500 {
+				lvl = "ERROR"
+			} else if statusCode >= 400 {
+				lvl = "WARN"
+			}
+
+			msg := fmt.Sprintf("%s %s -> %d in %dms", method, path, statusCode, latency.Milliseconds())
+			client.Log(&logger.LogPayload{
+				Level:   lvl,
+				Message: msg,
+				TraceID: traceID,
+				HTTP: &logger.HTTPMetadata{
+					Method:     method,
+					Path:       fullPath,
+					StatusCode: statusCode,
+					DurationMs: latency.Milliseconds(),
+					ClientIP:   clientIP,
+					UserAgent:  c.Request.UserAgent(),
+				},
+			})
+		}
 	}
 }
 

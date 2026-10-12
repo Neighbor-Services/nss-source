@@ -28,7 +28,14 @@ import (
 func main() {
 	// 1. Load Application Configuration
 	cfg := config.Load()
-	logger.InitGlobalLogger(cfg.Env)
+	logger.InitGlobalLogger(cfg.Env, logger.ProleadConfig{
+		ServerURL:   cfg.ProleadLoggerURL,
+		APIKey:      cfg.ProleadAPIKey,
+		Service:     "neighbor-services-backend",
+		Environment: cfg.Env,
+		Enabled:     cfg.ProleadEnabled,
+	})
+	defer logger.Close()
 
 	ginMode := os.Getenv("GIN_MODE")
 	if ginMode == "" {
