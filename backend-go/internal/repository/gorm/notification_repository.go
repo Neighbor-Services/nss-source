@@ -67,13 +67,16 @@ func NewDeviceTokenRepository(db *gorm.DB) repository.DeviceTokenRepository {
 }
 
 func (r *deviceTokenRepository) Upsert(ctx context.Context, token *entity.DeviceToken) error {
-	var existing entity.DeviceToken
-	err := r.db.WithContext(ctx).Where("token = ?", token.Token).First(&existing).Error
-	if err == nil {
-		token.ID = existing.ID
-		return r.db.WithContext(ctx).Save(token).Error
-	}
-	return r.db.WithContext(ctx).Create(token).Error
+	return r.db.WithContext(ctx).
+		Where(entity.DeviceToken{Token: token.Token}).
+		Assign(entity.DeviceToken{
+			UserID:    token.UserID,
+			Platform:  token.Platform,
+			DeviceID:  token.DeviceID,
+			IsActive:  true,
+			UpdatedAt: token.UpdatedAt,
+		}).
+		FirstOrCreate(token).Error
 }
 
 func (r *deviceTokenRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]entity.DeviceToken, error) {
