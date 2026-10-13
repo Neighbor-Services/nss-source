@@ -268,8 +268,8 @@ export class UserRepositoryImpl implements UserRepository {
 
   evaluateUserRisk(userId: string): Observable<any> {
     return this.http.post<any>(
-      `${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.fraudEvaluate}`,
-      { user_id: userId }
+      `${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.fraudEvaluate}/${userId}`,
+      {}
     );
   }
 }
