@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -76,10 +77,14 @@ type DeviceTokenRequest struct {
 
 func (h *NotificationHandler) RegisterDeviceToken(c *gin.Context) {
 	userIDStr := c.GetString("userID")
-	userUUID, _ := uuid.Parse(userIDStr)
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil || userUUID == uuid.Nil {
+		response.Unauthorized(c, "Invalid user credentials")
+		return
+	}
 
 	var req DeviceTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Token) == "" {
 		response.BadRequest(c, "Token is required")
 		return
 	}
@@ -88,7 +93,8 @@ func (h *NotificationHandler) RegisterDeviceToken(c *gin.Context) {
 		req.Platform = "mobile"
 	}
 
-	if err := h.notifUC.RegisterDeviceToken(c.Request.Context(), userUUID, req.Token, req.Platform, req.DeviceID); err != nil {
+	if err := h.notifUC.RegisterDeviceToken(c.Request.Context(), userUUID, strings.TrimSpace(req.Token), req.Platform, req.DeviceID); err != nil {
+		log.Printf("[NotificationHandler] RegisterDeviceToken error for user %s: %v", userUUID, err)
 		response.InternalError(c, "Failed to register device token")
 		return
 	}

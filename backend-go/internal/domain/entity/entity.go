@@ -677,9 +677,9 @@ func (Notification) TableName() string { return "notifications_notification" }
 type DeviceToken struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID    uuid.UUID `gorm:"type:uuid;index;not null" json:"user"`
-	Token     string    `gorm:"size:255;uniqueIndex;not null" json:"token"`
-	Platform  string    `gorm:"size:10;not null" json:"platform"`
-	DeviceID  string    `gorm:"size:255" json:"device_id,omitempty"`
+	Token     string    `gorm:"type:text;uniqueIndex;not null" json:"token"`
+	Platform  string    `gorm:"type:text;not null" json:"platform"`
+	DeviceID  string    `gorm:"type:text" json:"device_id,omitempty"`
 	IsActive  bool      `gorm:"default:true" json:"is_active"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`

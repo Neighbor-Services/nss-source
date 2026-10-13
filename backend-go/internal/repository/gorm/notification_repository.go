@@ -7,6 +7,7 @@ import (
 	"backend-go/internal/domain/repository"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type notificationRepository struct {
@@ -67,16 +68,10 @@ func NewDeviceTokenRepository(db *gorm.DB) repository.DeviceTokenRepository {
 }
 
 func (r *deviceTokenRepository) Upsert(ctx context.Context, token *entity.DeviceToken) error {
-	return r.db.WithContext(ctx).
-		Where(entity.DeviceToken{Token: token.Token}).
-		Assign(entity.DeviceToken{
-			UserID:    token.UserID,
-			Platform:  token.Platform,
-			DeviceID:  token.DeviceID,
-			IsActive:  true,
-			UpdatedAt: token.UpdatedAt,
-		}).
-		FirstOrCreate(token).Error
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "token"}},
+		DoUpdates: clause.AssignmentColumns([]string{"user_id", "platform", "device_id", "is_active", "updated_at"}),
+	}).Create(token).Error
 }
 
 func (r *deviceTokenRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]entity.DeviceToken, error) {
