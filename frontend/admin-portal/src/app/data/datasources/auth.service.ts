@@ -22,7 +22,7 @@ export class AuthService {
   ) {}
 
   login(email: string, password: string, totpCode?: string): Observable<AdminAuthResponse> {
-    const payload: any = { email, password };
+    const payload: any = { email, password, admin_only: true };
     if (totpCode) {
       payload.code = totpCode;
       payload.totp_code = totpCode;
@@ -41,13 +41,23 @@ export class AuthService {
 
         const token = res.access || res.tokens?.access || res.token || '';
         const refreshToken = res.refresh || res.tokens?.refresh || '';
+
+        const isStaff = res.user?.is_staff === true || res.user?.isStaff === true;
+        const isSuperuser = res.user?.is_superuser === true || res.user?.isSuperuser === true;
+
+        // If user is not staff or superuser, refuse session creation
+        if (!isStaff && !isSuperuser) {
+          this.logout();
+          throw new Error('Access denied: You do not have permission to access the administrator portal.');
+        }
+
         const user = {
           id: res.user?.id || '',
           email: res.user?.email || email,
           firstName: res.user?.first_name || '',
           lastName: res.user?.last_name || '',
-          isStaff: res.user?.is_staff ?? true,
-          isSuperuser: res.user?.is_superuser ?? false
+          isStaff,
+          isSuperuser
         };
 
         if (token) {
@@ -99,6 +109,12 @@ export class AuthService {
 
   getRefreshToken(): string | null {
     return localStorage.getItem(this.REFRESH_KEY);
+  }
+
+  isAdminUser(): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+    return user.isStaff === true || user.is_staff === true || user.isSuperuser === true || user.is_superuser === true;
   }
 
   private setSession(token: string, refreshToken: string, user: any) {

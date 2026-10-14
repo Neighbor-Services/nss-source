@@ -13,6 +13,11 @@ export const permissionGuard = (requiredPermission: AdminPermission): CanActivat
       return router.createUrlTree(['/login']);
     }
 
+    if (!user.isStaff && !user.is_staff && !user.isSuperuser && !user.is_superuser) {
+      auth.logout();
+      return router.createUrlTree(['/login'], { queryParams: { error: 'unauthorized' } });
+    }
+
     if (user.isSuperuser || user.is_superuser) {
       return true;
     }

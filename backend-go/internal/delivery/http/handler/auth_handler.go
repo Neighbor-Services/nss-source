@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
 	domainUsecase "backend-go/internal/domain/usecase"
+	"backend-go/internal/middleware"
+	"backend-go/pkg/logger"
 	"backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -53,14 +56,25 @@ func (h *AuthHandler) Register(c *gin.Context) {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required"`
+	AdminOnly bool   `json:"admin_only"`
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Email and password are required")
+		return
+	}
+
+	clientIP := c.ClientIP()
+	blocker := middleware.GetDefaultLoginBlocker()
+
+	// Check if IP or email is locked out due to brute force
+	if locked, remaining, reason := blocker.IsLocked(clientIP, req.Email); locked {
+		middleware.LogSecurityBruteForce(c, clientIP, req.Email, fmt.Sprintf("Blocked login attempt during active lockout (%s remaining)", remaining))
+		middleware.RespondBruteForceLocked(c, remaining, reason)
 		return
 	}
 
@@ -77,11 +91,124 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			})
 			return
 		}
+
+		newlyLocked, rem := blocker.RecordFailure(clientIP, req.Email)
+		if newlyLocked {
+			middleware.LogSecurityBruteForce(c, clientIP, req.Email, "Exceeded 5 failed login attempts; IP/account locked for 15 minutes")
+			middleware.RespondBruteForceLocked(c, rem, "attempts_exceeded")
+			return
+		}
+
 		response.Unauthorized(c, err.Error())
 		return
 	}
 
+	// If admin-only authentication was requested, enforce staff/superuser status
+	if req.AdminOnly || c.GetHeader("X-Portal-Type") == "admin" {
+		if !result.User.IsStaff && !result.User.IsSuperuser {
+			blocker.RecordFailure(clientIP, req.Email)
+			logger.Warn(fmt.Sprintf("[SECURITY] Standard user %s attempted unauthorized admin portal login from IP %s", req.Email, clientIP))
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":    "ADMIN_ACCESS_REQUIRED",
+				"error":   "Forbidden",
+				"message": "Access denied: You do not have permission to access the administrator portal.",
+			})
+			return
+		}
+	}
+
+	// Login succeeded - clear failure counter
+	blocker.RecordSuccess(clientIP, req.Email)
+
 	// Returns SimpleJWT compatible access/refresh + user & profile metadata
+	response.JSON(c, http.StatusOK, result)
+}
+
+// AdminLogin specifically authenticates administrator accounts for the Admin Portal.
+// Standard users without is_staff or is_superuser permission are rejected with 403 Forbidden.
+func (h *AuthHandler) AdminLogin(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Email and password are required")
+		return
+	}
+
+	clientIP := c.ClientIP()
+	blocker := middleware.GetDefaultLoginBlocker()
+
+	// 1. Check Brute-force lockout
+	if locked, remaining, reason := blocker.IsLocked(clientIP, req.Email); locked {
+		middleware.LogSecurityBruteForce(c, clientIP, req.Email, fmt.Sprintf("Blocked admin login attempt during active lockout (%s remaining)", remaining))
+		middleware.RespondBruteForceLocked(c, remaining, reason)
+		return
+	}
+
+	// 2. Authenticate credentials
+	result, err := h.authUC.Login(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
+			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":              "ACCOUNT_SUSPENDED",
+				"error":             "Account suspended",
+				"message":           "Your administrator account has been suspended.",
+				"suspension_reason": reason,
+				"support_email":     "support@neighborservice.com",
+			})
+			return
+		}
+
+		newlyLocked, rem := blocker.RecordFailure(clientIP, req.Email)
+		if newlyLocked {
+			middleware.LogSecurityBruteForce(c, clientIP, req.Email, "Exceeded 5 failed admin login attempts; IP/account locked for 15 minutes")
+			middleware.RespondBruteForceLocked(c, rem, "attempts_exceeded")
+			return
+		}
+
+		response.Unauthorized(c, "Invalid administrator credentials.")
+		return
+	}
+
+	// 3. Strictly verify that the user is an Administrator (Staff or Superuser)
+	if !result.User.IsStaff && !result.User.IsSuperuser {
+		blocker.RecordFailure(clientIP, req.Email)
+		logger.Warn(fmt.Sprintf("[SECURITY] Standard user %s attempted unauthorized admin portal login from IP %s", req.Email, clientIP))
+
+		if client := logger.GetProleadClient(); client != nil {
+			traceID, _ := c.Get("trace_id")
+			tID, _ := traceID.(string)
+			client.Log(&logger.LogPayload{
+				Level:   "WARN",
+				Message: fmt.Sprintf("[SECURITY ALERT] Unauthorized admin login attempt by %s from IP %s", req.Email, clientIP),
+				TraceID: tID,
+				HTTP: &logger.HTTPMetadata{
+					Method:     c.Request.Method,
+					Path:       c.Request.URL.Path,
+					StatusCode: http.StatusForbidden,
+					ClientIP:   clientIP,
+					UserAgent:  c.Request.UserAgent(),
+				},
+				Context: map[string]interface{}{
+					"security_alert": "unauthorized_admin_portal_access",
+					"client_ip":      clientIP,
+					"user_email":     logger.MaskPII(req.Email),
+					"user_id":        result.User.ID.String(),
+				},
+			})
+		}
+
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    "ADMIN_ACCESS_REQUIRED",
+			"error":   "Forbidden",
+			"message": "Access denied: You do not have permission to access the administrator portal.",
+		})
+		return
+	}
+
+	// 4. Success: clear brute force counter and respond with auth tokens
+	blocker.RecordSuccess(clientIP, req.Email)
+	logger.Info(fmt.Sprintf("[ADMIN AUTH] Administrator %s authenticated successfully from IP %s", req.Email, clientIP))
+
 	response.JSON(c, http.StatusOK, result)
 }
 

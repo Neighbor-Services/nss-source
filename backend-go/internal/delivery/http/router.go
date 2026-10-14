@@ -141,6 +141,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			acc.POST("/resend-otp/", middleware.AuthRateLimit(), deps.AuthHandler.ResendOTP)
 			acc.GET("/verify/:uidb64/:token/", deps.AuthHandler.VerifyOTP)
 			acc.POST("/login/", middleware.AuthRateLimit(), deps.AuthHandler.Login)
+			acc.POST("/admin-login/", middleware.AuthRateLimit(), deps.AuthHandler.AdminLogin)
+			acc.POST("/admin-login", middleware.AuthRateLimit(), deps.AuthHandler.AdminLogin)
 			acc.POST("/token/refresh/", middleware.AuthRateLimit(), deps.AuthHandler.TokenRefresh)
 			acc.POST("/token/rotate/", middleware.AuthRateLimit(), deps.AuthHandler.RotateToken)
 			acc.POST("/change-password/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.AuthHandler.ChangePassword)
@@ -480,6 +482,10 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 		v1.POST("/public/contact", deps.PublicHandler.SubmitContactMessage)
 		v1.POST("/public/resolution/", deps.PublicHandler.SubmitResolutionReport)
 		v1.POST("/public/resolution", deps.PublicHandler.SubmitResolutionReport)
+
+		// ─── ADMIN AUTHENTICATION (PUBLIC OPERATOR GATEWAY) ─────────────────
+		v1.POST("/admin/login", middleware.AuthRateLimit(), deps.AuthHandler.AdminLogin)
+		v1.POST("/admin/login/", middleware.AuthRateLimit(), deps.AuthHandler.AdminLogin)
 
 		// ─── SUPERUSER & ADMIN MANAGEMENT ──────────────────────────────────
 		admin := v1.Group("/admin")

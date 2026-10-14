@@ -19,7 +19,7 @@ export const ADMIN_API_CONFIG = {
     return getApiBaseUrl();
   },
   endpoints: {
-    login: '/accounts/login/',
+    login: '/admin/login',
     changePassword: '/accounts/change-password/',
     adminChangePassword: '/admin/change-password',
     dashboardStats: '/admin/dashboard/stats',
