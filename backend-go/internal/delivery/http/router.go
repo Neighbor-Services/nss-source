@@ -29,6 +29,7 @@ type RouterDependencies struct {
 	PublicHandler   *handler.PublicHandler
 	DocsHandler     *handler.DocsHandler
 	GoStoreHandler  *handler.GoStoreHandler
+	LocationHandler *handler.LocationHandler
 }
 
 func SetupRouter(deps RouterDependencies) *gin.Engine {
@@ -168,6 +169,13 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			acc.PATCH("/profile/update_me/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UpdateProfile)
 			acc.PUT("/profile/update_me/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UpdateProfile)
 			acc.PATCH("/profile/picture/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UploadPicture)
+
+			// ── Location WebSocket stream (token auth via ?token= query param) ──
+			if deps.LocationHandler != nil {
+				acc.GET("/location/ws/", deps.LocationHandler.ServeWsLocation)
+				acc.GET("/location/ws", deps.LocationHandler.ServeWsLocation)
+				acc.GET("/location/ws/health", deps.LocationHandler.HealthWs)
+			}
 			acc.GET("/profile/:id/", deps.ProfileHandler.GetProfile)
 			acc.PUT("/profile/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UpdateProfile)
 			acc.PATCH("/profile/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ProfileHandler.UpdateProfile)

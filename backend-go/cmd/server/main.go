@@ -145,6 +145,7 @@ func main() {
 	publicH := handler.NewPublicHandler(publicUC)
 	docsH := handler.NewDocsHandler()
 	gostoreH := handler.NewGoStoreHandler(cfg)
+	locationH := handler.NewLocationHandler(profileUC, hub, cfg)
 
 	// 5. Setup HTTP Router with Handlers & Middleware
 	router := deliveryHttp.SetupRouter(deliveryHttp.RouterDependencies{
@@ -166,6 +167,7 @@ func main() {
 		PublicHandler:   publicH,
 		DocsHandler:     docsH,
 		GoStoreHandler:  gostoreH,
+		LocationHandler: locationH,
 	})
 
 	// 6. Start Background Workers

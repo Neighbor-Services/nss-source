@@ -13,10 +13,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
+	gorilla "github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
+var upgrader = gorilla.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
@@ -47,7 +47,7 @@ var upgrader = websocket.Upgrader{
 type Client struct {
 	UserID string
 	RoomID string
-	Conn   *websocket.Conn
+	Conn   *gorilla.Conn
 	Send   chan []byte
 	Hub    *Hub
 }
@@ -442,7 +442,7 @@ func (c *Client) WritePump() {
 	}()
 
 	for message := range c.Send {
-		w, err := c.Conn.NextWriter(websocket.TextMessage)
+		w, err := c.Conn.NextWriter(gorilla.TextMessage)
 		if err != nil {
 			return
 		}
@@ -485,4 +485,11 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID, roomID st
 func HandleWebSocket(c *gin.Context, hub *Hub, userID, roomID string) {
 	ServeWs(hub, c.Writer, c.Request, userID, roomID)
 }
+
+// UpgradeConn upgrades an HTTP connection to WebSocket using the shared upgrader.
+// Used by handlers that manage their own client lifecycle (e.g. LocationHandler).
+func UpgradeConn(w http.ResponseWriter, r *http.Request) (*gorilla.Conn, error) {
+	return upgrader.Upgrade(w, r, nil)
+}
+
 
