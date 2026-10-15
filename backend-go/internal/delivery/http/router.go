@@ -967,6 +967,10 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 
 
 	// WebSockets
+	if deps.LocationHandler != nil {
+		r.GET("/ws/location/", deps.LocationHandler.ServeWsLocation)
+		r.GET("/ws/location", deps.LocationHandler.ServeWsLocation)
+	}
 	r.GET("/ws/presence/", deps.ChatHandler.HandleWebSocket)
 	r.GET("/ws/presence", deps.ChatHandler.HandleWebSocket)
 	r.GET("/ws/chat/:conversation_id/", deps.ChatHandler.HandleWebSocket)
