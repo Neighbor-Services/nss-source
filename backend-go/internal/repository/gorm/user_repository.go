@@ -142,13 +142,7 @@ func (r *profileRepository) UpdateCatalogServices(ctx context.Context, profileID
 }
 
 func (r *profileRepository) List(ctx context.Context, params repository.ProfileFilterParams) ([]entity.Profile, error) {
-	var profiles []entity.Profile
-	query := r.db.WithContext(ctx).
-		Preload("User").
-		Preload("CatalogServices").
-		Preload("CatalogServices.Category").
-		Preload("PortfolioItems").
-		Preload("ServicePackages")
+	query := r.db.WithContext(ctx).Model(&entity.Profile{})
 
 	if params.UserType != "" {
 		query = query.Where("accounts_profile.user_type = ?", params.UserType)
@@ -224,70 +218,62 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 		query = query.Where("accounts_profile.latitude != 0 AND accounts_profile.longitude != 0").
 			Where("accounts_profile.latitude BETWEEN ? AND ?", minLat, maxLat).
 			Where("accounts_profile.longitude BETWEEN ? AND ?", minLng, maxLng)
-	}
 
-	if params.Popular {
-		query = query.Order("accounts_profile.neighbor_score DESC, accounts_profile.average_rating DESC, accounts_profile.total_reviews DESC")
-	} else if !hasLocation {
-		query = query.Order("accounts_profile.created_at DESC")
-	}
-
-	if !hasLocation {
-		if params.Limit > 0 {
-			query = query.Limit(params.Limit)
+		type lightProfile struct {
+			ID            uuid.UUID `gorm:"column:id"`
+			Latitude      float64   `gorm:"column:latitude"`
+			Longitude     float64   `gorm:"column:longitude"`
+			AverageRating float64   `gorm:"column:average_rating"`
+			TotalReviews  int       `gorm:"column:total_reviews"`
+			NeighborScore float64   `gorm:"column:neighbor_score"`
 		}
-		if params.Offset > 0 {
-			query = query.Offset(params.Offset)
+		var lightProfiles []lightProfile
+		err := query.Select("accounts_profile.id, accounts_profile.latitude, accounts_profile.longitude, accounts_profile.average_rating, accounts_profile.total_reviews, accounts_profile.neighbor_score").
+			Find(&lightProfiles).Error
+		if err != nil {
+			slog.Error("profileRepository.List: light query failed", "error", err)
+			return nil, err
 		}
-	}
-
-	err := query.Find(&profiles).Error
-	if err != nil {
-		slog.Error("profileRepository.List: query failed",
-			"error", err,
-			"user_type", params.UserType,
-			"service_id", params.ServiceID,
-			"service_name", params.ServiceName,
-			"category_slug", params.CategorySlug,
-			"has_location", params.Latitude != nil && params.Longitude != nil,
-		)
-		return nil, err
-	}
-
-	if hasLocation {
-		lat := *params.Latitude
-		lng := *params.Longitude
-		maxRadius := *params.RadiusKm
 
 		type distProfile struct {
-			profile  entity.Profile
+			id       uuid.UUID
 			distance float64
+			rating   float64
+			reviews  int
+			score    float64
 		}
 		var distList []distProfile
-
-		for _, p := range profiles {
-			if p.Latitude == 0 && p.Longitude == 0 {
+		for _, lp := range lightProfiles {
+			if lp.Latitude == 0 && lp.Longitude == 0 {
 				continue
 			}
-			dist := geo.HaversineDistance(lat, lng, p.Latitude, p.Longitude)
-			if dist <= maxRadius {
-				distList = append(distList, distProfile{profile: p, distance: dist})
+			dist := geo.HaversineDistance(lat, lng, lp.Latitude, lp.Longitude)
+			if dist <= radius {
+				distList = append(distList, distProfile{
+					id:       lp.ID,
+					distance: dist,
+					rating:   lp.AverageRating,
+					reviews:  lp.TotalReviews,
+					score:    lp.NeighborScore,
+				})
 			}
 		}
 
 		if params.Popular {
 			// When popular is requested with location: sort by highest rating & reviews first, then closest distance
 			sort.Slice(distList, func(i, j int) bool {
-				if distList[i].profile.AverageRating != distList[j].profile.AverageRating {
-					return distList[i].profile.AverageRating > distList[j].profile.AverageRating
+				if distList[i].rating != distList[j].rating {
+					return distList[i].rating > distList[j].rating
 				}
-				if distList[i].profile.TotalReviews != distList[j].profile.TotalReviews {
-					return distList[i].profile.TotalReviews > distList[j].profile.TotalReviews
+				if distList[i].reviews != distList[j].reviews {
+					return distList[i].reviews > distList[j].reviews
+				}
+				if distList[i].score != distList[j].score {
+					return distList[i].score > distList[j].score
 				}
 				return distList[i].distance < distList[j].distance
 			})
 		} else {
-			// Sort by distance ascending
 			sort.Slice(distList, func(i, j int) bool {
 				return distList[i].distance < distList[j].distance
 			})
@@ -301,12 +287,73 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 		if params.Limit > 0 && start+params.Limit < end {
 			end = start + params.Limit
 		}
-
-		var filtered []entity.Profile
-		for i := start; i < end; i++ {
-			filtered = append(filtered, distList[i].profile)
+		if start >= end {
+			return []entity.Profile{}, nil
 		}
-		return filtered, nil
+
+		targetIDs := make([]uuid.UUID, 0, end-start)
+		orderMap := make(map[uuid.UUID]int)
+		for i := start; i < end; i++ {
+			targetIDs = append(targetIDs, distList[i].id)
+			orderMap[distList[i].id] = i - start
+		}
+
+		var hydrated []entity.Profile
+		err = r.db.WithContext(ctx).
+			Preload("User").
+			Preload("CatalogServices").
+			Preload("CatalogServices.Category").
+			Preload("PortfolioItems").
+			Preload("ServicePackages").
+			Where("id IN ?", targetIDs).
+			Find(&hydrated).Error
+		if err != nil {
+			return nil, err
+		}
+
+		// Reorder hydrated list to match distance/popular sorted order
+		sortedProfiles := make([]entity.Profile, len(hydrated))
+		for _, p := range hydrated {
+			if idx, ok := orderMap[p.ID]; ok && idx < len(sortedProfiles) {
+				sortedProfiles[idx] = p
+			}
+		}
+		return sortedProfiles, nil
+	}
+
+	// Non-location flow
+	var profiles []entity.Profile
+	query = query.
+		Preload("User").
+		Preload("CatalogServices").
+		Preload("CatalogServices.Category").
+		Preload("PortfolioItems").
+		Preload("ServicePackages")
+
+	if params.Popular {
+		query = query.Order("accounts_profile.neighbor_score DESC, accounts_profile.average_rating DESC, accounts_profile.total_reviews DESC")
+	} else {
+		query = query.Order("accounts_profile.created_at DESC")
+	}
+
+	if params.Limit > 0 {
+		query = query.Limit(params.Limit)
+	}
+	if params.Offset > 0 {
+		query = query.Offset(params.Offset)
+	}
+
+	err := query.Find(&profiles).Error
+	if err != nil {
+		slog.Error("profileRepository.List: query failed",
+			"error", err,
+			"user_type", params.UserType,
+			"service_id", params.ServiceID,
+			"service_name", params.ServiceName,
+			"category_slug", params.CategorySlug,
+			"has_location", false,
+		)
+		return nil, err
 	}
 
 	return profiles, nil

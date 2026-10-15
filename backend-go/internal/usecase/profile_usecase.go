@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -89,6 +90,26 @@ func (u *profileUseCase) GetProfile(ctx context.Context, userID uuid.UUID, targe
 }
 
 func (u *profileUseCase) ListProfiles(ctx context.Context, params repository.ProfileFilterParams) ([]entity.Profile, error) {
+	var cacheKey string
+	if params.Popular && u.cache != nil {
+		if params.ExcludeUserID != nil && *params.ExcludeUserID != uuid.Nil {
+			cacheKey = fmt.Sprintf("cache:popular_providers:seeker:%s", params.ExcludeUserID.String())
+		} else if params.Latitude != nil && params.Longitude != nil {
+			rad := 25.0
+			if params.RadiusKm != nil && *params.RadiusKm > 0 {
+				rad = *params.RadiusKm
+			}
+			cacheKey = fmt.Sprintf("cache:popular_providers:geo:%.2f:%.2f:rad:%.0f", *params.Latitude, *params.Longitude, rad)
+		} else {
+			cacheKey = fmt.Sprintf("cache:popular_providers:global:limit:%d:offset:%d", params.Limit, params.Offset)
+		}
+
+		var cached []entity.Profile
+		if found, _ := u.cache.Get(ctx, cacheKey, &cached); found && len(cached) > 0 {
+			return cached, nil
+		}
+	}
+
 	profiles, err := u.profileRepo.List(ctx, params)
 	if err != nil {
 		return nil, err
@@ -101,6 +122,11 @@ func (u *profileUseCase) ListProfiles(ctx context.Context, params repository.Pro
 			profiles[i].PraiseBadges = summary.TopPraiseBadges
 		}
 	}
+
+	if cacheKey != "" && u.cache != nil && len(profiles) > 0 {
+		_ = u.cache.Set(ctx, cacheKey, profiles, 30*time.Minute)
+	}
+
 	return profiles, nil
 }
 
@@ -233,6 +259,11 @@ func (u *profileUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, up
 	profile.UpdatedAt = time.Now()
 	if err := u.profileRepo.Update(ctx, profile); err != nil {
 		return nil, err
+	}
+
+	// If coordinates or radius updated, invalidate popular providers cache for this seeker
+	if u.cache != nil {
+		_ = u.cache.Delete(ctx, fmt.Sprintf("cache:popular_providers:seeker:%s", userID.String()))
 	}
 
 	// Handle catalog services update if provided

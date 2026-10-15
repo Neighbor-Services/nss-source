@@ -413,6 +413,11 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 	var requests []entity.ServiceRequest
 	var err error
 	var providerProfile *entity.Profile
+	isSubscribed := true
+	if normType == "PROVIDER" {
+		isSubscribed = u.IsProviderSubscribed(ctx, userID)
+	}
+
 	if targetedOnly {
 		// Specific targeted/direct requests query
 		filterParams := repository.ServiceRequestFilterParams{
@@ -434,7 +439,7 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 		}
 
 		disableDistance := false
-		if u.adminRepo != nil {
+		if u.adminRepo != nil && isSubscribed {
 			if s, err := u.adminRepo.GetSettings(ctx); err == nil && s != nil {
 				disableDistance = s.DisableDistanceFilter
 			}
@@ -472,7 +477,16 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 
 			// Search Radius: if distance filter disabled globally, leave RadiusKm nil so all requests are visible
 			if !disableDistance {
-				if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
+				if !isSubscribed {
+					// Strictly restrict unsubscribed providers to immediate neighborhood (max 20km)
+					rad := 20.0
+					if extra.RadiusKm != nil && *extra.RadiusKm > 0 && *extra.RadiusKm < 20.0 {
+						rad = *extra.RadiusKm
+					} else if profile.SearchRadiusKm > 0 && profile.SearchRadiusKm < 20.0 {
+						rad = profile.SearchRadiusKm
+					}
+					filterParams.RadiusKm = &rad
+				} else if extra.RadiusKm != nil && *extra.RadiusKm > 0 {
 					filterParams.RadiusKm = extra.RadiusKm
 				} else if profile.SearchRadiusKm > 0 {
 					rad := profile.SearchRadiusKm
@@ -515,6 +529,13 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 		filtered = append(filtered, req)
 	}
 	requests = filtered
+
+	if normType == "PROVIDER" && !isSubscribed {
+		// Unsubscribed providers only see recent requests immediately around them
+		if len(requests) > 5 {
+			requests = requests[:5]
+		}
+	}
 
 	for i := range requests {
 		u.enrichServiceRequest(ctx, &requests[i])
@@ -1207,7 +1228,30 @@ func (u *serviceUseCase) GetProposals(ctx context.Context, userID uuid.UUID, use
 	return u.proposalRepo.ListByProvider(ctx, userID)
 }
 
+func (u *serviceUseCase) IsProviderSubscribed(ctx context.Context, userID uuid.UUID) bool {
+	if u.profileRepo != nil {
+		if profile, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && profile != nil {
+			tier := strings.ToUpper(strings.TrimSpace(profile.SubscriptionTier))
+			if tier == "SILVER" || tier == "GOLD" || tier == "PLATINUM" || tier == "DIAMOND" || tier == "PRO" {
+				return true
+			}
+		}
+	}
+	if u.adminRepo != nil {
+		if sub, err := u.adminRepo.GetSubscriptionByUserID(ctx, userID); err == nil && sub != nil {
+			if sub.IsActive && (sub.NextPayment == nil || sub.NextPayment.After(time.Now())) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid.UUID, prop *entity.Proposal) (*entity.Proposal, error) {
+	if !u.IsProviderSubscribed(ctx, providerUserID) {
+		return nil, errors.New("Active subscription required to accept requests or submit proposals. Please choose a subscription plan.")
+	}
+
 	prop.ID = uuid.New()
 	prop.ProviderID = providerUserID
 	prop.IsApproved = false
@@ -1409,6 +1453,10 @@ func (u *serviceUseCase) GetFlashDispatch(ctx context.Context, id uuid.UUID) (*e
 }
 
 func (u *serviceUseCase) AcceptFlashDispatch(ctx context.Context, providerID, dispatchID uuid.UUID) (*entity.FlashDispatch, *entity.Appointment, error) {
+	if !u.IsProviderSubscribed(ctx, providerID) {
+		return nil, nil, errors.New("Active subscription required to accept emergency flash dispatches. Please choose a subscription plan.")
+	}
+
 	// Distributed / In-Memory Lock to prevent race conditions during concurrent acceptance
 	if u.cache != nil {
 		locked, _ := u.cache.AcquireLock(ctx, "dispatch:"+dispatchID.String(), 10*time.Second)

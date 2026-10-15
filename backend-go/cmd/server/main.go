@@ -226,6 +226,9 @@ func main() {
 	voiceSpeechWorker := worker.NewVoiceSpeechLearningWorker(db, cfg)
 	voiceSpeechWorker.Start()
 
+	popularProviderWorker := worker.NewPopularProviderWorker(db, cfg, redisCache)
+	popularProviderWorker.Start()
+
 	// 7. Start HTTP Server with Graceful Shutdown
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),

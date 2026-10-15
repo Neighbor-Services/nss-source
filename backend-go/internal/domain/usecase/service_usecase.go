@@ -34,6 +34,7 @@ type ServiceUseCase interface {
 	GetProposals(ctx context.Context, userID uuid.UUID, userType string, requestID *uuid.UUID) ([]entity.Proposal, error)
 	CreateProposal(ctx context.Context, providerID uuid.UUID, prop *entity.Proposal) (*entity.Proposal, error)
 	DeleteProposal(ctx context.Context, providerID, idOrReqID uuid.UUID) error
+	IsProviderSubscribed(ctx context.Context, providerID uuid.UUID) bool
 
 	// Emergency Flash Dispatch
 	CreateFlashDispatch(ctx context.Context, seekerID uuid.UUID, dispatch *entity.FlashDispatch) (*entity.FlashDispatch, error)

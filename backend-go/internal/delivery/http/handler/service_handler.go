@@ -659,6 +659,11 @@ func (h *ServiceHandler) CreateProposal(c *gin.Context) {
 		return
 	}
 
+	if !h.serviceUC.IsProviderSubscribed(c.Request.Context(), userUUID) {
+		response.Forbidden(c, "Active subscription required to accept requests or submit proposals. Please choose a subscription plan.")
+		return
+	}
+
 	var payload CreateProposalPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		response.BadRequest(c, "Invalid proposal payload")
@@ -759,6 +764,11 @@ func (h *ServiceHandler) AcceptFlashDispatch(c *gin.Context) {
 	userUUID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	if !h.serviceUC.IsProviderSubscribed(c.Request.Context(), userUUID) {
+		response.Forbidden(c, "Active subscription required to accept emergency flash dispatches. Please choose a subscription plan.")
 		return
 	}
 

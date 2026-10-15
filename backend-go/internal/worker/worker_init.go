@@ -20,4 +20,6 @@ func init() {
 	GlobalRegistry.RegisterWorker("AI Voice Speech & Sentiment Learning Worker", "AI & Speech", "15m", "Mines spoken speech transcripts for colloquial trade patterns, sentiment trends, and continually updates search vocabulary.")
 	GlobalRegistry.RegisterWorker("Database Backup Worker", "Infrastructure", "24h", "Generates daily automated PostgreSQL database snapshots with 14-day retention rotation.")
 	GlobalRegistry.RegisterWorker("Unsubscribed Provider Conversion Worker", "Subscriptions & Growth", "24h", "Monitors registered providers without active subscriptions, dispatching conversion emails & radar push alerts.")
+	GlobalRegistry.RegisterWorker("Popular Provider Geospatial Pre-caching Worker", "Algorithm & Performance", "5m", "Pre-computes top popular providers mapped to seeker locations and distance preferences in Redis cache.")
 }
+
