@@ -45,6 +45,16 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	DB = db
+
+	// Configure database connection pooling to prevent connection leaks and starvation
+	if sqlDB, err := db.DB(); err == nil {
+		sqlDB.SetMaxOpenConns(50)
+		sqlDB.SetMaxIdleConns(25)
+		sqlDB.SetConnMaxLifetime(15 * time.Minute)
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+		log.Printf("✓ Database connection pool configured (MaxOpen: 50, MaxIdle: 25)")
+	}
+
 	log.Printf("✓ Database connected successfully (%s)", cfg.DBDriver)
 
 	return db, nil
@@ -192,6 +202,12 @@ func ensureExplicitTables(db *gorm.DB) {
 			result_count INTEGER DEFAULT 0,
 			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Performance indexes for spatial queries, feeds, and messaging
+		`CREATE INDEX IF NOT EXISTS idx_accounts_profile_user_coords ON accounts_profile (user_type, latitude, longitude)`,
+		`CREATE INDEX IF NOT EXISTS idx_services_servicerequest_user_status ON services_servicerequest (user_id, status)`,
+		`CREATE INDEX IF NOT EXISTS idx_services_servicerequest_coords ON services_servicerequest (latitude, longitude)`,
+		`CREATE INDEX IF NOT EXISTS idx_services_request_status_created ON services_servicerequest (status, created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_chat_message_convo_created ON chat_message (conversation_id, created_at)`,
 	}
 	for _, ddl := range ddls {
 		if err := db.Exec(ddl).Error; err != nil {

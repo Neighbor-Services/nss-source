@@ -66,14 +66,20 @@ func (w *PopularProviderWorker) processPopularProviders() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	// 1. Fetch active seekers who have non-zero coordinates
+	// 1. Fetch actively seen seekers who have valid non-zero coordinates
 	var seekers []entity.Profile
+	recentCutoff := time.Now().Add(-48 * time.Hour)
 	err := w.db.WithContext(ctx).
-		Where("user_type = ? AND (latitude != 0 OR longitude != 0)", "SEEKER").
+		Where("user_type = ? AND (latitude != 0 OR longitude != 0) AND (last_seen > ? OR updated_at > ?)", "SEEKER", recentCutoff, recentCutoff).
+		Limit(250).
 		Find(&seekers).Error
-	if err != nil {
-		log.Printf("[PopularProviderWorker] Error fetching seeker profiles: %v", err)
-		return
+	if err != nil || len(seekers) == 0 {
+		// Fallback to most recently updated seekers with coordinates if no recent activity
+		_ = w.db.WithContext(ctx).
+			Where("user_type = ? AND (latitude != 0 OR longitude != 0)", "SEEKER").
+			Order("updated_at DESC").
+			Limit(50).
+			Find(&seekers).Error
 	}
 
 	if len(seekers) == 0 {
@@ -116,18 +122,40 @@ func (w *PopularProviderWorker) processPopularProviders() {
 	}
 
 	cachedCount := 0
-	// 3. For each seeker, map to their distance preference & providers around them
+	// 3. For each active seeker, map to their distance preference & providers around them
 	for _, seeker := range seekers {
 		radius := seeker.SearchRadiusKm
 		if radius <= 0 {
 			radius = 25.0
 		}
 
+		// Fast Bounding Box pre-filtering: 1 deg lat is ~69 miles
+		maxLatDelta := radius / 69.0
+		maxLonDelta := radius / 50.0
+
 		var candidates []distProvider
 		for _, p := range providers {
 			if p.UserID == seeker.UserID || p.ID == seeker.ID {
 				continue
 			}
+
+			// Scalar bounding-box rejection before computing trigonometry
+			latDiff := seeker.Latitude - p.Latitude
+			if latDiff < 0 {
+				latDiff = -latDiff
+			}
+			if latDiff > maxLatDelta {
+				continue
+			}
+
+			lonDiff := seeker.Longitude - p.Longitude
+			if lonDiff < 0 {
+				lonDiff = -lonDiff
+			}
+			if lonDiff > maxLonDelta {
+				continue
+			}
+
 			dist := geo.HaversineDistance(seeker.Latitude, seeker.Longitude, p.Latitude, p.Longitude)
 			if dist <= radius {
 				candidates = append(candidates, distProvider{

@@ -261,15 +261,51 @@ func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase
 	return results, nil
 }
 
+func (u *serviceUseCase) batchEnrichServiceRequests(ctx context.Context, requests []entity.ServiceRequest) {
+	if len(requests) == 0 {
+		return
+	}
+	userCache := make(map[uuid.UUID]*entity.User)
+	profileCache := make(map[uuid.UUID]*entity.Profile)
+	catalogCache := make(map[uuid.UUID]*entity.CatalogService)
+
+	for i := range requests {
+		u.enrichServiceRequestInternal(ctx, &requests[i], userCache, profileCache, catalogCache)
+	}
+}
+
 func (u *serviceUseCase) enrichServiceRequest(ctx context.Context, req *entity.ServiceRequest) {
+	u.enrichServiceRequestInternal(ctx, req, nil, nil, nil)
+}
+
+func (u *serviceUseCase) enrichServiceRequestInternal(
+	ctx context.Context,
+	req *entity.ServiceRequest,
+	userCache map[uuid.UUID]*entity.User,
+	profileCache map[uuid.UUID]*entity.Profile,
+	catalogCache map[uuid.UUID]*entity.CatalogService,
+) {
 	if req == nil {
 		return
 	}
 
 	// 1. Enrich User & UserProfile
 	if req.User == nil && req.UserID != uuid.Nil && u.userRepo != nil {
-		if user, err := u.userRepo.GetByID(ctx, req.UserID); err == nil && user != nil {
-			req.User = user
+		if userCache != nil {
+			if cachedUser, ok := userCache[req.UserID]; ok {
+				req.User = cachedUser
+			} else {
+				if user, err := u.userRepo.GetByID(ctx, req.UserID); err == nil && user != nil {
+					req.User = user
+					userCache[req.UserID] = user
+				} else {
+					userCache[req.UserID] = nil
+				}
+			}
+		} else {
+			if user, err := u.userRepo.GetByID(ctx, req.UserID); err == nil && user != nil {
+				req.User = user
+			}
 		}
 	}
 
@@ -281,10 +317,29 @@ func (u *serviceUseCase) enrichServiceRequest(ctx context.Context, req *entity.S
 	}
 
 	if req.UserProfile == nil && req.UserID != uuid.Nil && u.profileRepo != nil {
-		if prof, err := u.profileRepo.GetByUserID(ctx, req.UserID); err == nil && prof != nil {
-			req.UserProfile = prof
-			if req.User != nil {
-				req.User.Profile = prof
+		if profileCache != nil {
+			if cachedProf, ok := profileCache[req.UserID]; ok {
+				req.UserProfile = cachedProf
+				if req.User != nil {
+					req.User.Profile = cachedProf
+				}
+			} else {
+				if prof, err := u.profileRepo.GetByUserID(ctx, req.UserID); err == nil && prof != nil {
+					req.UserProfile = prof
+					profileCache[req.UserID] = prof
+					if req.User != nil {
+						req.User.Profile = prof
+					}
+				} else {
+					profileCache[req.UserID] = nil
+				}
+			}
+		} else {
+			if prof, err := u.profileRepo.GetByUserID(ctx, req.UserID); err == nil && prof != nil {
+				req.UserProfile = prof
+				if req.User != nil {
+					req.User.Profile = prof
+				}
 			}
 		}
 	}
@@ -313,9 +368,26 @@ func (u *serviceUseCase) enrichServiceRequest(ctx context.Context, req *entity.S
 	if req.CatalogService != nil {
 		req.CatalogServiceName = req.CatalogService.Name
 	} else if req.CatalogServiceID != nil && u.catalogRepo != nil {
-		if cs, err := u.catalogRepo.GetByID(ctx, *req.CatalogServiceID); err == nil && cs != nil {
-			req.CatalogService = cs
-			req.CatalogServiceName = cs.Name
+		if catalogCache != nil {
+			if cachedCS, ok := catalogCache[*req.CatalogServiceID]; ok {
+				req.CatalogService = cachedCS
+				if cachedCS != nil {
+					req.CatalogServiceName = cachedCS.Name
+				}
+			} else {
+				if cs, err := u.catalogRepo.GetByID(ctx, *req.CatalogServiceID); err == nil && cs != nil {
+					req.CatalogService = cs
+					req.CatalogServiceName = cs.Name
+					catalogCache[*req.CatalogServiceID] = cs
+				} else {
+					catalogCache[*req.CatalogServiceID] = nil
+				}
+			}
+		} else {
+			if cs, err := u.catalogRepo.GetByID(ctx, *req.CatalogServiceID); err == nil && cs != nil {
+				req.CatalogService = cs
+				req.CatalogServiceName = cs.Name
+			}
 		}
 	}
 
@@ -537,9 +609,7 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 		}
 	}
 
-	for i := range requests {
-		u.enrichServiceRequest(ctx, &requests[i])
-	}
+	u.batchEnrichServiceRequests(ctx, requests)
 
 	if u.cache != nil && len(requests) > 0 {
 		_ = u.cache.Set(ctx, cacheKey, requests, 5*time.Minute)

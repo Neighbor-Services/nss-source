@@ -12,6 +12,7 @@ import (
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/internal/websocket"
 	"backend-go/pkg/auth"
+	"backend-go/pkg/geo"
 	"backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -85,6 +86,13 @@ func (h *LocationHandler) ServeWsLocation(c *gin.Context) {
 	log.Printf("[LocationWS] Client connected: userID=%s", userUUID)
 	conn.SetReadDeadline(time.Time{}) // no global read deadline — location updates are periodic
 
+	var (
+		lastPersisted time.Time
+		lastLat       float64
+		lastLng       float64
+		hasPrevious   bool
+	)
+
 	// ── 3. Read pump — process location frames ────────────────────────────────
 	for {
 		_, raw, err := conn.ReadMessage()
@@ -105,35 +113,52 @@ func (h *LocationHandler) ServeWsLocation(c *gin.Context) {
 			continue
 		}
 
-		// ── 4. Persist location asynchronously so we don't block the read loop ──
-		go func(uid uuid.UUID, m locationUpdateMsg) {
-			updates := map[string]interface{}{
-				"latitude":  m.Lat,
-				"longitude": m.Lng,
-			}
-			if m.City != "" {
-				updates["city"] = m.City
-			}
-			if m.State != "" {
-				updates["state"] = m.State
-			}
-			if m.Country != "" {
-				updates["country"] = m.Country
-			}
-			if m.Address != "" {
-				updates["address"] = m.Address
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			if _, err := h.profileUC.UpdateProfile(ctx, uid, updates); err != nil {
-				log.Printf("[LocationWS] UpdateProfile failed for %s: %v", uid, err)
-			}
-		}(userUUID, msg)
-
-		// Acknowledge receipt back to the client
+		// Acknowledge receipt back to the client immediately
 		_ = conn.WriteMessage(1, []byte(`{"type":"location_ack"}`))
+
+		// ── 4. Intelligent debounce: only write to disk if >15s elapsed or moved > ~50m ──
+		timeSinceLast := time.Since(lastPersisted)
+		shouldPersist := !hasPrevious || timeSinceLast >= 15*time.Second
+
+		if !shouldPersist && (msg.Lat != 0 || msg.Lng != 0) && (lastLat != 0 || lastLng != 0) {
+			distMiles := geo.HaversineDistance(lastLat, lastLng, msg.Lat, msg.Lng)
+			if distMiles >= 0.03 { // ~50 meters in miles
+				shouldPersist = true
+			}
+		}
+
+		if shouldPersist {
+			lastPersisted = time.Now()
+			lastLat = msg.Lat
+			lastLng = msg.Lng
+			hasPrevious = true
+
+			go func(uid uuid.UUID, m locationUpdateMsg) {
+				updates := map[string]interface{}{
+					"latitude":  m.Lat,
+					"longitude": m.Lng,
+				}
+				if m.City != "" {
+					updates["city"] = m.City
+				}
+				if m.State != "" {
+					updates["state"] = m.State
+				}
+				if m.Country != "" {
+					updates["country"] = m.Country
+				}
+				if m.Address != "" {
+					updates["address"] = m.Address
+				}
+
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+
+				if _, err := h.profileUC.UpdateProfile(ctx, uid, updates); err != nil {
+					log.Printf("[LocationWS] UpdateProfile failed for %s: %v", uid, err)
+				}
+			}(userUUID, msg)
+		}
 	}
 }
 

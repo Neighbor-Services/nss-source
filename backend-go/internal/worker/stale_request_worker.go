@@ -101,20 +101,39 @@ func (w *StaleRequestWorker) processStaleRequests() {
 
 	log.Printf("[StaleRequestWorker] Found %d stale requests to auto-close", len(staleRequests))
 
+	// 1. Batch SQL update to mark all stale requests as EXPIRED in one query
+	staleIDs := make([]uuid.UUID, 0, len(staleRequests))
+	userIDs := make([]uuid.UUID, 0, len(staleRequests))
 	for _, req := range staleRequests {
-		// Mark the request as EXPIRED
-		if err := w.db.Model(&req).Update("status", "EXPIRED").Error; err != nil {
-			log.Printf("[StaleRequestWorker] Failed to close request %s: %v", req.ID, err)
-			continue
+		staleIDs = append(staleIDs, req.ID)
+		if req.UserID != uuid.Nil {
+			userIDs = append(userIDs, req.UserID)
 		}
+	}
 
-		if req.User == nil {
-			continue
+	if err := w.db.Model(&entity.ServiceRequest{}).
+		Where("id IN ?", staleIDs).
+		Update("status", "EXPIRED").Error; err != nil {
+		log.Printf("[StaleRequestWorker] Failed to batch expire requests: %v", err)
+		return
+	}
+
+	// 2. Batch fetch profiles to avoid N+1 queries for notification preferences
+	var profiles []entity.Profile
+	profileMap := make(map[uuid.UUID]entity.Profile, len(userIDs))
+	if len(userIDs) > 0 {
+		if err := w.db.Where("user_id IN ?", userIDs).Find(&profiles).Error; err == nil {
+			for _, p := range profiles {
+				profileMap[p.UserID] = p
+			}
 		}
+	}
 
-		// In-app notification
+	// 3. Batch insert in-app notifications
+	notifications := make([]entity.Notification, 0, len(staleRequests))
+	for _, req := range staleRequests {
 		msg := fmt.Sprintf("Your request '%s' has been automatically closed after 30 days with no activity.", req.Title)
-		_ = w.db.Create(&entity.Notification{
+		notifications = append(notifications, entity.Notification{
 			ID:               uuid.New(),
 			UserID:           req.UserID,
 			NotificationType: "REQUEST_EXPIRED",
@@ -123,31 +142,40 @@ func (w *StaleRequestWorker) processStaleRequests() {
 			Data:             entity.JSONMap{"request_id": req.ID.String()},
 			CreatedAt:        time.Now(),
 		})
-
-		// Push notification
-		w.sendPush(
-			req.UserID,
-			"Service Request Expired",
-			msg,
-			map[string]string{
-				"notification_type": "request_expired",
-				"request_id":        req.ID.String(),
-			},
-		)
-
-		// Email notification
-		seekerName := req.User.Email
-		var profile entity.Profile
-		if err := w.db.Where("user_id = ?", req.UserID).First(&profile).Error; err == nil && profile.FirstName != "" {
-			seekerName = profile.FirstName
-		}
-		hasProfile := err == nil
-		if !hasProfile || profile.EmailNotificationsEnabled {
-			_ = email.SendStaleRequestExpiredEmail(w.emailCfg, req.User.Email, seekerName, req.Title)
-		}
-
-		log.Printf("[StaleRequestWorker] Auto-closed stale request: %s (%s)", req.Title, req.ID)
 	}
+	if len(notifications) > 0 {
+		_ = w.db.CreateInBatches(notifications, 100).Error
+	}
+
+	// 4. Asynchronous push and email delivery pool (non-blocking)
+	go func(requests []entity.ServiceRequest, pMap map[uuid.UUID]entity.Profile) {
+		for _, req := range requests {
+			if req.User == nil {
+				continue
+			}
+			msg := fmt.Sprintf("Your request '%s' has been automatically closed after 30 days with no activity.", req.Title)
+			w.sendPush(
+				req.UserID,
+				"Service Request Expired",
+				msg,
+				map[string]string{
+					"notification_type": "request_expired",
+					"request_id":        req.ID.String(),
+				},
+			)
+
+			prof, ok := pMap[req.UserID]
+			seekerName := req.User.Email
+			if ok && prof.FirstName != "" {
+				seekerName = prof.FirstName
+			}
+			if !ok || prof.EmailNotificationsEnabled {
+				_ = email.SendStaleRequestExpiredEmail(w.emailCfg, req.User.Email, seekerName, req.Title)
+			}
+		}
+	}(staleRequests, profileMap)
+
+	log.Printf("[StaleRequestWorker] Successfully batch-closed %d stale requests", len(staleRequests))
 }
 
 func (w *StaleRequestWorker) sendPush(userID uuid.UUID, title, body string, data map[string]string) {

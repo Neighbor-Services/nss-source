@@ -8,12 +8,27 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"backend-go/pkg/cache"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	gorilla "github.com/gorilla/websocket"
+)
+
+const (
+	// writeWait is the time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// pongWait is the time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// pingPeriod sends pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// maxMessageSize allowed from peer (512 KB).
+	maxMessageSize = 512 * 1024
 )
 
 var upgrader = gorilla.Upgrader{
@@ -377,6 +392,13 @@ func (c *Client) ReadPump() {
 		c.Conn.Close()
 	}()
 
+	c.Conn.SetReadLimit(maxMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
 	for {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
@@ -437,18 +459,43 @@ func (c *Client) ReadPump() {
 }
 
 func (c *Client) WritePump() {
+	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		ticker.Stop()
 		c.Conn.Close()
 	}()
 
-	for message := range c.Send {
-		w, err := c.Conn.NextWriter(gorilla.TextMessage)
-		if err != nil {
-			return
-		}
-		w.Write(message)
-		if err := w.Close(); err != nil {
-			return
+	for {
+		select {
+		case message, ok := <-c.Send:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// The hub closed the channel.
+				_ = c.Conn.WriteMessage(gorilla.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.Conn.NextWriter(gorilla.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
+
+			// Add queued chat messages to the current websocket frame
+			n := len(c.Send)
+			for i := 0; i < n; i++ {
+				w.Write([]byte{'\n'})
+				w.Write(<-c.Send)
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(gorilla.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 }
