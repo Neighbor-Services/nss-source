@@ -103,6 +103,11 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.GET("/legal/", deps.ProfileHandler.GetLegalDocuments)
 	r.GET("/legal", deps.ProfileHandler.GetLegalDocuments)
 
+	// Android App Links & iOS Universal Links Verification
+	r.GET("/.well-known/assetlinks.json", deps.PublicHandler.AssetLinks)
+	r.GET("/.well-known/apple-app-site-association", deps.PublicHandler.AppleAppSiteAssociation)
+	r.GET("/apple-app-site-association", deps.PublicHandler.AppleAppSiteAssociation)
+
 	// Public Site Static Web Pages (Django HTML template compatibility)
 	r.GET("/", deps.PublicHandler.RenderStaticPage("landing"))
 	r.GET("/about", deps.PublicHandler.RenderStaticPage("about"))
