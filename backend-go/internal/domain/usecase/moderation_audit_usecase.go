@@ -24,6 +24,7 @@ type ModerationUseCase interface {
 	GetVerifications(ctx context.Context, providerID *uuid.UUID) ([]entity.ProviderVerification, error)
 	SubmitVerification(ctx context.Context, providerID uuid.UUID, input VerificationSubmitInput) (*entity.ProviderVerification, error)
 	GetBackgroundChecks(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error)
+	GetMyBackgroundCheck(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error)
 	GetBackgroundCheckConfig(ctx context.Context) (map[string]interface{}, error)
 	InitiateBackgroundCheck(ctx context.Context, userID uuid.UUID, paymentIntentID string) (*entity.BackgroundCheck, error)
 	ResyncBackgroundCheck(ctx context.Context, id uuid.UUID) (*entity.BackgroundCheck, error)

@@ -23,6 +23,7 @@ type BackgroundCheckRepository interface {
 	GetByCandidateID(ctx context.Context, candidateID string) (*entity.BackgroundCheck, error)
 	GetByReportID(ctx context.Context, reportID string) (*entity.BackgroundCheck, error)
 	GetPendingByProvider(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error)
+	GetLatestByProvider(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error)
 	List(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error)
 	Update(ctx context.Context, check *entity.BackgroundCheck) error
 	GetModerationSetting(ctx context.Context) (*entity.ModerationSetting, error)

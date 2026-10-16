@@ -113,6 +113,15 @@ func (r *bgCheckRepository) GetPendingByProvider(ctx context.Context, providerID
 	return &check, nil
 }
 
+func (r *bgCheckRepository) GetLatestByProvider(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
+	var check entity.BackgroundCheck
+	err := r.db.WithContext(ctx).Preload("Provider").Order("created_at desc").First(&check, "provider_id = ?", providerID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &check, nil
+}
+
 func (r *bgCheckRepository) List(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error) {
 	var list []entity.BackgroundCheck
 	query := r.db.WithContext(ctx).Preload("Provider").Order("created_at desc")
@@ -133,8 +142,8 @@ func (r *bgCheckRepository) GetModerationSetting(ctx context.Context) (*entity.M
 	if err != nil {
 		defaultSetting := entity.ModerationSetting{
 			ID:                         uuid.New(),
-			BackgroundCheckPaymentMode: "IN_APP_STRIPE",
-			BackgroundCheckFee:         29.99,
+			BackgroundCheckPaymentMode: "NATIVE_CHECKR",
+			BackgroundCheckFee:         0.0,
 		}
 		_ = r.db.WithContext(ctx).Create(&defaultSetting)
 		return &defaultSetting, nil

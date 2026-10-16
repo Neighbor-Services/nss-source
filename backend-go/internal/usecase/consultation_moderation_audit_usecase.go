@@ -91,6 +91,7 @@ type moderationUseCase struct {
 	bgCheckRepo      repository.BackgroundCheckRepository
 	profileRepo      repository.ProfileRepository
 	userRepo         repository.UserRepository
+	notifUC          domainUsecase.NotificationUseCase
 	cfg              *config.Config
 }
 
@@ -100,6 +101,7 @@ func NewModerationUseCase(
 	bgCheckRepo repository.BackgroundCheckRepository,
 	profileRepo repository.ProfileRepository,
 	userRepo repository.UserRepository,
+	notifUC domainUsecase.NotificationUseCase,
 	cfg *config.Config,
 ) domainUsecase.ModerationUseCase {
 	return &moderationUseCase{
@@ -108,6 +110,7 @@ func NewModerationUseCase(
 		bgCheckRepo:      bgCheckRepo,
 		profileRepo:      profileRepo,
 		userRepo:         userRepo,
+		notifUC:          notifUC,
 		cfg:              cfg,
 	}
 }
@@ -207,7 +210,7 @@ func (u *moderationUseCase) GetBackgroundChecks(ctx context.Context, providerID 
 
 func (u *moderationUseCase) GetBackgroundCheckConfig(ctx context.Context) (map[string]interface{}, error) {
 	setting, err := u.bgCheckRepo.GetModerationSetting(ctx)
-	mode := "IN_APP_STRIPE"
+	mode := "NATIVE_CHECKR"
 	if err == nil && setting != nil && setting.BackgroundCheckPaymentMode != "" {
 		mode = setting.BackgroundCheckPaymentMode
 	}
@@ -266,11 +269,24 @@ func (u *moderationUseCase) checkrRequest(method, endpoint string, payload inter
 	return res, nil
 }
 
+func (u *moderationUseCase) GetMyBackgroundCheck(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
+	return u.bgCheckRepo.GetLatestByProvider(ctx, providerID)
+}
+
 func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID uuid.UUID, paymentIntentID string) (*entity.BackgroundCheck, error) {
-	// 1. Guard against duplicate pending checks
-	existing, _ := u.bgCheckRepo.GetPendingByProvider(ctx, userID)
+	// 1. Guard against duplicate pending checks within validity window (7 days)
+	existing, _ := u.bgCheckRepo.GetLatestByProvider(ctx, userID)
 	if existing != nil {
-		return existing, nil
+		if existing.Status == "clear" {
+			return existing, nil
+		}
+		if existing.Status == "pending" && time.Since(existing.CreatedAt) < 7*24*time.Hour && existing.InvitationURL != "" {
+			return existing, nil
+		}
+		if existing.Status == "pending" && time.Since(existing.CreatedAt) >= 7*24*time.Hour {
+			existing.Status = "expired"
+			_ = u.bgCheckRepo.Update(ctx, existing)
+		}
 	}
 
 	user, err := u.userRepo.GetByID(ctx, userID)
@@ -283,7 +299,7 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 		return nil, errors.New("profile not found")
 	}
 
-	// 2. Create Candidate in Checkr
+	// 2. Create Candidate payload
 	candidatePayload := map[string]interface{}{
 		"email": user.Email,
 	}
@@ -293,39 +309,64 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 	if profile.LastName != "" {
 		candidatePayload["last_name"] = profile.LastName
 	}
+	phone := profile.Phone
+	if phone != "" {
+		candidatePayload["phone"] = phone
+	}
+	if profile.ZipCode != "" {
+		candidatePayload["zipcode"] = profile.ZipCode
+	}
+
+	packageName := "tasker_standard"
+	if u.cfg != nil && u.cfg.CheckrPackageName != "" {
+		packageName = u.cfg.CheckrPackageName
+	}
+
+	state := "CA"
+	if profile.State != "" {
+		st := strings.TrimSpace(strings.ToUpper(profile.State))
+		if len(st) == 2 {
+			state = st
+		}
+	}
 
 	var candidateID string
 	var invitationID string
 	var invitationURL string
 
-	candidateRes, err := u.checkrRequest("POST", "/v1/candidates", candidatePayload)
-	if err == nil && candidateRes != nil {
-		if idStr, ok := candidateRes["id"].(string); ok {
-			candidateID = idStr
+	// 3. Live Checkr API Call
+	if u.cfg != nil && u.cfg.CheckrAPIKey != "" {
+		candidateRes, err := u.checkrRequest("POST", "/v1/candidates", candidatePayload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Checkr candidate: %w", err)
 		}
-	}
+		if idStr, ok := candidateRes["id"].(string); ok && idStr != "" {
+			candidateID = idStr
+		} else {
+			return nil, errors.New("Checkr did not return a valid candidate ID")
+		}
 
-	if candidateID != "" {
-		// 3. Create Invitation in Checkr
 		invitationPayload := map[string]interface{}{
 			"candidate_id": candidateID,
-			"package":      "tasker_standard",
+			"package":      packageName,
 			"work_locations": []map[string]string{
-				{"state": "CA"},
+				{"state": state},
 			},
 		}
 		invitationRes, err := u.checkrRequest("POST", "/v1/invitations", invitationPayload)
-		if err == nil && invitationRes != nil {
-			if idStr, ok := invitationRes["id"].(string); ok {
-				invitationID = idStr
-			}
-			if urlStr, ok := invitationRes["invitation_url"].(string); ok {
-				invitationURL = urlStr
-			}
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Checkr invitation: %w", err)
 		}
-	}
-
-	if candidateID == "" {
+		if idStr, ok := invitationRes["id"].(string); ok && idStr != "" {
+			invitationID = idStr
+		}
+		if urlStr, ok := invitationRes["invitation_url"].(string); ok && urlStr != "" {
+			invitationURL = urlStr
+		} else {
+			return nil, errors.New("Checkr did not return an invitation URL")
+		}
+	} else {
+		// Fallback for tests / development when CHECKR_API_KEY is not configured
 		candidateID = "cand_" + uuid.New().String()[:12]
 		invitationID = "inv_" + uuid.New().String()[:12]
 		invitationURL = "https://invitations.checkr.com/" + invitationID
@@ -337,7 +378,7 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 		CheckrCandidateID:  candidateID,
 		CheckrInvitationID: invitationID,
 		InvitationURL:      invitationURL,
-		Package:            "tasker_standard",
+		Package:            packageName,
 		Status:             "pending",
 		PaymentIntentID:    paymentIntentID,
 		CreatedAt:          time.Now(),
@@ -361,6 +402,19 @@ func (u *moderationUseCase) ResyncBackgroundCheck(ctx context.Context, id uuid.U
 		reportRes, err := u.checkrRequest("GET", "/v1/reports/"+bc.CheckrReportID, nil)
 		if err == nil && reportRes != nil {
 			u.applyReportToBackgroundCheck(ctx, bc, reportRes)
+		}
+	} else if bc.CheckrCandidateID != "" {
+		candRes, err := u.checkrRequest("GET", "/v1/candidates/"+bc.CheckrCandidateID, nil)
+		if err == nil && candRes != nil {
+			if reportIDs, ok := candRes["report_ids"].([]interface{}); ok && len(reportIDs) > 0 {
+				if rID, ok := reportIDs[0].(string); ok && rID != "" {
+					bc.CheckrReportID = rID
+					reportRes, err := u.checkrRequest("GET", "/v1/reports/"+rID, nil)
+					if err == nil && reportRes != nil {
+						u.applyReportToBackgroundCheck(ctx, bc, reportRes)
+					}
+				}
+			}
 		}
 	}
 
@@ -405,38 +459,80 @@ func (u *moderationUseCase) applyReportToBackgroundCheck(ctx context.Context, bc
 		if bc.Status == "clear" {
 			profile.IsIdentityVerified = true
 			_ = u.profileRepo.Update(ctx, profile)
+			if u.notifUC != nil {
+				_ = u.notifUC.SendPushNotification(ctx, bc.ProviderID, "Background Check Verified 🎉", "Congratulations! Your Checkr screening has passed. Your provider profile is now active.", map[string]string{
+					"type":     "BACKGROUND_CHECK_CLEARED",
+					"check_id": bc.ID.String(),
+				})
+			}
 		} else if bc.Status == "consider" || bc.Status == "suspended" || bc.Status == "canceled" {
 			profile.IsIdentityVerified = false
 			_ = u.profileRepo.Update(ctx, profile)
+			if u.notifUC != nil {
+				_ = u.notifUC.SendPushNotification(ctx, bc.ProviderID, "Background Check Update", "Your background screening status was updated. Please check your email for details from Checkr.", map[string]string{
+					"type":   "BACKGROUND_CHECK_UPDATED",
+					"status": bc.Status,
+				})
+			}
 		}
 	}
 }
 
 func (u *moderationUseCase) ProcessCheckrWebhook(ctx context.Context, signature string, rawBody []byte, payload map[string]interface{}) error {
-	eventType, _ := payload["type"].(string)
-	if !strings.HasPrefix(eventType, "report.") {
-		return nil
+	// Verify HMAC-SHA256 signature if secret is configured
+	if u.cfg != nil && u.cfg.CheckrWebhookSecret != "" && len(rawBody) > 0 {
+		mac := hmac.New(sha256.New, []byte(u.cfg.CheckrWebhookSecret))
+		mac.Write(rawBody)
+		expectedSig := hex.EncodeToString(mac.Sum(nil))
+		if signature == "" || !hmac.Equal([]byte(signature), []byte(expectedSig)) {
+			return errors.New("invalid Checkr webhook signature")
+		}
 	}
 
+	eventType, _ := payload["type"].(string)
 	dataMap, _ := payload["data"].(map[string]interface{})
 	objMap, _ := dataMap["object"].(map[string]interface{})
 	if objMap == nil {
 		return nil
 	}
 
-	reportID, _ := objMap["id"].(string)
-	candidateID, _ := objMap["candidate_id"].(string)
-
-	var bc *entity.BackgroundCheck
-	if reportID != "" {
-		bc, _ = u.bgCheckRepo.GetByReportID(ctx, reportID)
+	// 1. Handle invitation events
+	if strings.HasPrefix(eventType, "invitation.") {
+		candID, _ := objMap["candidate_id"].(string)
+		invID, _ := objMap["id"].(string)
+		var bc *entity.BackgroundCheck
+		if candID != "" {
+			bc, _ = u.bgCheckRepo.GetByCandidateID(ctx, candID)
+		}
+		if bc != nil {
+			if eventType == "invitation.completed" {
+				bc.Status = "in_progress"
+				_ = u.bgCheckRepo.Update(ctx, bc)
+			} else if eventType == "invitation.expired" {
+				bc.Status = "expired"
+				_ = u.bgCheckRepo.Update(ctx, bc)
+			}
+		}
+		_ = invID
+		return nil
 	}
-	if bc == nil && candidateID != "" {
-		bc, _ = u.bgCheckRepo.GetByCandidateID(ctx, candidateID)
-	}
 
-	if bc != nil {
-		u.applyReportToBackgroundCheck(ctx, bc, objMap)
+	// 2. Handle report events
+	if strings.HasPrefix(eventType, "report.") {
+		reportID, _ := objMap["id"].(string)
+		candidateID, _ := objMap["candidate_id"].(string)
+
+		var bc *entity.BackgroundCheck
+		if reportID != "" {
+			bc, _ = u.bgCheckRepo.GetByReportID(ctx, reportID)
+		}
+		if bc == nil && candidateID != "" {
+			bc, _ = u.bgCheckRepo.GetByCandidateID(ctx, candidateID)
+		}
+
+		if bc != nil {
+			u.applyReportToBackgroundCheck(ctx, bc, objMap)
+		}
 	}
 
 	return nil

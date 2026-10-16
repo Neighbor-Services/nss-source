@@ -31,6 +31,8 @@ type Config struct {
 	StripePublishableKey     string
 	StripeWebhookSecret      string
 	CheckrAPIKey             string
+	CheckrWebhookSecret      string
+	CheckrPackageName        string
 	FrontendURL              string
 	MediaUploadDir           string
 	GoStoreURL               string
@@ -113,6 +115,8 @@ func Load() *Config {
 		StripePublishableKey:     getEnv("STRIPE_PUBLIC_KEY", getEnv("STRIPE_PUBLISHABLE_KEY", "")),
 		StripeWebhookSecret:      getEnv("STRIPE_WEBHOOK_SECRET", ""),
 		CheckrAPIKey:             getEnv("CHECKR_API_KEY", ""),
+		CheckrWebhookSecret:      getEnv("CHECKR_WEBHOOK_SECRET", ""),
+		CheckrPackageName:        getEnv("CHECKR_PACKAGE_NAME", "tasker_standard"),
 		FrontendURL:              getEnv("FRONTEND_URL", "http://localhost:4200"),
 		MediaUploadDir:           getEnv("MEDIA_UPLOAD_DIR", "./media"),
 		GoStoreURL:               getEnv("GOSTORE_URL", "https://file.proleadsolutions.co"),

@@ -125,7 +125,7 @@ func main() {
 	notifUC := usecase.NewNotificationUseCase(notifRepo, tokenRepo, profileRepo, fcmClient)
 	paymentUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, walletTxRepo, payoutRepo, customerRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, cfg)
 	consultUC := usecase.NewConsultationUseCase(cfg)
-	moderateUC := usecase.NewModerationUseCase(reportRepo, verificationRepo, bgCheckRepo, profileRepo, userRepo, cfg)
+	moderateUC := usecase.NewModerationUseCase(reportRepo, verificationRepo, bgCheckRepo, profileRepo, userRepo, notifUC, cfg)
 	auditUC := usecase.NewAuditUseCase(auditRepo)
 	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, redisCache, cfg)
 	publicUC := usecase.NewPublicUseCase(publicRepo, catalogRepo, categoryRepo, cfg)

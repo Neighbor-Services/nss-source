@@ -478,9 +478,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 		v1.GET("/moderation/background-checks/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ModerateHandler.GetBackgroundChecks)
 		v1.GET("/moderation/background-checks", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ModerateHandler.GetBackgroundChecks)
 		v1.GET("/moderation/background-checks/config/", deps.ModerateHandler.GetBackgroundCheckConfig)
+		v1.GET("/moderation/background-checks/me/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ModerateHandler.GetMyBackgroundCheck)
+		v1.GET("/moderation/background-checks/me", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ModerateHandler.GetMyBackgroundCheck)
 		v1.POST("/moderation/background-checks/initiate/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ModerateHandler.InitiateBackgroundCheck)
 		v1.POST("/moderation/background-checks/:id/resync/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ModerateHandler.ResyncBackgroundCheck)
 		v1.POST("/moderation/checkr-webhook/", deps.ModerateHandler.CheckrWebhook)
+		v1.POST("/moderation/checkr-webhook", deps.ModerateHandler.CheckrWebhook)
 		v1.GET("/audit/logs/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.AuditHandler.GetLogs)
 		v1.GET("/audit/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.AuditHandler.GetLogs)
 		// ─── PUBLIC SITE CMS API ─────────────────────────────────────────────

@@ -76,6 +76,14 @@ func (m *mockBgCheckRepo) GetPendingByProvider(ctx context.Context, providerID u
 	}
 	return nil, nil
 }
+func (m *mockBgCheckRepo) GetLatestByProvider(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
+	for _, c := range m.checks {
+		if c.ProviderID == providerID {
+			return c, nil
+		}
+	}
+	return nil, nil
+}
 func (m *mockBgCheckRepo) List(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error) {
 	var list []entity.BackgroundCheck
 	for _, c := range m.checks {
@@ -91,8 +99,8 @@ func (m *mockBgCheckRepo) GetModerationSetting(ctx context.Context) (*entity.Mod
 	if m.setting == nil {
 		return &entity.ModerationSetting{
 			ID:                         uuid.New(),
-			BackgroundCheckPaymentMode: "IN_APP_STRIPE",
-			BackgroundCheckFee:         29.99,
+			BackgroundCheckPaymentMode: "NATIVE_CHECKR",
+			BackgroundCheckFee:         0.0,
 		}, nil
 	}
 	return m.setting, nil
@@ -128,7 +136,7 @@ func TestModerationUseCase_BackgroundCheckFlow(t *testing.T) {
 	}}
 	cfg := &config.Config{CheckrAPIKey: ""}
 
-	modUC := usecase.NewModerationUseCase(reportRepo, verifRepo, bgRepo, profileRepo, userRepo, cfg)
+	modUC := usecase.NewModerationUseCase(reportRepo, verifRepo, bgRepo, profileRepo, userRepo, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Get Config
@@ -136,8 +144,8 @@ func TestModerationUseCase_BackgroundCheckFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get background check config: %v", err)
 	}
-	if setting["payment_mode"] != "IN_APP_STRIPE" {
-		t.Errorf("Expected IN_APP_STRIPE, got %v", setting["payment_mode"])
+	if setting["payment_mode"] != "NATIVE_CHECKR" {
+		t.Errorf("Expected NATIVE_CHECKR, got %v", setting["payment_mode"])
 	}
 
 	// 2. Initiate Background Check

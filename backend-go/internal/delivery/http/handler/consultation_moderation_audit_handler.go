@@ -476,6 +476,26 @@ func (h *ModerationHandler) ResyncBackgroundCheck(c *gin.Context) {
 	response.JSON(c, http.StatusOK, check)
 }
 
+func (h *ModerationHandler) GetMyBackgroundCheck(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	check, err := h.moderationUC.GetMyBackgroundCheck(c.Request.Context(), userUUID)
+	if err != nil || check == nil {
+		response.JSON(c, http.StatusOK, gin.H{"has_check": false, "background_check": nil})
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"has_check":        true,
+		"background_check": check,
+	})
+}
+
 func (h *ModerationHandler) CheckrWebhook(c *gin.Context) {
 	sig := c.GetHeader("X-Checkr-Signature")
 	rawBody, _ := io.ReadAll(c.Request.Body)
@@ -485,7 +505,10 @@ func (h *ModerationHandler) CheckrWebhook(c *gin.Context) {
 		_ = json.Unmarshal(rawBody, &payload)
 	}
 
-	_ = h.moderationUC.ProcessCheckrWebhook(c.Request.Context(), sig, rawBody, payload)
+	if err := h.moderationUC.ProcessCheckrWebhook(c.Request.Context(), sig, rawBody, payload); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
 	response.JSON(c, http.StatusOK, gin.H{"status": "ok", "detail": "Acknowledged."})
 }
 
