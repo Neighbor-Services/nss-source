@@ -19,6 +19,7 @@ import (
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
 	domainUsecase "backend-go/internal/domain/usecase"
+
 	"github.com/google/uuid"
 )
 
@@ -213,7 +214,7 @@ func (u *moderationUseCase) GetBackgroundCheckConfig(ctx context.Context) (map[s
 	setting, err := u.bgCheckRepo.GetModerationSetting(ctx)
 	mode := "NATIVE_CHECKR"
 	if err == nil && setting != nil && setting.BackgroundCheckPaymentMode != "" {
-		mode = setting.BackgroundCheckPaymentMode
+		mode = "NATIVE_CHECKR"
 	}
 	env := "production"
 	if u.cfg != nil && u.cfg.Env != "" {
