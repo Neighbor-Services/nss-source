@@ -863,7 +863,7 @@ func (Report) TableName() string { return "moderation_report" }
 type ProviderVerification struct {
 	ID            uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	ProviderID    uuid.UUID  `gorm:"type:uuid;index;not null" json:"provider"`
-	DocumentType  string     `gorm:"size:100;default:'Driver\'s License'" json:"document_type"`
+	DocumentType  string     `gorm:"size:100;default:DRIVER_LICENSE" json:"document_type"`
 	DocumentFront string     `gorm:"size:500;not null" json:"document_front"`
 	DocumentBack  string     `gorm:"size:500" json:"document_back,omitempty"`
 	Selfie        string     `gorm:"size:500" json:"selfie,omitempty"`
