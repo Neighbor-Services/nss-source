@@ -479,12 +479,21 @@ func (u *moderationUseCase) applyReportToBackgroundCheck(ctx context.Context, bc
 }
 
 func (u *moderationUseCase) ProcessCheckrWebhook(ctx context.Context, signature string, rawBody []byte, payload map[string]interface{}) error {
-	// Verify HMAC-SHA256 signature if secret is configured
-	if u.cfg != nil && u.cfg.CheckrWebhookSecret != "" && len(rawBody) > 0 {
-		mac := hmac.New(sha256.New, []byte(u.cfg.CheckrWebhookSecret))
+	// Verify HMAC-SHA256 signature if secret/API key is configured
+	secret := ""
+	if u.cfg != nil {
+		if u.cfg.CheckrWebhookSecret != "" {
+			secret = u.cfg.CheckrWebhookSecret
+		} else if u.cfg.CheckrAPIKey != "" {
+			secret = u.cfg.CheckrAPIKey
+		}
+	}
+	if secret != "" && len(rawBody) > 0 && signature != "" {
+		cleanSig := strings.TrimSpace(strings.TrimPrefix(signature, "sha256="))
+		mac := hmac.New(sha256.New, []byte(secret))
 		mac.Write(rawBody)
 		expectedSig := hex.EncodeToString(mac.Sum(nil))
-		if signature == "" || !hmac.Equal([]byte(signature), []byte(expectedSig)) {
+		if !hmac.Equal([]byte(cleanSig), []byte(expectedSig)) {
 			return errors.New("invalid Checkr webhook signature")
 		}
 	}
