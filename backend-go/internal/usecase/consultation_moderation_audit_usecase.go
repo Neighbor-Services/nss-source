@@ -329,7 +329,7 @@ func (u *moderationUseCase) GetMyBackgroundCheck(ctx context.Context, providerID
 	return u.bgCheckRepo.GetLatestByProvider(ctx, providerID)
 }
 
-func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID uuid.UUID, paymentIntentID string) (*entity.BackgroundCheck, error) {
+func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID uuid.UUID) (*entity.BackgroundCheck, error) {
 	// 1. Guard against duplicate pending checks within validity window (7 days)
 	existing, _ := u.bgCheckRepo.GetLatestByProvider(ctx, userID)
 	if existing != nil {
@@ -463,7 +463,6 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 		InvitationURL:      invitationURL,
 		Package:            packageName,
 		Status:             "pending",
-		PaymentIntentID:    paymentIntentID,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}

@@ -149,7 +149,7 @@ func TestModerationUseCase_BackgroundCheckFlow(t *testing.T) {
 	}
 
 	// 2. Initiate Background Check
-	check, err := modUC.InitiateBackgroundCheck(ctx, providerID, "pi_test_12345")
+	check, err := modUC.InitiateBackgroundCheck(ctx, providerID)
 	if err != nil {
 		t.Fatalf("Failed to initiate background check: %v", err)
 	}

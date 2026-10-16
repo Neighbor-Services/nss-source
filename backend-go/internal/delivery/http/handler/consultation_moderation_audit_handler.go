@@ -427,7 +427,7 @@ func (h *ModerationHandler) GetBackgroundChecks(c *gin.Context) {
 func (h *ModerationHandler) GetBackgroundCheckConfig(c *gin.Context) {
 	cfg, err := h.moderationUC.GetBackgroundCheckConfig(c.Request.Context())
 	if err != nil {
-		response.JSON(c, http.StatusOK, gin.H{"payment_mode": "IN_APP_STRIPE"})
+		response.JSON(c, http.StatusOK, gin.H{"payment_mode": "NATIVE_CHECKR"})
 		return
 	}
 	response.JSON(c, http.StatusOK, cfg)
@@ -441,12 +441,7 @@ func (h *ModerationHandler) InitiateBackgroundCheck(c *gin.Context) {
 		return
 	}
 
-	var body struct {
-		PaymentIntentID string `json:"payment_intent_id"`
-	}
-	_ = c.ShouldBindJSON(&body)
-
-	check, err := h.moderationUC.InitiateBackgroundCheck(c.Request.Context(), userUUID, body.PaymentIntentID)
+	check, err := h.moderationUC.InitiateBackgroundCheck(c.Request.Context(), userUUID)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return

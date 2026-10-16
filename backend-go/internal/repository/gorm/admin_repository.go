@@ -633,7 +633,7 @@ func (r *adminRepository) GetSettings(ctx context.Context) (*entity.ModerationSe
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			s = entity.ModerationSetting{
 				ID:                         uuid.New(),
-				BackgroundCheckPaymentMode: "IN_APP_STRIPE",
+				BackgroundCheckPaymentMode: "NATIVE_CHECKR",
 				BackgroundCheckFee:         29.99,
 			}
 			_ = r.db.WithContext(ctx).Create(&s)

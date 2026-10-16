@@ -26,7 +26,7 @@ type ModerationUseCase interface {
 	GetBackgroundChecks(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error)
 	GetMyBackgroundCheck(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error)
 	GetBackgroundCheckConfig(ctx context.Context) (map[string]interface{}, error)
-	InitiateBackgroundCheck(ctx context.Context, userID uuid.UUID, paymentIntentID string) (*entity.BackgroundCheck, error)
+	InitiateBackgroundCheck(ctx context.Context, userID uuid.UUID) (*entity.BackgroundCheck, error)
 	ResyncBackgroundCheck(ctx context.Context, id uuid.UUID) (*entity.BackgroundCheck, error)
 	ProcessCheckrWebhook(ctx context.Context, signature string, rawBody []byte, payload map[string]interface{}) error
 }

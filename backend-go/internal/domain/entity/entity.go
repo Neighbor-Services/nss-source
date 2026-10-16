@@ -900,7 +900,7 @@ type BackgroundCheck struct {
 	LastSyncedAt       *time.Time `json:"last_synced_at,omitempty"`
 	SyncAttemptCount   int        `gorm:"default:0" json:"sync_attempt_count"`
 	Notes              string     `gorm:"type:text" json:"notes,omitempty"`
-	PaymentIntentID    string     `gorm:"size:255;uniqueIndex" json:"payment_intent_id,omitempty"`
+	PaymentIntentID    string     `gorm:"size:255" json:"payment_intent_id,omitempty"`
 	CreatedAt          time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt          time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 
@@ -916,7 +916,7 @@ func (BackgroundCheck) TableName() string { return "moderation_backgroundcheck" 
 
 type ModerationSetting struct {
 	ID                         uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	BackgroundCheckPaymentMode string    `gorm:"size:20;default:'IN_APP_STRIPE'" json:"background_check_payment_mode"` // IN_APP_STRIPE, INVOICE
+	BackgroundCheckPaymentMode string    `gorm:"size:20;default:'NATIVE_CHECKR'"` // NATIVE_CHECKR, IN_APP_STRIPE, INVOICE
 	BackgroundCheckFee         float64   `gorm:"default:29.99" json:"background_check_fee"`
 	BroadcastRadiusKm          float64   `gorm:"default:25.0" json:"broadcast_radius_km"`
 	MatchRadiusKm              float64   `gorm:"default:25.0" json:"match_radius_km"`

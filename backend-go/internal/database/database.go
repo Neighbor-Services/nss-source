@@ -286,9 +286,20 @@ func cleanOrphanRecords(db *gorm.DB) {
 		_ = db.Exec("ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS suspension_reason TEXT").Error
 		_ = db.Exec("ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP WITH TIME ZONE").Error
 	}
+
+	if db.Migrator().HasTable("moderation_backgroundcheck") {
+		_ = db.Exec("DROP INDEX IF EXISTS idx_moderation_backgroundcheck_payment_intent_id").Error
+	}
+
+	if db.Migrator().HasTable("moderation_moderationsetting") {
+		_ = db.Exec("UPDATE moderation_moderationsetting SET background_check_payment_mode = 'NATIVE_CHECKR' WHERE background_check_payment_mode = 'IN_APP_STRIPE'").Error
+	}
 }
 
 func createCompositeIndexes(db *gorm.DB) {
+	// Moderation: Checkr handles payments natively on its portal; ensure no unique constraint on payment_intent_id
+	_ = db.Exec("DROP INDEX IF EXISTS idx_moderation_backgroundcheck_payment_intent_id").Error
+
 	indexes := []string{
 		// Geospatial & Profile query performance
 		"CREATE INDEX IF NOT EXISTS idx_profile_lat_lng ON accounts_profile (latitude, longitude)",
