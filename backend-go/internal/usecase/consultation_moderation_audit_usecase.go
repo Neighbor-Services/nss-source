@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -253,13 +254,44 @@ func (u *moderationUseCase) checkrRequest(method, endpoint string, payload inter
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
+	log.Printf("[Checkr API] %s %s -> Status %d: %s", method, endpoint, resp.StatusCode, string(bodyBytes))
+
 	var res map[string]interface{}
 	if err := json.Unmarshal(bodyBytes, &res); err != nil {
 		return nil, fmt.Errorf("Checkr response parsing error: %w", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		errMsg, _ := res["error"].(string)
+		var errDetails []string
+		if msg, ok := res["message"].(string); ok && msg != "" {
+			errDetails = append(errDetails, msg)
+		}
+		if errDesc, ok := res["error_description"].(string); ok && errDesc != "" {
+			errDetails = append(errDetails, errDesc)
+		}
+		if errMsg, ok := res["error"].(string); ok && errMsg != "" {
+			errDetails = append(errDetails, errMsg)
+		} else if errObj, ok := res["error"].(map[string]interface{}); ok {
+			if m, ok := errObj["message"].(string); ok {
+				errDetails = append(errDetails, m)
+			}
+		}
+		if errList, ok := res["errors"].([]interface{}); ok {
+			for _, item := range errList {
+				if s, ok := item.(string); ok {
+					errDetails = append(errDetails, s)
+				} else if m, ok := item.(map[string]interface{}); ok {
+					if f, ok := m["field"].(string); ok {
+						msg := fmt.Sprintf("%v", m["message"])
+						errDetails = append(errDetails, fmt.Sprintf("%s: %s", f, msg))
+					} else if msg, ok := m["message"].(string); ok {
+						errDetails = append(errDetails, msg)
+					}
+				}
+			}
+		}
+
+		errMsg := strings.Join(errDetails, "; ")
 		if errMsg == "" {
 			errMsg = string(bodyBytes)
 		}
@@ -267,6 +299,23 @@ func (u *moderationUseCase) checkrRequest(method, endpoint string, payload inter
 	}
 
 	return res, nil
+}
+
+func (u *moderationUseCase) getFirstAvailablePackage() string {
+	res, err := u.checkrRequest("GET", "/v1/packages", nil)
+	if err != nil {
+		return ""
+	}
+	if data, ok := res["data"].([]interface{}); ok && len(data) > 0 {
+		for _, item := range data {
+			if pkg, ok := item.(map[string]interface{}); ok {
+				if slug, ok := pkg["slug"].(string); ok && slug != "" {
+					return slug
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func (u *moderationUseCase) GetMyBackgroundCheck(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
@@ -299,19 +348,34 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 		return nil, errors.New("profile not found")
 	}
 
-	// 2. Create Candidate payload
+	// 2. Resolve Candidate Names (Checkr requires both first_name and last_name)
+	firstName := strings.TrimSpace(profile.FirstName)
+	lastName := strings.TrimSpace(profile.LastName)
+
+	if firstName == "" && lastName == "" {
+		parts := strings.Split(user.Email, "@")
+		firstName = parts[0]
+		lastName = "Provider"
+	} else if lastName == "" {
+		parts := strings.Fields(firstName)
+		if len(parts) > 1 {
+			firstName = parts[0]
+			lastName = strings.Join(parts[1:], " ")
+		} else {
+			lastName = "Provider"
+		}
+	} else if firstName == "" {
+		firstName = "Provider"
+	}
+
 	candidatePayload := map[string]interface{}{
-		"email": user.Email,
+		"first_name": firstName,
+		"last_name":  lastName,
+		"email":      user.Email,
+		"custom_id":  user.ID.String(),
 	}
-	if profile.FirstName != "" {
-		candidatePayload["first_name"] = profile.FirstName
-	}
-	if profile.LastName != "" {
-		candidatePayload["last_name"] = profile.LastName
-	}
-	phone := profile.Phone
-	if phone != "" {
-		candidatePayload["phone"] = phone
+	if profile.Phone != "" {
+		candidatePayload["phone"] = profile.Phone
 	}
 	if profile.ZipCode != "" {
 		candidatePayload["zipcode"] = profile.ZipCode
@@ -350,10 +414,22 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 			"candidate_id": candidateID,
 			"package":      packageName,
 			"work_locations": []map[string]string{
-				{"state": state},
+				{
+					"country": "US",
+					"state":   state,
+				},
 			},
 		}
 		invitationRes, err := u.checkrRequest("POST", "/v1/invitations", invitationPayload)
+		if err != nil {
+			// If invitation failed (e.g. package not found), check account for available package
+			if availablePkg := u.getFirstAvailablePackage(); availablePkg != "" && availablePkg != packageName {
+				log.Printf("[Checkr API] Retrying invitation with discovered package '%s' (fallback from '%s')", availablePkg, packageName)
+				invitationPayload["package"] = availablePkg
+				packageName = availablePkg
+				invitationRes, err = u.checkrRequest("POST", "/v1/invitations", invitationPayload)
+			}
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Checkr invitation: %w", err)
 		}
