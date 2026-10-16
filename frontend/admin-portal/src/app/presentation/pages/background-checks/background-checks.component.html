@@ -252,6 +252,14 @@
                     <span class="text-dim">{{ (b.completedAt | date:'mediumDate') || 'In Progress' }}</span>
                   </td>
                   <td class="text-right">
+                    @if (b.status !== 'clear') {
+                      <button class="btn btn-sm btn-success mr-2" (click)="quickClearCheck(b)" title="Manually Clear Checkr Screening" [disabled]="isSubmitting()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <span>Clear Checkr</span>
+                      </button>
+                    }
                     <button class="btn btn-sm btn-secondary" (click)="openOverride(b)" title="Supervisor Compliance Override">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>

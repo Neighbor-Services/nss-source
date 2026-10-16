@@ -97,11 +97,21 @@ func SendPasswordResetEmail(cfg *Config, toEmail, otp string) error {
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
+// FormatBudgetOrNegotiable formats a request, proposal, or appointment price.
+// If price <= 0, it returns "Price Negotiable" to avoid showing confusing $0.00 amounts.
+func FormatBudgetOrNegotiable(price float64) string {
+	if price <= 0 {
+		return "Price Negotiable"
+	}
+	return fmt.Sprintf("$%.2f", price)
+}
+
 // ─── PROPOSALS & REQUESTS EMAILS ─────────────────────────────────────────────
 
 func SendNewProposalEmail(cfg *Config, toEmail, seekerName, providerName, requestTitle string, price float64, description string) error {
 	subject := fmt.Sprintf("New Proposal Received for: %s", requestTitle)
-	plainText := fmt.Sprintf("Hello %s,\n\n%s has submitted a proposal for your request \"%s\".\n\nProposed Amount: $%.2f\nCover Letter: %s\n\nOpen your Neighbor Service app to view the provider's profile, chat, and accept the proposal.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", seekerName, providerName, requestTitle, price, description)
+	priceDisplay := FormatBudgetOrNegotiable(price)
+	plainText := fmt.Sprintf("Hello %s,\n\n%s has submitted a proposal for your request \"%s\".\n\nProposed Amount: %s\nCover Letter: %s\n\nOpen your Neighbor Service app to view the provider's profile, chat, and accept the proposal.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", seekerName, providerName, requestTitle, priceDisplay, description)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -113,7 +123,7 @@ func SendNewProposalEmail(cfg *Config, toEmail, seekerName, providerName, reques
         .container { max-width: 560px; margin: 0 auto; background-color: #ffffff; padding: 36px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .badge { display: inline-block; padding: 4px 10px; background: #e0f2fe; color: #0284c7; border-radius: 4px; font-weight: 600; font-size: 13px; }
         .card { background: #f8fafc; border-radius: 6px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
-        .price { font-size: 24px; font-weight: 700; color: #16a34a; }
+        .price { font-size: 22px; font-weight: 700; color: #16a34a; }
         .footer { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
     </style>
 </head>
@@ -124,7 +134,7 @@ func SendNewProposalEmail(cfg *Config, toEmail, seekerName, providerName, reques
         <p><strong>%s</strong> has submitted a proposal for your request <strong>"%s"</strong>.</p>
         <div class="card">
             <p style="margin:0 0 8px 0; font-size:14px; color:#64748b;">Proposed Amount:</p>
-            <div class="price">$%.2f</div>
+            <div class="price">%s</div>
             <p style="margin:12px 0 0 0; font-size:14px;"><strong>Cover Letter:</strong> %s</p>
         </div>
         <p>Open your Neighbor Service app to view the provider's profile, chat, and accept the proposal.</p>
@@ -134,14 +144,15 @@ func SendNewProposalEmail(cfg *Config, toEmail, seekerName, providerName, reques
         </div>
     </div>
 </body>
-</html>`, seekerName, providerName, requestTitle, price, description)
+</html>`, seekerName, providerName, requestTitle, priceDisplay, description)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
 func SendProposalApprovedEmail(cfg *Config, toEmail, providerName, seekerName, seekerEmail, requestTitle string, price float64, scheduledTime string) error {
 	subject := fmt.Sprintf("Proposal Accepted: %s", requestTitle)
-	plainText := fmt.Sprintf("Congratulations %s!\n\nYour proposal for \"%s\" was accepted by %s.\n\nAgreed Price: $%.2f\nClient Contact: %s\nScheduled Time: %s\n\nAn appointment has been scheduled. Please arrive on time and ask the client for their arrival code when you arrive.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, seekerName, price, seekerEmail, scheduledTime)
+	priceDisplay := FormatBudgetOrNegotiable(price)
+	plainText := fmt.Sprintf("Congratulations %s!\n\nYour proposal for \"%s\" was accepted by %s.\n\nAgreed Price: %s\nClient Contact: %s\nScheduled Time: %s\n\nAn appointment has been scheduled. Please arrive on time and ask the client for their arrival code when you arrive.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, seekerName, priceDisplay, seekerEmail, scheduledTime)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -162,7 +173,7 @@ func SendProposalApprovedEmail(cfg *Config, toEmail, providerName, seekerName, s
         <h2 style="margin-top: 12px; color: #0f172a;">Congratulations %s!</h2>
         <p>Your proposal for <strong>"%s"</strong> was accepted by <strong>%s</strong>.</p>
         <div class="card">
-            <p style="margin:0 0 6px 0;"><strong>Agreed Price:</strong> $%.2f</p>
+            <p style="margin:0 0 6px 0;"><strong>Agreed Price:</strong> %s</p>
             <p style="margin:0 0 6px 0;"><strong>Client Contact:</strong> %s</p>
             <p style="margin:0;"><strong>Scheduled Time:</strong> %s</p>
         </div>
@@ -173,14 +184,15 @@ func SendProposalApprovedEmail(cfg *Config, toEmail, providerName, seekerName, s
         </div>
     </div>
 </body>
-</html>`, providerName, requestTitle, seekerName, price, seekerEmail, scheduledTime)
+</html>`, providerName, requestTitle, seekerName, priceDisplay, seekerEmail, scheduledTime)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
 func SendDirectRequestEmail(cfg *Config, toEmail, providerName, seekerName, requestTitle string, price float64, scheduledTime, description string) error {
 	subject := fmt.Sprintf("Direct Service Request: %s", requestTitle)
-	plainText := fmt.Sprintf("Hello %s,\n\n%s has sent a direct request exclusively to you for \"%s\".\n\nBudget: $%.2f\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to accept or submit a customized proposal.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, seekerName, requestTitle, price, scheduledTime, description)
+	priceDisplay := FormatBudgetOrNegotiable(price)
+	plainText := fmt.Sprintf("Hello %s,\n\n%s has sent a direct request exclusively to you for \"%s\".\n\nBudget: %s\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to accept or submit a customized proposal.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, seekerName, requestTitle, priceDisplay, scheduledTime, description)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -201,7 +213,7 @@ func SendDirectRequestEmail(cfg *Config, toEmail, providerName, seekerName, requ
         <h2 style="margin-top: 12px; color: #0f172a;">Hello %s,</h2>
         <p><strong>%s</strong> has sent a direct request exclusively to you for <strong>"%s"</strong>.</p>
         <div class="card">
-            <p style="margin:0 0 6px 0;"><strong>Budget:</strong> $%.2f</p>
+            <p style="margin:0 0 6px 0;"><strong>Budget:</strong> %s</p>
             <p style="margin:0 0 6px 0;"><strong>Scheduled For:</strong> %s</p>
             <p style="margin:0;"><strong>Details:</strong> %s</p>
         </div>
@@ -212,14 +224,15 @@ func SendDirectRequestEmail(cfg *Config, toEmail, providerName, seekerName, requ
         </div>
     </div>
 </body>
-</html>`, providerName, seekerName, requestTitle, price, scheduledTime, description)
+</html>`, providerName, seekerName, requestTitle, priceDisplay, scheduledTime, description)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
 func SendBroadcastRequestEmail(cfg *Config, toEmail, providerName, seekerName, requestTitle string, distance float64, price float64, scheduledTime, description string) error {
 	subject := fmt.Sprintf("New Service Request Nearby: %s", requestTitle)
-	plainText := fmt.Sprintf("Hello %s,\n\nA new service request for \"%s\" was posted %.1f mi away from your location.\n\nCustomer: %s\nBudget: $%.2f\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to submit your proposal before another provider is selected!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, distance, seekerName, price, scheduledTime, description)
+	priceDisplay := FormatBudgetOrNegotiable(price)
+	plainText := fmt.Sprintf("Hello %s,\n\nA new service request for \"%s\" was posted %.1f mi away from your location.\n\nCustomer: %s\nBudget: %s\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to submit your proposal before another provider is selected!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, distance, seekerName, priceDisplay, scheduledTime, description)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -241,7 +254,7 @@ func SendBroadcastRequestEmail(cfg *Config, toEmail, providerName, seekerName, r
         <p>A new service request for <strong>"%s"</strong> was posted <strong>%.1f mi</strong> away from your location.</p>
         <div class="card">
             <p style="margin:0 0 6px 0;"><strong>Customer:</strong> %s</p>
-            <p style="margin:0 0 6px 0;"><strong>Budget:</strong> $%.2f</p>
+            <p style="margin:0 0 6px 0;"><strong>Budget:</strong> %s</p>
             <p style="margin:0 0 6px 0;"><strong>Scheduled For:</strong> %s</p>
             <p style="margin:0;"><strong>Details:</strong> %s</p>
         </div>
@@ -252,7 +265,7 @@ func SendBroadcastRequestEmail(cfg *Config, toEmail, providerName, seekerName, r
         </div>
     </div>
 </body>
-</html>`, providerName, requestTitle, distance, seekerName, price, scheduledTime, description)
+</html>`, providerName, requestTitle, distance, seekerName, priceDisplay, scheduledTime, description)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -307,7 +320,8 @@ func SendAppointmentBookedEmail(cfg *Config, toEmail, recipientName, otherPartyN
 
 func SendAppointmentCompletedEmail(cfg *Config, toEmail, recipientName, otherPartyName, serviceTitle string, totalAmount float64) error {
 	subject := fmt.Sprintf("Service Completed: %s", serviceTitle)
-	plainText := fmt.Sprintf("Service Completed\n\nHello %s,\n\nThe appointment for \"%s\" has been marked completed.\n\nOther Party: %s\nTotal Amount: $%.2f\n\nFunds held in escrow have been released to the provider. Don't forget to leave a review!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, totalAmount)
+	amountDisplay := FormatBudgetOrNegotiable(totalAmount)
+	plainText := fmt.Sprintf("Service Completed\n\nHello %s,\n\nThe appointment for \"%s\" has been marked completed.\n\nOther Party: %s\nTotal Amount: %s\n\nFunds held in escrow have been released to the provider. Don't forget to leave a review!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, amountDisplay)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -328,7 +342,7 @@ func SendAppointmentCompletedEmail(cfg *Config, toEmail, recipientName, otherPar
         <p>The appointment for <strong>"%s"</strong> has been marked completed.</p>
         <div class="card">
             <p style="margin:0 0 6px 0;"><strong>Other Party:</strong> %s</p>
-            <p style="margin:0;"><strong>Total Amount:</strong> $%.2f</p>
+            <p style="margin:0;"><strong>Total Amount:</strong> %s</p>
         </div>
         <p>Funds held in escrow have been released to the provider. Don't forget to leave a review!</p>
         <div class="footer">
@@ -337,7 +351,7 @@ func SendAppointmentCompletedEmail(cfg *Config, toEmail, recipientName, otherPar
         </div>
     </div>
 </body>
-</html>`, recipientName, serviceTitle, otherPartyName, totalAmount)
+</html>`, recipientName, serviceTitle, otherPartyName, amountDisplay)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -974,10 +988,7 @@ func MaskEmail(email string) string {
 
 func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, serviceType string, distanceMiles float64, price float64) error {
 	subject := fmt.Sprintf("New Job Opportunity Nearby: %s", requestTitle)
-	priceStr := "Negotiable"
-	if price > 0 {
-		priceStr = fmt.Sprintf("$%.2f", price)
-	}
+	priceStr := FormatBudgetOrNegotiable(price)
 
 	plainText := fmt.Sprintf("Hello %s,\n\nA new job matching your location is now available:\n\nTitle: %s\nService: %s\nDistance: approx %.1f mi away\nBudget: %s\n\nOpen the Neighbor Service app to view full details and send your proposal!\n\n---\nNeighbor Service Solutions LLC", recipientName, requestTitle, serviceType, distanceMiles, priceStr)
 

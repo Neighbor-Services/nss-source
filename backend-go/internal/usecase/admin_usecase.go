@@ -226,6 +226,42 @@ func (u *adminUseCase) UpdateUser(ctx context.Context, adminID, userID uuid.UUID
 		user.IsVerified = *input.IsVerified
 		details["is_verified"] = *input.IsVerified
 	}
+	if input.IsIdentityVerified != nil {
+		if profile, err := u.profileRepo.GetByUserID(ctx, user.ID); err == nil && profile != nil {
+			profile.IsIdentityVerified = *input.IsIdentityVerified
+			_ = u.profileRepo.Update(ctx, profile)
+		}
+		now := time.Now()
+		if *input.IsIdentityVerified {
+			if existingBC, err := u.adminRepo.GetBackgroundCheckByProviderID(ctx, user.ID); err == nil && existingBC != nil {
+				existingBC.Status = "clear"
+				existingBC.Adjudication = "CLEARED"
+				existingBC.Notes = fmt.Sprintf("%s\n[Admin Clearance]: Manually cleared via admin portal", existingBC.Notes)
+				existingBC.LastSyncedAt = &now
+				_ = u.adminRepo.UpdateBackgroundCheck(ctx, existingBC)
+			} else {
+				newBC := &entity.BackgroundCheck{
+					ID:           uuid.New(),
+					ProviderID:   user.ID,
+					Status:       "clear",
+					Adjudication: "CLEARED",
+					Package:      "tasker_standard",
+					Notes:        "[Admin Clearance]: Manually cleared via admin portal",
+					LastSyncedAt: &now,
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				}
+				_ = u.adminRepo.UpdateBackgroundCheck(ctx, newBC)
+			}
+		} else {
+			if existingBC, err := u.adminRepo.GetBackgroundCheckByProviderID(ctx, user.ID); err == nil && existingBC != nil {
+				existingBC.Status = "consider"
+				existingBC.Adjudication = "SUSPENDED"
+				_ = u.adminRepo.UpdateBackgroundCheck(ctx, existingBC)
+			}
+		}
+		details["is_identity_verified"] = *input.IsIdentityVerified
+	}
 
 	if err := u.adminRepo.UpdateUser(ctx, user); err != nil {
 		return nil, err
@@ -473,33 +509,91 @@ func (u *adminUseCase) ListBackgroundChecks(ctx context.Context, adminID uuid.UU
 }
 
 func (u *adminUseCase) OverrideBackgroundCheck(ctx context.Context, adminID, checkID uuid.UUID, status, notes string) error {
-	bc, err := u.adminRepo.GetBackgroundCheckByID(ctx, checkID)
-	if err != nil || bc == nil {
-		return errors.New("background check not found")
-	}
+	normStatus := strings.ToUpper(strings.TrimSpace(status))
+	isClear := normStatus == "CLEAR" || normStatus == "PASSED" || normStatus == "APPROVED"
 
-	bc.Status = status
-	if notes != "" {
-		bc.Notes = fmt.Sprintf("%s\n[Admin Override]: %s", bc.Notes, notes)
-	}
+	var providerID uuid.UUID
 	now := time.Now()
-	bc.LastSyncedAt = &now
 
-	if err := u.adminRepo.UpdateBackgroundCheck(ctx, bc); err != nil {
-		return err
+	bc, err := u.adminRepo.GetBackgroundCheckByID(ctx, checkID)
+	if err == nil && bc != nil {
+		providerID = bc.ProviderID
+		if isClear {
+			bc.Status = "clear"
+			bc.Adjudication = "CLEARED"
+		} else {
+			bc.Status = strings.ToLower(normStatus)
+			bc.Adjudication = normStatus
+		}
+		if notes != "" {
+			bc.Notes = fmt.Sprintf("%s\n[Admin Override]: %s", bc.Notes, notes)
+		} else if isClear {
+			bc.Notes = fmt.Sprintf("%s\n[Admin Override]: Manually cleared by administrator", bc.Notes)
+		}
+		bc.LastSyncedAt = &now
+		if err := u.adminRepo.UpdateBackgroundCheck(ctx, bc); err != nil {
+			return err
+		}
+	} else {
+		// Treat checkID as provider user ID if not found as background check ID
+		providerID = checkID
+		if existingBC, err := u.adminRepo.GetBackgroundCheckByProviderID(ctx, providerID); err == nil && existingBC != nil {
+			bc = existingBC
+			if isClear {
+				bc.Status = "clear"
+				bc.Adjudication = "CLEARED"
+			} else {
+				bc.Status = strings.ToLower(normStatus)
+				bc.Adjudication = normStatus
+			}
+			if notes != "" {
+				bc.Notes = fmt.Sprintf("%s\n[Admin Override]: %s", bc.Notes, notes)
+			} else if isClear {
+				bc.Notes = fmt.Sprintf("%s\n[Admin Override]: Manually cleared by administrator", bc.Notes)
+			}
+			bc.LastSyncedAt = &now
+			if err := u.adminRepo.UpdateBackgroundCheck(ctx, bc); err != nil {
+				return err
+			}
+		} else {
+			// Check if provider user profile exists
+			if profile, pErr := u.profileRepo.GetByUserID(ctx, providerID); pErr == nil && profile != nil {
+				statusVal := "consider"
+				if isClear {
+					statusVal = "clear"
+				}
+				newBC := &entity.BackgroundCheck{
+					ID:           uuid.New(),
+					ProviderID:   providerID,
+					Status:       statusVal,
+					Adjudication: normStatus,
+					Package:      "tasker_standard",
+					Notes:        notes,
+					LastSyncedAt: &now,
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				}
+				if newBC.Notes == "" && isClear {
+					newBC.Notes = "Manually cleared by administrator"
+				}
+				if err := u.adminRepo.UpdateBackgroundCheck(ctx, newBC); err != nil {
+					return err
+				}
+			} else {
+				return errors.New("background check or provider user not found")
+			}
+		}
 	}
 
-	if profile, err := u.profileRepo.GetByUserID(ctx, bc.ProviderID); err == nil && profile != nil {
-		if status == "CLEAR" {
-			profile.IsIdentityVerified = true
-		} else {
-			profile.IsIdentityVerified = false
+	if providerID != uuid.Nil {
+		if profile, err := u.profileRepo.GetByUserID(ctx, providerID); err == nil && profile != nil {
+			profile.IsIdentityVerified = isClear
+			_ = u.profileRepo.Update(ctx, profile)
 		}
-		_ = u.profileRepo.Update(ctx, profile)
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_OVERRIDE_BACKGROUND_CHECK", "BackgroundCheck", checkID.String(), map[string]interface{}{
-		"status": status,
+		"status": normStatus,
 		"notes":  notes,
 	})
 	return nil

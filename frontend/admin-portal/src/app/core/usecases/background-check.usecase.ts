@@ -16,4 +16,8 @@ export class BackgroundCheckUseCase {
   overrideBackgroundCheck(id: string, newStatus: string, reason: string): Observable<{ success: boolean }> {
     return this.bgRepo.overrideBackgroundCheck(id, newStatus, reason);
   }
+
+  clearCheckr(id: string, reason: string = 'Manually cleared via admin portal'): Observable<{ success: boolean }> {
+    return this.bgRepo.clearCheckr(id, reason);
+  }
 }

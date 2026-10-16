@@ -215,8 +215,15 @@ func (u *moderationUseCase) GetBackgroundCheckConfig(ctx context.Context) (map[s
 	if err == nil && setting != nil && setting.BackgroundCheckPaymentMode != "" {
 		mode = setting.BackgroundCheckPaymentMode
 	}
+	env := "production"
+	if u.cfg != nil && u.cfg.Env != "" {
+		env = u.cfg.Env
+	}
+	skipVerification := env == "staging" || env == "stage" || env == "dev" || env == "development"
 	return map[string]interface{}{
-		"payment_mode": mode,
+		"payment_mode":      mode,
+		"env":               env,
+		"skip_verification": skipVerification,
 	}, nil
 }
 

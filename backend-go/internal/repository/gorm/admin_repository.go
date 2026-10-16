@@ -305,6 +305,15 @@ func (r *adminRepository) GetBackgroundCheckByID(ctx context.Context, id uuid.UU
 	return &bc, nil
 }
 
+func (r *adminRepository) GetBackgroundCheckByProviderID(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
+	var bc entity.BackgroundCheck
+	err := r.db.WithContext(ctx).Preload("Provider").Preload("Provider.Profile").Where("provider_id = ?", providerID).Order("created_at DESC").First(&bc).Error
+	if err != nil {
+		return nil, err
+	}
+	return &bc, nil
+}
+
 func (r *adminRepository) UpdateBackgroundCheck(ctx context.Context, bc *entity.BackgroundCheck) error {
 	return r.db.WithContext(ctx).Save(bc).Error
 }

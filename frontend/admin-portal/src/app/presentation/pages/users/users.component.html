@@ -436,6 +436,15 @@
                       <span>Dossier</span>
                     </a>
 
+                    @if (user.userType === 'provider' && (!user.isIdentityVerified || user.checkrStatus !== 'clear')) {
+                      <button class="btn btn-sm btn-outline-success" (click)="clearCheckr(user)" title="Clear Checkr Screening">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <span>Clear Checkr</span>
+                      </button>
+                    }
+
                     <button class="btn btn-sm btn-ghost" (click)="impersonate(user)" title="Impersonate User Session">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>

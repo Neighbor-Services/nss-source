@@ -478,6 +478,27 @@ export class UserDetailComponent implements OnInit {
     });
   }
 
+  clearCheckr(): void {
+    const u = this.user();
+    if (!u) return;
+    if (!confirm(`Are you sure you want to manually CLEAR Checkr background check for ${u.firstName || ''} ${u.lastName || ''} (${u.email})?`)) {
+      return;
+    }
+    this.isActioning.set(true);
+    this.userUC.updateUser(u.id, { isIdentityVerified: true }).subscribe({
+      next: () => {
+        this.isActioning.set(false);
+        this.successMessage.set(`Checkr background check and identity verified for ${u.email}.`);
+        this.loadFullUserDetails(u.id);
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err) => {
+        this.isActioning.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to clear Checkr.');
+      }
+    });
+  }
+
   toggleStaff(): void {
     const u = this.user();
     if (!u) return;

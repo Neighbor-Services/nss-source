@@ -17,20 +17,21 @@ import (
 	"backend-go/pkg/email"
 	"backend-go/pkg/fcm"
 	"backend-go/pkg/geo"
+
 	"github.com/google/uuid"
 )
 
 type serviceUseCase struct {
-	categoryRepo repository.CategoryRepository
-	catalogRepo  repository.CatalogServiceRepository
-	requestRepo  repository.ServiceRequestRepository
-	proposalRepo repository.ProposalRepository
-	profileRepo  repository.ProfileRepository
-	aptRepo      repository.AppointmentRepository
-	notifRepo    repository.NotificationRepository
-	tokenRepo    repository.DeviceTokenRepository
-	fcmClient    fcm.Client
-	userRepo     repository.UserRepository
+	categoryRepo  repository.CategoryRepository
+	catalogRepo   repository.CatalogServiceRepository
+	requestRepo   repository.ServiceRequestRepository
+	proposalRepo  repository.ProposalRepository
+	profileRepo   repository.ProfileRepository
+	aptRepo       repository.AppointmentRepository
+	notifRepo     repository.NotificationRepository
+	tokenRepo     repository.DeviceTokenRepository
+	fcmClient     fcm.Client
+	userRepo      repository.UserRepository
 	adminRepo     repository.AdminRepository
 	dispatchRepo  repository.FlashDispatchRepository
 	knowledgeRepo repository.AIKnowledgeRepository
@@ -79,7 +80,6 @@ func (u *serviceUseCase) invalidateRequestCaches(ctx context.Context) {
 		_ = u.cache.DeleteByPattern(ctx, "cache:*requests*")
 	}
 }
-
 
 func (u *serviceUseCase) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
 	if u.fcmClient == nil || u.tokenRepo == nil {
@@ -730,7 +730,6 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 
 	u.invalidateRequestCaches(ctx)
 
-
 	// If direct request, notify target provider via in-app notification & email
 	if req.TargetProviderID != nil {
 		if u.notifRepo != nil {
@@ -1075,7 +1074,6 @@ func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID
 	return u.requestRepo.Delete(ctx, id)
 }
 
-
 func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID, proposalID uuid.UUID) (*entity.ServiceRequest, error) {
 	if u.cache != nil {
 		locked, _ := u.cache.AcquireLock(ctx, "req_approve:"+requestID.String(), 10*time.Second)
@@ -1228,7 +1226,6 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 	return u.GetRequestByID(ctx, requestID)
 }
 
-
 func (u *serviceUseCase) CancelApproval(ctx context.Context, userID, requestID uuid.UUID) error {
 	req, err := u.requestRepo.GetByID(ctx, requestID)
 	if err != nil {
@@ -1290,7 +1287,6 @@ func (u *serviceUseCase) CancelApproval(ctx context.Context, userID, requestID u
 	return nil
 }
 
-
 func (u *serviceUseCase) GetProposals(ctx context.Context, userID uuid.UUID, userType string, requestID *uuid.UUID) ([]entity.Proposal, error) {
 	if requestID != nil {
 		return u.proposalRepo.ListByRequest(ctx, *requestID)
@@ -1320,6 +1316,14 @@ func (u *serviceUseCase) IsProviderSubscribed(ctx context.Context, userID uuid.U
 func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid.UUID, prop *entity.Proposal) (*entity.Proposal, error) {
 	if !u.IsProviderSubscribed(ctx, providerUserID) {
 		return nil, errors.New("Active subscription required to accept requests or submit proposals. Please choose a subscription plan.")
+	}
+
+	if u.cfg != nil && u.cfg.Env == "production" {
+		if profile, err := u.profileRepo.GetByUserID(ctx, providerUserID); err == nil && profile != nil {
+			if !profile.IsIdentityVerified {
+				return nil, errors.New("Identity verification required. Your Checkr background check must be cleared before you can accept requests.")
+			}
+		}
 	}
 
 	prop.ID = uuid.New()
@@ -1525,6 +1529,14 @@ func (u *serviceUseCase) GetFlashDispatch(ctx context.Context, id uuid.UUID) (*e
 func (u *serviceUseCase) AcceptFlashDispatch(ctx context.Context, providerID, dispatchID uuid.UUID) (*entity.FlashDispatch, *entity.Appointment, error) {
 	if !u.IsProviderSubscribed(ctx, providerID) {
 		return nil, nil, errors.New("Active subscription required to accept emergency flash dispatches. Please choose a subscription plan.")
+	}
+
+	if u.cfg != nil && u.cfg.Env == "production" {
+		if profile, err := u.profileRepo.GetByUserID(ctx, providerID); err == nil && profile != nil {
+			if !profile.IsIdentityVerified {
+				return nil, nil, errors.New("Identity verification required. Your Checkr background check must be cleared before you can accept emergency flash dispatches.")
+			}
+		}
 	}
 
 	// Distributed / In-Memory Lock to prevent race conditions during concurrent acceptance
@@ -1822,5 +1834,3 @@ func (u *serviceUseCase) ParseAndRefineVoiceSpeech(ctx context.Context, userID *
 
 	return &logRecord, nil
 }
-
-

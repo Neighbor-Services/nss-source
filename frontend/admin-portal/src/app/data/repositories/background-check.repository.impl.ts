@@ -40,4 +40,12 @@ export class BackgroundCheckRepositoryImpl implements BackgroundCheckRepository 
       map(() => ({ success: true }))
     );
   }
+
+  clearCheckr(id: string, reason: string = 'Manually cleared via admin portal'): Observable<{ success: boolean }> {
+    return this.http.post<any>(`${ADMIN_API_CONFIG.baseUrl}${ADMIN_API_CONFIG.endpoints.backgroundChecks}/${id}/clear`, {
+      notes: reason
+    }).pipe(
+      map(() => ({ success: true }))
+    );
+  }
 }

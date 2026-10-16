@@ -287,6 +287,29 @@ func (h *AdminHandler) OverrideBackgroundCheck(c *gin.Context) {
 	response.JSON(c, http.StatusOK, gin.H{"status": "background check overridden successfully"})
 }
 
+func (h *AdminHandler) ClearUserCheckr(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid user or check ID")
+		return
+	}
+
+	notes := "Manually cleared via admin portal"
+	var req struct {
+		Notes string `json:"notes"`
+	}
+	if err := c.ShouldBindJSON(&req); err == nil && req.Notes != "" {
+		notes = req.Notes
+	}
+
+	if err := h.adminUC.OverrideBackgroundCheck(c.Request.Context(), adminID, id, "CLEAR", notes); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.JSON(c, http.StatusOK, gin.H{"status": "cleared", "message": "Provider Checkr screening manually cleared"})
+}
+
 // ─── REPORTS ────────────────────────────────────────────────────────────────
 
 func (h *AdminHandler) ListReports(c *gin.Context) {

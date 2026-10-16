@@ -40,6 +40,7 @@ type AdminRepository interface {
 
 	ListBackgroundChecks(ctx context.Context, status string, limit, offset int) ([]entity.BackgroundCheck, int64, error)
 	GetBackgroundCheckByID(ctx context.Context, id uuid.UUID) (*entity.BackgroundCheck, error)
+	GetBackgroundCheckByProviderID(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error)
 	UpdateBackgroundCheck(ctx context.Context, bc *entity.BackgroundCheck) error
 
 	ListReports(ctx context.Context, status string, limit, offset int) ([]entity.Report, int64, error)

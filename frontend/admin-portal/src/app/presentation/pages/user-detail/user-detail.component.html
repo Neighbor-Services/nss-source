@@ -339,6 +339,12 @@
             </div>
             
             <div class="panel-actions-toolbar">
+              @if (isProvider() && (user()!.checkrStatus !== 'clear' || !user()!.isIdentityVerified)) {
+                <button class="btn btn-xs btn-outline-success" (click)="clearCheckr()" [disabled]="isActioning()" title="Manually Clear Checkr Screening">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Clear Checkr
+                </button>
+              }
               <button class="btn btn-xs btn-outline-primary" (click)="toggleIdentityVerified()" [disabled]="isActioning()">
                 {{ user()!.isIdentityVerified ? 'Revoke ID' : 'Verify Identity' }}
               </button>
@@ -521,6 +527,12 @@
                   <span class="badge" [ngClass]="user()!.checkrStatus === 'clear' ? 'badge-success' : (user()!.checkrStatus ? 'badge-warning' : 'badge-secondary')">
                     Status: {{ (user()!.checkrStatus || 'Not Initiated') | uppercase }}
                   </span>
+                  @if (isProvider() && (user()!.checkrStatus !== 'clear' || !user()!.isIdentityVerified)) {
+                    <button class="btn btn-xs btn-success ml-2" (click)="clearCheckr()" [disabled]="isActioning()" title="Manually Clear Checkr Screening">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      Clear Screening
+                    </button>
+                  }
                 </div>
               </div>
             </div>

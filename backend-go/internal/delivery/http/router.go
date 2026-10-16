@@ -544,6 +544,10 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			admin.GET("/background-checks/", deps.AdminHandler.ListBackgroundChecks)
 			admin.POST("/background-checks/:id/override", deps.AdminHandler.OverrideBackgroundCheck)
 			admin.POST("/background-checks/:id/override/", deps.AdminHandler.OverrideBackgroundCheck)
+			admin.POST("/background-checks/:id/clear", deps.AdminHandler.ClearUserCheckr)
+			admin.POST("/background-checks/:id/clear/", deps.AdminHandler.ClearUserCheckr)
+			admin.POST("/users/:id/clear-checkr", deps.AdminHandler.ClearUserCheckr)
+			admin.POST("/users/:id/clear-checkr/", deps.AdminHandler.ClearUserCheckr)
 
 			// Reports & Moderation
 			admin.GET("/reports", deps.AdminHandler.ListReports)

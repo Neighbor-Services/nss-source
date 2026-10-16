@@ -783,6 +783,26 @@ export class UsersComponent implements OnInit {
     });
   }
 
+  clearCheckr(user: AdminUser) {
+    if (!confirm(`Are you sure you want to manually CLEAR Checkr verification for provider ${user.firstName || ''} ${user.lastName || ''} (${user.email})?`)) {
+      return;
+    }
+    this.isActioning.set(true);
+    this.userUC.updateUser(user.id, { isIdentityVerified: true }).subscribe({
+      next: () => {
+        this.isActioning.set(false);
+        this.actionMessage.set(`Checkr background check and identity verified for ${user.email}.`);
+        this.isSuccess.set(true);
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.isActioning.set(false);
+        this.actionMessage.set(err?.error?.message || 'Failed to clear Checkr.');
+        this.isSuccess.set(false);
+      }
+    });
+  }
+
   assignRole() {
     const user = this.selectedUser();
     if (!user || !this.selectedRoleId) return;

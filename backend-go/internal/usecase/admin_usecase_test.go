@@ -108,6 +108,14 @@ func (m *mockAdminRepo) ListBackgroundChecks(ctx context.Context, status string,
 func (m *mockAdminRepo) GetBackgroundCheckByID(ctx context.Context, id uuid.UUID) (*entity.BackgroundCheck, error) {
 	return m.checks[id], nil
 }
+func (m *mockAdminRepo) GetBackgroundCheckByProviderID(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
+	for _, bc := range m.checks {
+		if bc.ProviderID == providerID {
+			return bc, nil
+		}
+	}
+	return nil, errors.New("not found")
+}
 func (m *mockAdminRepo) UpdateBackgroundCheck(ctx context.Context, bc *entity.BackgroundCheck) error {
 	m.checks[bc.ID] = bc
 	return nil
@@ -794,7 +802,7 @@ func TestAdminUseCase_VerificationAndBackgroundChecks(t *testing.T) {
 	// 2. Override Background Check
 	err = adminUC.OverrideBackgroundCheck(ctx, adminID, bcID, "CLEAR", "Manual passport verification confirmed")
 	assert.NoError(t, err)
-	assert.Equal(t, "CLEAR", adminRepo.checks[bcID].Status)
+	assert.Equal(t, "clear", adminRepo.checks[bcID].Status)
 	assert.True(t, profile.IsIdentityVerified)
 }
 

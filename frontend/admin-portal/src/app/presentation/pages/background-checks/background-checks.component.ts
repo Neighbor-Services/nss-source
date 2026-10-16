@@ -78,6 +78,28 @@ export class BackgroundChecksComponent implements OnInit {
     });
   }
 
+  quickClearCheck(item: BackgroundCheckItem) {
+    if (!confirm(`Are you sure you want to manually CLEAR Checkr screening for ${item.userName || item.userEmail}?`)) {
+      return;
+    }
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.bgUC.clearCheckr(item.id, 'Manually cleared via admin portal').subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.successMessage.set(`Checkr screening for ${item.userName || item.userEmail} has been marked CLEAR and approved.`);
+        this.loadChecks();
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err: any) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Failed to clear background check');
+      }
+    });
+  }
+
   openOverride(item: BackgroundCheckItem) {
     this.selectedCheck.set(item);
     this.overrideStatusVal = item.status === 'clear' ? 'consider' : 'clear';

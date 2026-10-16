@@ -78,3 +78,44 @@ func TestMaskEmail(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatBudgetOrNegotiable(t *testing.T) {
+	tests := []struct {
+		price    float64
+		expected string
+	}{
+		{0.0, "Price Negotiable"},
+		{-10.5, "Price Negotiable"},
+		{150.0, "$150.00"},
+		{45.5, "$45.50"},
+	}
+
+	for _, tc := range tests {
+		actual := email.FormatBudgetOrNegotiable(tc.price)
+		if actual != tc.expected {
+			t.Errorf("FormatBudgetOrNegotiable(%f) = %q, expected %q", tc.price, actual, tc.expected)
+		}
+	}
+
+	// Also verify that SendDirectRequestEmail and other templates succeed with 0.0 price
+	cfg := &email.Config{Host: ""}
+	if err := email.SendDirectRequestEmail(cfg, "test@example.com", "Alice", "John", "Plumbing", 0.0, "Tomorrow", "Details"); err != nil {
+		t.Fatalf("SendDirectRequestEmail with 0.0 returned error: %v", err)
+	}
+	if err := email.SendBroadcastRequestEmail(cfg, "test@example.com", "Alice", "John", "Plumbing", 5.2, 0.0, "Tomorrow", "Details"); err != nil {
+		t.Fatalf("SendBroadcastRequestEmail with 0.0 returned error: %v", err)
+	}
+	if err := email.SendNewProposalEmail(cfg, "test@example.com", "John", "Alice", "Plumbing", 0.0, "Details"); err != nil {
+		t.Fatalf("SendNewProposalEmail with 0.0 returned error: %v", err)
+	}
+	if err := email.SendProposalApprovedEmail(cfg, "test@example.com", "Alice", "John", "john@example.com", "Plumbing", 0.0, "Tomorrow"); err != nil {
+		t.Fatalf("SendProposalApprovedEmail with 0.0 returned error: %v", err)
+	}
+	if err := email.SendAppointmentCompletedEmail(cfg, "test@example.com", "John", "Alice", "Plumbing", 0.0); err != nil {
+		t.Fatalf("SendAppointmentCompletedEmail with 0.0 returned error: %v", err)
+	}
+	if err := email.SendNearbyJobAlertEmail(cfg, "test@example.com", "Alice", "Plumbing", "Repairs", 3.5, 0.0); err != nil {
+		t.Fatalf("SendNearbyJobAlertEmail with 0.0 returned error: %v", err)
+	}
+}
+
