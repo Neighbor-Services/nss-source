@@ -186,3 +186,30 @@ func TestModerationUseCase_BackgroundCheckFlow(t *testing.T) {
 		t.Errorf("Expected provider profile to be identity verified after CLEAR report")
 	}
 }
+
+func TestResolveCountryAndState(t *testing.T) {
+	tests := []struct {
+		countryIn  string
+		stateIn    string
+		expectedC  string
+		expectedS  string
+	}{
+		{"Canada", "Ontario", "CA", "ON"},
+		{"CA", "British Columbia", "CA", "BC"},
+		{"CAN", "ab", "CA", "AB"},
+		{"", "Ontario", "CA", "ON"},
+		{"Canada", "", "CA", "ON"},
+		{"US", "California", "US", "CA"},
+		{"USA", "ny", "US", "NY"},
+		{"", "Texas", "US", "TX"},
+		{"", "", "US", "CA"},
+	}
+
+	for _, tt := range tests {
+		c, s := usecase.ResolveCountryAndState(tt.countryIn, tt.stateIn)
+		if c != tt.expectedC || s != tt.expectedS {
+			t.Errorf("resolveCountryAndState(%q, %q) = (%q, %q); expected (%q, %q)",
+				tt.countryIn, tt.stateIn, c, s, tt.expectedC, tt.expectedS)
+		}
+	}
+}

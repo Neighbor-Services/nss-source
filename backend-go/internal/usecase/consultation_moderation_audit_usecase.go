@@ -309,7 +309,113 @@ func (u *moderationUseCase) checkrRequest(method, endpoint string, payload inter
 	return res, nil
 }
 
-func (u *moderationUseCase) getFirstAvailablePackage() string {
+var canadianProvinces = map[string]string{
+	"ON": "ON", "ONTARIO": "ON",
+	"QC": "QC", "QUEBEC": "QC", "QUÉBEC": "QC",
+	"BC": "BC", "BRITISH COLUMBIA": "BC",
+	"AB": "AB", "ALBERTA": "AB",
+	"MB": "MB", "MANITOBA": "MB",
+	"SK": "SK", "SASKATCHEWAN": "SK",
+	"NS": "NS", "NOVA SCOTIA": "NS",
+	"NB": "NB", "NEW BRUNSWICK": "NB",
+	"NL": "NL", "NEWFOUNDLAND": "NL", "NEWFOUNDLAND AND LABRADOR": "NL",
+	"PE": "PE", "PRINCE EDWARD ISLAND": "PE", "PEI": "PE",
+	"NT": "NT", "NORTHWEST TERRITORIES": "NT",
+	"NU": "NU", "NUNAVUT": "NU",
+	"YT": "YT", "YUKON": "YT",
+}
+
+var usStates = map[string]string{
+	"AL": "AL", "ALABAMA": "AL",
+	"AK": "AK", "ALASKA": "AK",
+	"AZ": "AZ", "ARIZONA": "AZ",
+	"AR": "AR", "ARKANSAS": "AR",
+	"CA": "CA", "CALIFORNIA": "CA",
+	"CO": "CO", "COLORADO": "CO",
+	"CT": "CT", "CONNECTICUT": "CT",
+	"DE": "DE", "DELAWARE": "DE",
+	"FL": "FL", "FLORIDA": "FL",
+	"GA": "GA", "GEORGIA": "GA",
+	"HI": "HI", "HAWAII": "HI",
+	"ID": "ID", "IDAHO": "ID",
+	"IL": "IL", "ILLINOIS": "IL",
+	"IN": "IN", "INDIANA": "IN",
+	"IA": "IA", "IOWA": "IA",
+	"KS": "KS", "KANSAS": "KS",
+	"KY": "KY", "KENTUCKY": "KY",
+	"LA": "LA", "LOUISIANA": "LA",
+	"ME": "ME", "MAINE": "ME",
+	"MD": "MD", "MARYLAND": "MD",
+	"MA": "MA", "MASSACHUSETTS": "MA",
+	"MI": "MI", "MICHIGAN": "MI",
+	"MN": "MN", "MINNESOTA": "MN",
+	"MS": "MS", "MISSISSIPPI": "MS",
+	"MO": "MO", "MISSOURI": "MO",
+	"MT": "MT", "MONTANA": "MT",
+	"NE": "NE", "NEBRASKA": "NE",
+	"NV": "NV", "NEVADA": "NV",
+	"NH": "NH", "NEW HAMPSHIRE": "NH",
+	"NJ": "NJ", "NEW JERSEY": "NJ",
+	"NM": "NM", "NEW MEXICO": "NM",
+	"NY": "NY", "NEW YORK": "NY",
+	"NC": "NC", "NORTH CAROLINA": "NC",
+	"ND": "ND", "NORTH DAKOTA": "ND",
+	"OH": "OH", "OHIO": "OH",
+	"OK": "OK", "OKLAHOMA": "OK",
+	"OR": "OR", "OREGON": "OR",
+	"PA": "PA", "PENNSYLVANIA": "PA",
+	"RI": "RI", "RHODE ISLAND": "RI",
+	"SC": "SC", "SOUTH CAROLINA": "SC",
+	"SD": "SD", "SOUTH DAKOTA": "SD",
+	"TN": "TN", "TENNESSEE": "TN",
+	"TX": "TX", "TEXAS": "TX",
+	"UT": "UT", "UTAH": "UT",
+	"VT": "VT", "VERMONT": "VT",
+	"VA": "VA", "VIRGINIA": "VA",
+	"WA": "WA", "WASHINGTON": "WA",
+	"WV": "WV", "WEST VIRGINIA": "WV",
+	"WI": "WI", "WISCONSIN": "WI",
+	"WY": "WY", "WYOMING": "WY",
+	"DC": "DC", "DISTRICT OF COLUMBIA": "DC",
+}
+
+func ResolveCountryAndState(countryInput, stateInput string) (string, string) {
+	c := strings.ToUpper(strings.TrimSpace(countryInput))
+	s := strings.ToUpper(strings.TrimSpace(stateInput))
+
+	isCanada := c == "CA" || c == "CAN" || c == "CANADA"
+	if !isCanada && c == "" {
+		if _, ok := canadianProvinces[s]; ok {
+			if _, isUS := usStates[s]; !isUS {
+				isCanada = true
+			}
+		}
+	}
+
+	if isCanada {
+		if prov, ok := canadianProvinces[s]; ok {
+			return "CA", prov
+		}
+		if len(s) == 2 {
+			return "CA", s
+		}
+		return "CA", "ON"
+	}
+
+	country := "US"
+	if c != "" && c != "US" && c != "USA" && c != "UNITED STATES" && len(c) == 2 {
+		country = c
+	}
+	if st, ok := usStates[s]; ok {
+		return country, st
+	}
+	if len(s) == 2 {
+		return country, s
+	}
+	return country, "CA"
+}
+
+func (u *moderationUseCase) findPackageMatching(predicate func(slug, name string) bool) string {
 	res, err := u.checkrRequest("GET", "/v1/packages", nil)
 	if err != nil {
 		return ""
@@ -317,13 +423,41 @@ func (u *moderationUseCase) getFirstAvailablePackage() string {
 	if data, ok := res["data"].([]interface{}); ok && len(data) > 0 {
 		for _, item := range data {
 			if pkg, ok := item.(map[string]interface{}); ok {
-				if slug, ok := pkg["slug"].(string); ok && slug != "" {
+				slug, _ := pkg["slug"].(string)
+				name, _ := pkg["name"].(string)
+				if slug != "" && predicate(slug, name) {
 					return slug
 				}
 			}
 		}
 	}
 	return ""
+}
+
+func (u *moderationUseCase) getFirstAvailablePackage() string {
+	return u.findPackageMatching(func(slug, name string) bool {
+		return true
+	})
+}
+
+func (u *moderationUseCase) resolvePackageForCountry(country string) string {
+	if country == "CA" {
+		if u.cfg != nil && u.cfg.CheckrCanadaPackageName != "" {
+			return u.cfg.CheckrCanadaPackageName
+		}
+		// Search Checkr account packages for a Canadian or international package
+		if pkg := u.findPackageMatching(func(slug, name string) bool {
+			s := strings.ToLower(slug + " " + name)
+			return strings.Contains(s, "canada") || strings.Contains(s, "can") || strings.Contains(s, "intl") || strings.Contains(s, "international")
+		}); pkg != "" {
+			return pkg
+		}
+	}
+
+	if u.cfg != nil && u.cfg.CheckrPackageName != "" {
+		return u.cfg.CheckrPackageName
+	}
+	return "tasker_standard"
 }
 
 func (u *moderationUseCase) GetMyBackgroundCheck(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
@@ -376,30 +510,21 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 		firstName = "Provider"
 	}
 
+	country, state := ResolveCountryAndState(profile.Country, profile.State)
+	packageName := u.resolvePackageForCountry(country)
+
 	candidatePayload := map[string]interface{}{
 		"first_name": firstName,
 		"last_name":  lastName,
 		"email":      user.Email,
 		"custom_id":  user.ID.String(),
+		"country":    country,
 	}
 	if profile.Phone != "" {
 		candidatePayload["phone"] = profile.Phone
 	}
 	if profile.ZipCode != "" {
 		candidatePayload["zipcode"] = profile.ZipCode
-	}
-
-	packageName := "tasker_standard"
-	if u.cfg != nil && u.cfg.CheckrPackageName != "" {
-		packageName = u.cfg.CheckrPackageName
-	}
-
-	state := "CA"
-	if profile.State != "" {
-		st := strings.TrimSpace(strings.ToUpper(profile.State))
-		if len(st) == 2 {
-			state = st
-		}
 	}
 
 	var candidateID string
@@ -423,18 +548,29 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 			"package":      packageName,
 			"work_locations": []map[string]string{
 				{
-					"country": "US",
+					"country": country,
 					"state":   state,
 				},
 			},
 		}
 		invitationRes, err := u.checkrRequest("POST", "/v1/invitations", invitationPayload)
 		if err != nil {
-			// If invitation failed (e.g. package not found), check account for available package
-			if availablePkg := u.getFirstAvailablePackage(); availablePkg != "" && availablePkg != packageName {
-				log.Printf("[Checkr API] Retrying invitation with discovered package '%s' (fallback from '%s')", availablePkg, packageName)
+			// If invitation failed (e.g. package not supported for this country), discover available package
+			if availablePkg := u.findPackageMatching(func(slug, name string) bool {
+				if country == "CA" {
+					s := strings.ToLower(slug + " " + name)
+					return strings.Contains(s, "canada") || strings.Contains(s, "can") || strings.Contains(s, "intl") || strings.Contains(s, "international")
+				}
+				return true
+			}); availablePkg != "" && availablePkg != packageName {
+				log.Printf("[Checkr API] Retrying invitation with discovered package '%s' (fallback from '%s') for %s", availablePkg, packageName, country)
 				invitationPayload["package"] = availablePkg
 				packageName = availablePkg
+				invitationRes, err = u.checkrRequest("POST", "/v1/invitations", invitationPayload)
+			} else if fallbackPkg := u.getFirstAvailablePackage(); fallbackPkg != "" && fallbackPkg != packageName {
+				log.Printf("[Checkr API] Retrying invitation with fallback package '%s' (fallback from '%s')", fallbackPkg, packageName)
+				invitationPayload["package"] = fallbackPkg
+				packageName = fallbackPkg
 				invitationRes, err = u.checkrRequest("POST", "/v1/invitations", invitationPayload)
 			}
 		}
@@ -539,7 +675,8 @@ func (u *moderationUseCase) applyReportToBackgroundCheck(ctx context.Context, bc
 
 	// Update profile identity verified status
 	if profile, err := u.profileRepo.GetByUserID(ctx, bc.ProviderID); err == nil && profile != nil {
-		if bc.Status == "clear" {
+		switch bc.Status {
+		case "clear":
 			profile.IsIdentityVerified = true
 			_ = u.profileRepo.Update(ctx, profile)
 			if u.notifUC != nil {
@@ -548,7 +685,7 @@ func (u *moderationUseCase) applyReportToBackgroundCheck(ctx context.Context, bc
 					"check_id": bc.ID.String(),
 				})
 			}
-		} else if bc.Status == "consider" || bc.Status == "suspended" || bc.Status == "canceled" {
+		case "consider", "suspended", "canceled":
 			profile.IsIdentityVerified = false
 			_ = u.profileRepo.Update(ctx, profile)
 			if u.notifUC != nil {
@@ -597,10 +734,11 @@ func (u *moderationUseCase) ProcessCheckrWebhook(ctx context.Context, signature 
 			bc, _ = u.bgCheckRepo.GetByCandidateID(ctx, candID)
 		}
 		if bc != nil {
-			if eventType == "invitation.completed" {
+			switch eventType {
+			case "invitation.completed":
 				bc.Status = "in_progress"
 				_ = u.bgCheckRepo.Update(ctx, bc)
-			} else if eventType == "invitation.expired" {
+			case "invitation.expired":
 				bc.Status = "expired"
 				_ = u.bgCheckRepo.Update(ctx, bc)
 			}

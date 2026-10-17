@@ -33,6 +33,7 @@ type Config struct {
 	CheckrAPIKey             string
 	CheckrWebhookSecret      string
 	CheckrPackageName        string
+	CheckrCanadaPackageName  string
 	FrontendURL              string
 	MediaUploadDir           string
 	GoStoreURL               string
@@ -117,6 +118,7 @@ func Load() *Config {
 		CheckrAPIKey:             getEnv("CHECKR_API_KEY", ""),
 		CheckrWebhookSecret:      getEnv("CHECKR_WEBHOOK_SECRET", ""),
 		CheckrPackageName:        getEnv("CHECKR_PACKAGE_NAME", "tasker_standard"),
+		CheckrCanadaPackageName:  getEnv("CHECKR_CANADA_PACKAGE_NAME", ""),
 		FrontendURL:              getEnv("FRONTEND_URL", "http://localhost:4200"),
 		MediaUploadDir:           getEnv("MEDIA_UPLOAD_DIR", "./media"),
 		GoStoreURL:               getEnv("GOSTORE_URL", "https://file.proleadsolutions.co"),
