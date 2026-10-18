@@ -22,8 +22,11 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	var dialector gorm.Dialector
 
 	logLevel := logger.Info
-	if cfg.Env == "production" {
+	switch cfg.Env {
+	case "production":
 		logLevel = logger.Error
+	case "staging":
+		logLevel = logger.Warn
 	}
 
 	gormConfig := &gorm.Config{
@@ -62,11 +65,16 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 // AutoMigrate migrates all models matching Django and Go database table schemas.
 func AutoMigrate(db *gorm.DB) error {
+	// Silence verbose schema introspection queries during migration
+	migrateDB := db.Session(&gorm.Session{
+		Logger: db.Logger.LogMode(logger.Warn),
+	})
+
 	// 1. Ensure required flash dispatch & AI index tables are created with explicit DDL first
-	ensureExplicitTables(db)
+	ensureExplicitTables(migrateDB)
 
 	// 2. Clean up dangling orphan records to prevent foreign key constraint violations
-	cleanOrphanRecords(db)
+	cleanOrphanRecords(migrateDB)
 
 	// 3. Resilient per-model AutoMigrate so that legacy table conflicts never abort new table creation
 	models := []interface{}{
@@ -144,15 +152,15 @@ func AutoMigrate(db *gorm.DB) error {
 	}
 
 	for _, m := range models {
-		if err := db.AutoMigrate(m); err != nil {
+		if err := migrateDB.AutoMigrate(m); err != nil {
 			log.Printf("⚠️ AutoMigrate model (%T) note: %v", m, err)
 		}
 	}
 
-	createCompositeIndexes(db)
-	seedDefaultSubscriptionPlans(db)
-	seedDefaultCategoriesAndServices(db)
-	seedDefaultLegalDocuments(db)
+	createCompositeIndexes(migrateDB)
+	seedDefaultSubscriptionPlans(migrateDB)
+	seedDefaultCategoriesAndServices(migrateDB)
+	seedDefaultLegalDocuments(migrateDB)
 	return nil
 }
 
