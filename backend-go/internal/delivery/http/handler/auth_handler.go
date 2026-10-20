@@ -11,6 +11,7 @@ import (
 	"backend-go/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -399,12 +400,29 @@ func (h *AuthHandler) AppleLogin(c *gin.Context) {
 		token = req.IDToken
 	}
 
+	email := req.Email
+	if email == "" && token != "" {
+		// Extract email from Apple id_token JWT claims if not provided in payload
+		parser := jwt.NewParser()
+		var claims jwt.MapClaims
+		if _, _, err := parser.ParseUnverified(token, &claims); err == nil {
+			if em, ok := claims["email"].(string); ok && em != "" {
+				email = em
+			}
+			if email == "" {
+				if sub, ok := claims["sub"].(string); ok && sub != "" {
+					email = fmt.Sprintf("apple_%s@privaterelay.appleid.com", sub)
+				}
+			}
+		}
+	}
+
 	name := req.Name
 	if name == "" {
 		name = strings.TrimSpace(req.FirstName + " " + req.LastName)
 	}
 
-	result, err := h.authUC.SocialLogin(c.Request.Context(), "apple", token, req.Email, name)
+	result, err := h.authUC.SocialLogin(c.Request.Context(), "apple", token, email, name)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
 			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
