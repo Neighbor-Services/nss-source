@@ -19,7 +19,7 @@ func NewNotificationRepository(db *gorm.DB) repository.NotificationRepository {
 }
 
 func (r *notificationRepository) ListByUser(ctx context.Context, userID uuid.UUID, limit int) ([]entity.Notification, error) {
-	var list []entity.Notification
+	list := make([]entity.Notification, 0)
 	query := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("created_at DESC")

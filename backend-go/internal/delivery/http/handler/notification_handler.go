@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"backend-go/internal/config"
+	"backend-go/internal/domain/entity"
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/internal/websocket"
 	"backend-go/pkg/auth"
@@ -27,14 +28,28 @@ func NewNotificationHandler(notifUC domainUsecase.NotificationUseCase, hub *webs
 
 func (h *NotificationHandler) GetNotifications(c *gin.Context) {
 	userIDStr := c.GetString("userID")
-	userUUID, _ := uuid.Parse(userIDStr)
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil || userUUID == uuid.Nil {
+		response.Unauthorized(c, "Invalid user credentials")
+		return
+	}
 
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+
 	notifications, err := h.notifUC.GetNotifications(c.Request.Context(), userUUID, limit)
 	if err != nil {
+		log.Printf("[NotificationHandler] GetNotifications failed for user %s: %v", userUUID, err)
 		response.InternalError(c, "Failed to load notifications")
 		return
 	}
+
+	if notifications == nil {
+		notifications = []entity.Notification{}
+	}
+
 	response.JSON(c, http.StatusOK, notifications)
 }
 

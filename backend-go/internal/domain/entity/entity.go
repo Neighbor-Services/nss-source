@@ -3,7 +3,6 @@ package entity
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"strings"
 	"time"
 
@@ -20,19 +19,31 @@ func (j JSONSlice) Value() (driver.Value, error) {
 }
 
 func (j *JSONSlice) Scan(value interface{}) error {
+	*j = []string{}
 	if value == nil {
-		*j = []string{}
 		return nil
 	}
-	bytes, ok := value.([]byte)
-	if !ok {
-		str, okStr := value.(string)
-		if !okStr {
-			return errors.New("type assertion failed")
-		}
-		bytes = []byte(str)
+	var str string
+	switch v := value.(type) {
+	case []byte:
+		str = strings.TrimSpace(string(v))
+	case string:
+		str = strings.TrimSpace(v)
+	default:
+		return nil
 	}
-	return json.Unmarshal(bytes, j)
+	if str == "" || str == "null" || str == "None" || str == "[]" {
+		return nil
+	}
+	if err := json.Unmarshal([]byte(str), j); err != nil {
+		if str != "" {
+			*j = []string{str}
+		}
+	}
+	if *j == nil {
+		*j = []string{}
+	}
+	return nil
 }
 
 // JSONMap represents a map stored as JSON in the database.
@@ -43,19 +54,32 @@ func (j JSONMap) Value() (driver.Value, error) {
 }
 
 func (j *JSONMap) Scan(value interface{}) error {
+	*j = make(map[string]interface{})
 	if value == nil {
-		*j = make(map[string]interface{})
 		return nil
 	}
-	bytes, ok := value.([]byte)
-	if !ok {
-		str, okStr := value.(string)
-		if !okStr {
-			return errors.New("type assertion failed")
-		}
-		bytes = []byte(str)
+	var str string
+	switch v := value.(type) {
+	case []byte:
+		str = strings.TrimSpace(string(v))
+	case string:
+		str = strings.TrimSpace(v)
+	default:
+		return nil
 	}
-	return json.Unmarshal(bytes, j)
+	if str == "" || str == "null" || str == "None" || str == "{}" {
+		return nil
+	}
+	if err := json.Unmarshal([]byte(str), j); err != nil {
+		fixed := strings.ReplaceAll(str, "'", "\"")
+		if err2 := json.Unmarshal([]byte(fixed), j); err2 != nil {
+			(*j)["raw"] = str
+		}
+	}
+	if *j == nil {
+		*j = make(map[string]interface{})
+	}
+	return nil
 }
 
 // ─── DOMAIN ENTITIES ────────────────────────────────────────────────────────
