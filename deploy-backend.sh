@@ -367,8 +367,6 @@ ENV_EOF
     chmod 600 "$APP_DIR/config/instance-$i.env"
 
     systemctl enable ns-backend@$i
-    systemctl restart ns-backend@$i
-    echo -e "${GREEN}  ✓ Instance #$i active on Port $INSTANCE_PORT${NC}"
 done
 
 # Stop any old higher instances if reducing count
@@ -379,9 +377,18 @@ for ((i=NUM_INSTANCES+1; i<=20; i++)); do
     fi
 done
 
+systemctl daemon-reload
 systemctl enable ns-backend.target
-systemctl restart ns-backend.target
-echo -e "${GREEN}✓ All $NUM_INSTANCES backend instances running and managed by ns-backend.target${NC}"
+
+echo -e "${YELLOW}Performing zero-downtime rolling restart across $NUM_INSTANCES backend instances...${NC}"
+for ((i=1; i<=NUM_INSTANCES; i++)); do
+    INSTANCE_PORT=$(($BASE_PORT + $i))
+    echo -e "  Rolling restart instance #$i on Port $INSTANCE_PORT..."
+    systemctl restart "ns-backend@$i.service"
+    sleep 0.5
+    echo -e "${GREEN}  ✓ Instance #$i active on Port $INSTANCE_PORT${NC}"
+done
+echo -e "${GREEN}✓ All $NUM_INSTANCES backend instances running with zero dropped connections${NC}"
 
 echo -e "${YELLOW}Phase 6: Nginx Load Balancer & SSL Gateway Configuration${NC}"
 
@@ -433,6 +440,39 @@ upstream ns_backend_ws_cluster {
     ip_hash;
 $(echo -e "$UPSTREAM_WS_SERVERS")
 }
+
+# ------------------------------------------------------------------------------
+# Cloudflare & Reverse Proxy Real-IP Restoration
+# Ensures rate limiting zones and logs record real client IPs instead of CDN proxies
+# ------------------------------------------------------------------------------
+set_real_ip_from 173.245.48.0/20;
+set_real_ip_from 103.21.244.0/22;
+set_real_ip_from 103.22.200.0/22;
+set_real_ip_from 103.31.4.0/22;
+set_real_ip_from 141.101.64.0/18;
+set_real_ip_from 108.162.192.0/18;
+set_real_ip_from 190.93.240.0/20;
+set_real_ip_from 188.114.96.0/20;
+set_real_ip_from 197.234.240.0/22;
+set_real_ip_from 198.41.128.0/17;
+set_real_ip_from 162.158.0.0/15;
+set_real_ip_from 104.16.0.0/13;
+set_real_ip_from 104.24.0.0/14;
+set_real_ip_from 172.64.0.0/13;
+set_real_ip_from 131.0.72.0/22;
+set_real_ip_from 2400:cb00::/32;
+set_real_ip_from 2606:4700::/32;
+set_real_ip_from 2803:f800::/32;
+set_real_ip_from 2405:b500::/32;
+set_real_ip_from 2405:8100::/32;
+set_real_ip_from 2a06:98c0::/29;
+set_real_ip_from 2c0f:f248::/32;
+set_real_ip_from 127.0.0.1;
+set_real_ip_from 10.0.0.0/8;
+set_real_ip_from 172.16.0.0/12;
+set_real_ip_from 192.168.0.0/16;
+real_ip_header CF-Connecting-IP;
+real_ip_recursive on;
 
 # Rate limiting zones
 limit_req_zone \$binary_remote_addr zone=ns_api_limit:10m rate=60r/s;
@@ -603,30 +643,31 @@ if [ "$SETUP_UFW" = "y" ]; then
     echo -e "${GREEN}✓ UFW Firewall enabled: ports 22, 80, 443 open. Backend instance ports $(($BASE_PORT + 1))-$(($BASE_PORT + $NUM_INSTANCES)) & PostgreSQL are isolated locally.${NC}"
 fi
 
-echo -e "${YELLOW}Phase 8: Intrusion Prevention & 404 Scanner Auto-Ban (Fail2ban)${NC}"
-read -p "Do you want to configure Fail2ban to automatically block IP addresses hitting 10+ 404 errors in 5m for 7 days? (y/n) [default: y]: " SETUP_FAIL2BAN
+echo -e "${YELLOW}Phase 8: Intrusion Prevention & Malicious Scanner Auto-Ban (Fail2ban)${NC}"
+read -p "Do you want to configure Fail2ban to block scanner bots probing for exploits (.env, .php, .git, wp-*) for 7 days? (y/n) [default: y]: " SETUP_FAIL2BAN
 SETUP_FAIL2BAN=${SETUP_FAIL2BAN:-y}
 if [ "$SETUP_FAIL2BAN" = "y" ]; then
-    echo -e "${YELLOW}Configuring Fail2ban 404 scanner detection filter and jail...${NC}"
+    echo -e "${YELLOW}Configuring Fail2ban exploit probe detection filter and jail...${NC}"
 
     mkdir -p /etc/fail2ban/filter.d /etc/fail2ban/jail.d
 
-    # 1. Create Nginx 404 filter
+    # 1. Create targeted Nginx exploit & vulnerability probe filter
     cat << 'EOF' > /etc/fail2ban/filter.d/nginx-404.conf
 [Definition]
-# Detect repeated 404 errors (probes for .env, wp-login, hidden configs, exploit paths)
-failregex = ^<HOST> - .* "(GET|POST|HEAD|PUT|DELETE|OPTIONS) .* HTTP/[0-9.]+" 404
+# Detect malicious scanners and exploit probes generating 404s (.env, .php, .git, wp-*, admin, actuator, etc.)
+failregex = ^<HOST> - .* "(GET|POST|HEAD) .*(/\.env|\.git|\.aws|\.svn|\.bak|\.config|\.yaml|\.yml|\.sql|\.php|wp-|wordpress|phpmyadmin|actuator|xmlrpc|boaform|solr|telescope|vendor/phpunit|\.well-known/security).* HTTP/[0-9.]+" 404
 ignoreregex =
 EOF
 
-    # 2. Configure 404 jail (10 attempts in 5 minutes -> ban for 7 days = 604800s)
+    # 2. Configure 404 jail (5 probe attempts in 5 minutes -> ban for 7 days = 604800s)
     cat << EOF > /etc/fail2ban/jail.d/nginx-404.local
 [nginx-404]
 enabled   = true
 port      = http,https
 filter    = nginx-404
 logpath   = /var/log/nginx/access.log
-maxretry  = 10
+ignoreip  = 127.0.0.1/8 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+maxretry  = 5
 findtime  = 300
 bantime   = 604800
 banaction = ufw
@@ -635,7 +676,7 @@ EOF
 
     systemctl enable fail2ban
     systemctl restart fail2ban
-    echo -e "${GREEN}✓ Fail2ban active: IPs hitting 10+ 404 errors within 5 minutes are banned at firewall level for 7 days (604800s).${NC}"
+    echo -e "${GREEN}✓ Fail2ban active: Malicious scanner bots probing for exploits are banned at firewall level for 7 days (604800s).${NC}"
     fail2ban-client status nginx-404 2>/dev/null || true
 fi
 

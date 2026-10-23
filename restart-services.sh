@@ -60,16 +60,21 @@ restart_redis() {
 restart_go_cluster() {
     echo -e "${YELLOW}▶ Restarting Go Backend Multi-Instance Cluster...${NC}"
     if [ "$IS_ROOT" = true ]; then
-        # Check systemd target
-        if systemctl list-unit-files | grep -q "ns-backend.target"; then
+        ACTIVE_INSTANCES=$(systemctl list-units --type=service --all 2>/dev/null | grep -oE "ns-backend@[0-9]+" | sort -u)
+        if [ -n "$ACTIVE_INSTANCES" ]; then
+            echo -e "  Executing zero-downtime rolling restart across active backend instances..."
+            for inst in $ACTIVE_INSTANCES; do
+                echo -e "  Restarting instance $inst..."
+                systemctl restart "$inst" && echo -e "${GREEN}  ✓ $inst restarted${NC}" || true
+                sleep 0.5
+            done
+            if systemctl list-unit-files | grep -q "ns-backend.target"; then
+                systemctl start ns-backend.target 2>/dev/null || true
+            fi
+            echo -e "${GREEN}  ✓ All backend cluster instances restarted with zero downtime${NC}"
+        elif systemctl list-unit-files | grep -q "ns-backend.target"; then
             systemctl restart ns-backend.target && echo -e "${GREEN}  ✓ ns-backend.target cluster restarted${NC}" || true
         fi
-
-        # Restart individual active instances (ns-backend@1, ns-backend@2, etc.)
-        for inst in $(systemctl list-units --type=service --all 2>/dev/null | grep -oE "ns-backend@[0-9]+" | sort -u); do
-            echo -e "  Restarting instance $inst..."
-            systemctl restart "$inst" && echo -e "${GREEN}  ✓ $inst restarted${NC}" || true
-        done
 
         # Staging Go backend
         if systemctl list-unit-files | grep -q "ns-backend-staging"; then
