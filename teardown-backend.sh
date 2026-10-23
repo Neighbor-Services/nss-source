@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) — Deployment Teardown & Cleanup Script
+# Neighbor Services (NSA) — Deployment Teardown & Cleanup Script
 # Safely stops and completely removes systemd services, supervisor replicas,
 # Nginx site configurations, socket files, and logrotate configs created
 # by the backend deployment scripts.
@@ -24,7 +24,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${BLUE}================================================================${NC}"
-echo -e "${CYAN}   Neighbor Service (NSA) — Backend Deployment Teardown         ${NC}"
+echo -e "${CYAN}   Neighbor Services (NSA) — Backend Deployment Teardown         ${NC}"
 echo -e "${BLUE}================================================================${NC}"
 echo ""
 

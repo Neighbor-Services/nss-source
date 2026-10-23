@@ -1,6 +1,6 @@
-# Neighbor Service (NSA)
+# Neighbor Services (NSA)
 
-Neighbor Service is an on-demand service marketplace platform connecting service seekers with verified local service providers.
+Neighbor Services is an on-demand service marketplace platform connecting service seekers with verified local service providers.
 
 ---
 
@@ -186,4 +186,4 @@ Automated orchestration scripts are available in `scripts/deploy/`:
 ---
 
 ## 📄 License & Proprietary Notice
-© Neighbor Service. All rights reserved.
+© Neighbor Services. All rights reserved.

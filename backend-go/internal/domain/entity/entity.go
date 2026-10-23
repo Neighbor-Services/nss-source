@@ -426,12 +426,13 @@ type ServiceRequest struct {
 func (ServiceRequest) TableName() string { return "services_servicerequest" }
 
 type Proposal struct {
-	ID         uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	RequestID  uuid.UUID `gorm:"type:uuid;index;not null" json:"request"`
-	ProviderID uuid.UUID `gorm:"type:uuid;index;not null" json:"provider"`
-	IsApproved bool      `gorm:"default:false" json:"is_approved"`
-	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID            uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	RequestID     uuid.UUID  `gorm:"type:uuid;index;not null" json:"request"`
+	ProviderID    uuid.UUID  `gorm:"type:uuid;index;not null" json:"provider"`
+	ScheduledTime *time.Time `json:"scheduled_time,omitempty"`
+	IsApproved    bool       `gorm:"default:false" json:"is_approved"`
+	CreatedAt     time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt     time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 
 	Request  *ServiceRequest `gorm:"foreignKey:RequestID" json:"request_details,omitempty"`
 	Provider *User           `gorm:"foreignKey:ProviderID" json:"provider_details,omitempty"`
@@ -1200,7 +1201,7 @@ func (SiteStat) TableName() string { return "public_site_sitestat" }
 
 type SiteSetting struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	SiteName       string    `gorm:"size:100;default:'Neighbor Service'" json:"site_name"`
+	SiteName       string    `gorm:"size:100;default:'Neighbor Services'" json:"site_name"`
 	ContactEmail   string    `gorm:"size:100;default:'support@neighborservice.com'" json:"contact_email"`
 	ContactPhone   string    `gorm:"size:50;default:'+1 (555) 000-0000'" json:"contact_phone"`
 	ContactAddress string    `gorm:"type:text;default:'123 Community City, CC 12345'" json:"contact_address"`

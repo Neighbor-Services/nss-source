@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) - Production Backend Deployment Script
+# Neighbor Services (NSA) - Production Backend Deployment Script
 # Multi-Instance Go Cluster & Nginx Upstream Load Balancing (No Docker required)
 # Usage: sudo bash deploy-backend.sh
 # ==============================================================================
@@ -43,7 +43,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${BLUE}================================================================${NC}"
-echo -e "${CYAN}  Neighbor Service (NSA) - Production Backend Cluster Deploy    ${NC}"
+echo -e "${CYAN}  Neighbor Services (NSA) - Production Backend Cluster Deploy    ${NC}"
 echo -e "${BLUE}================================================================${NC}"
 echo ""
 
@@ -221,7 +221,7 @@ if [ "$BACKUP_CHOICE" = "1" ]; then
 
     cat << 'BACKUP_SCRIPT' > "$APP_DIR/backup_postgres.sh"
 #!/bin/bash
-# Automated PostgreSQL backup script for Neighbor Service
+# Automated PostgreSQL backup script for Neighbor Services
 DB_NAME="REPLACE_DB_NAME"
 BACKUP_DIR="/opt/ns/backups/postgres"
 DATE=$(date +"%Y%m%d_%H%M%S")
@@ -269,7 +269,7 @@ export PATH=$PATH:/usr/local/go/bin
 echo -e "${YELLOW}Downloading Go dependencies...${NC}"
 sudo -u $USER bash -c "cd '$APP_DIR' && env PATH=\"\$PATH:/usr/local/go/bin\" go mod tidy"
 
-echo -e "${YELLOW}Compiling Neighbor Service API Server (cmd/server/main.go)...${NC}"
+echo -e "${YELLOW}Compiling Neighbor Services API Server (cmd/server/main.go)...${NC}"
 sudo -u $USER bash -c "cd '$APP_DIR' && env PATH=\"\$PATH:/usr/local/go/bin\" go build -ldflags='-s -w' -o bin/server ./cmd/server/"
 chmod +x "$APP_DIR/bin/server"
 echo -e "${GREEN}✓ Production API server compiled: $APP_DIR/bin/server${NC}"
@@ -313,7 +313,7 @@ chown -R $USER:$GROUP "$APP_DIR/config"
 # 1. Template Unit File
 cat << 'EOF' > /etc/systemd/system/ns-backend@.service
 [Unit]
-Description=Neighbor Service (NSA) Backend Instance #%i
+Description=Neighbor Services (NSA) Backend Instance #%i
 After=network.target postgresql.service
 Wants=postgresql.service
 
@@ -347,7 +347,7 @@ done
 
 cat << EOF > /etc/systemd/system/ns-backend.target
 [Unit]
-Description=Neighbor Service (NSA) Backend Multi-Instance Target
+Description=Neighbor Services (NSA) Backend Multi-Instance Target
 Wants=$WANTS_LIST
 
 [Install]

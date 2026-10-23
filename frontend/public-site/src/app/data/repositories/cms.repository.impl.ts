@@ -72,7 +72,7 @@ export class CmsRepositoryImpl implements CmsRepository {
         }));
 
         const siteSettings = {
-          siteName: res?.settings?.site_name || 'Neighbor Service',
+          siteName: res?.settings?.site_name || 'Neighbor Services',
           supportEmail: res?.settings?.support_email || 'support@neighborservice.com',
           supportPhone: res?.settings?.support_phone || '+1 (800) 555-0199',
           headquarters: res?.settings?.headquarters || 'Austin, Texas',

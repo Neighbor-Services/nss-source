@@ -301,7 +301,7 @@ var categoriesSeed = []CategoryData{
 
 func main() {
 	log.Println("🌱 ====================================================================")
-	log.Println("🌱 Neighbor Service - Syncing Official Categories & Catalog Services")
+	log.Println("🌱 Neighbor Services - Syncing Official Categories & Catalog Services")
 	log.Println("🌱 Source of Truth: NS Category Listing Documentation")
 	log.Println("🌱 ====================================================================")
 

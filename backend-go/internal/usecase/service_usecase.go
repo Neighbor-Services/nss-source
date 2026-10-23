@@ -35,6 +35,8 @@ type serviceUseCase struct {
 	adminRepo     repository.AdminRepository
 	dispatchRepo  repository.FlashDispatchRepository
 	knowledgeRepo repository.AIKnowledgeRepository
+	convRepo      repository.ConversationRepository
+	msgRepo       repository.MessageRepository
 	cache         cache.Cache
 	cfg           *config.Config
 }
@@ -53,6 +55,8 @@ func NewServiceUseCase(
 	adminRepo repository.AdminRepository,
 	dispatchRepo repository.FlashDispatchRepository,
 	knowledgeRepo repository.AIKnowledgeRepository,
+	convRepo repository.ConversationRepository,
+	msgRepo repository.MessageRepository,
 	cache cache.Cache,
 	cfg *config.Config,
 ) domainUsecase.ServiceUseCase {
@@ -70,6 +74,8 @@ func NewServiceUseCase(
 		adminRepo:     adminRepo,
 		dispatchRepo:  dispatchRepo,
 		knowledgeRepo: knowledgeRepo,
+		convRepo:      convRepo,
+		msgRepo:       msgRepo,
 		cache:         cache,
 		cfg:           cfg,
 	}
@@ -1104,6 +1110,16 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 	proposal.IsApproved = true
 	_ = u.proposalRepo.Update(ctx, proposal)
 
+	appDate := proposal.ScheduledTime
+	if appDate == nil && req.ScheduledTime != nil {
+		appDate = req.ScheduledTime
+	}
+	if appDate == nil {
+		now := time.Now().Add(1 * time.Hour)
+		appDate = &now
+	}
+	req.ScheduledTime = appDate
+
 	var apt *entity.Appointment
 	// Automatically create appointment if AppointmentRepository is available
 	if u.aptRepo != nil {
@@ -1119,11 +1135,7 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 		if req.Price != nil && *req.Price > 0 {
 			totalPrice = *req.Price
 		}
-		appDate := req.ScheduledTime
-		if appDate == nil {
-			now := time.Now().Add(1 * time.Hour)
-			appDate = &now
-		}
+
 		newApt := entity.Appointment{
 			ID:               uuid.New(),
 			SeekerID:         req.UserID,
@@ -1148,26 +1160,102 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 	req.UpdatedAt = time.Now()
 	_ = u.requestRepo.Update(ctx, req)
 
-	// Notify provider in-app
+	schedDateStr := appDate.Format("Monday, January 02, 2006 at 03:04 PM")
+	aptIDStr := ""
+	if apt != nil {
+		aptIDStr = apt.ID.String()
+	}
+
+	// 1. Send appointment calendar message directly into the chat conversation between Seeker and Provider
+	if u.convRepo != nil && u.msgRepo != nil {
+		conv, cErr := u.convRepo.GetByParticipants(ctx, req.UserID, proposal.ProviderID)
+		if cErr != nil || conv == nil {
+			newConv := entity.Conversation{
+				ID:        uuid.New(),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			_ = u.convRepo.Create(ctx, &newConv, []uuid.UUID{req.UserID, proposal.ProviderID})
+			conv = &newConv
+		}
+		if conv != nil {
+			chatMsgTxt := fmt.Sprintf("📅 Appointment Scheduled: %s for '%s'", schedDateStr, req.Title)
+			calMsg := entity.Message{
+				ID:             uuid.New(),
+				ConversationID: conv.ID,
+				SenderID:       req.UserID,
+				Content:        chatMsgTxt,
+				Message:        chatMsgTxt,
+				IsCalender:     true,
+				CalenderDate:   appDate,
+				IsDelivered:    true,
+				CreatedAt:      time.Now(),
+			}
+			_ = u.msgRepo.Create(ctx, &calMsg)
+
+			if u.tokenRepo != nil && u.fcmClient != nil {
+				go func() {
+					tokens, _ := u.tokenRepo.ListByUser(context.Background(), proposal.ProviderID)
+					var tokenStrings []string
+					for _, t := range tokens {
+						if t.Token != "" && t.IsActive {
+							tokenStrings = append(tokenStrings, t.Token)
+						}
+					}
+					if len(tokenStrings) > 0 {
+						_, _ = u.fcmClient.SendMulticast(context.Background(), tokenStrings, "New Appointment Message", chatMsgTxt, map[string]string{
+							"notification_type": "message",
+							"conversation_id":   conv.ID.String(),
+							"message_id":        calMsg.ID.String(),
+							"sender_id":         req.UserID.String(),
+						})
+					}
+				}()
+			}
+		}
+	}
+
+	// 2. Send in-app and push notifications to BOTH Seeker and Provider that this is the agreed date
 	if u.notifRepo != nil {
-		notif := entity.Notification{
+		pNotif := entity.Notification{
 			ID:               uuid.New(),
 			UserID:           proposal.ProviderID,
 			SenderID:         &userID,
-			NotificationType: "PROPOSAL",
-			Title:            "Proposal Accepted",
-			Message:          fmt.Sprintf("Your proposal for '%s' has been accepted!", req.Title),
-			Data:             entity.JSONMap{"proposal_id": proposal.ID.String(), "request_id": req.ID.String()},
+			NotificationType: "APPOINTMENT",
+			Title:            "Appointment Confirmed",
+			Message:          fmt.Sprintf("Your proposal for '%s' was accepted! The agreed appointment date is %s.", req.Title, schedDateStr),
+			Data:             entity.JSONMap{"proposal_id": proposal.ID.String(), "request_id": req.ID.String(), "appointment_id": aptIDStr, "scheduled_time": appDate.Format(time.RFC3339)},
 			CreatedAt:        time.Now(),
 		}
-		_ = u.notifRepo.Create(ctx, &notif)
+		_ = u.notifRepo.Create(ctx, &pNotif)
+
+		sNotif := entity.Notification{
+			ID:               uuid.New(),
+			UserID:           req.UserID,
+			SenderID:         &proposal.ProviderID,
+			NotificationType: "APPOINTMENT",
+			Title:            "Appointment Confirmed",
+			Message:          fmt.Sprintf("Your appointment for '%s' is confirmed. The agreed appointment date is %s.", req.Title, schedDateStr),
+			Data:             entity.JSONMap{"proposal_id": proposal.ID.String(), "request_id": req.ID.String(), "appointment_id": aptIDStr, "scheduled_time": appDate.Format(time.RFC3339)},
+			CreatedAt:        time.Now(),
+		}
+		_ = u.notifRepo.Create(ctx, &sNotif)
 	}
 
-	u.sendPush(proposal.ProviderID, "Proposal Accepted", fmt.Sprintf("Your proposal for '%s' has been accepted!", req.Title), map[string]string{
-		"notification_type": "proposal",
+	u.sendPush(proposal.ProviderID, "Appointment Confirmed", fmt.Sprintf("Your proposal for '%s' was accepted! The agreed appointment date is %s.", req.Title, schedDateStr), map[string]string{
+		"notification_type": "appointment",
 		"request_id":        req.ID.String(),
 		"proposal_id":       proposal.ID.String(),
+		"appointment_id":    aptIDStr,
 		"sender_id":         userID.String(),
+	})
+
+	u.sendPush(req.UserID, "Appointment Confirmed", fmt.Sprintf("Your appointment for '%s' is confirmed for %s.", req.Title, schedDateStr), map[string]string{
+		"notification_type": "appointment",
+		"request_id":        req.ID.String(),
+		"proposal_id":       proposal.ID.String(),
+		"appointment_id":    aptIDStr,
+		"sender_id":         proposal.ProviderID.String(),
 	})
 
 	// Asynchronously send approval email & appointment confirmation
@@ -1318,6 +1406,10 @@ func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid
 		return nil, errors.New("Active subscription required to accept requests or submit proposals. Please choose a subscription plan.")
 	}
 
+	if prop.ScheduledTime == nil || prop.ScheduledTime.IsZero() {
+		return nil, errors.New("Available date and time is required to accept this request")
+	}
+
 	if u.cfg != nil && u.cfg.Env == "production" {
 		if profile, err := u.profileRepo.GetByUserID(ctx, providerUserID); err == nil && profile != nil {
 			if !profile.IsIdentityVerified {
@@ -1339,6 +1431,10 @@ func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid
 	// Notify seeker in-app & email
 	req, err := u.requestRepo.GetByID(ctx, prop.RequestID)
 	if err == nil && req != nil {
+		schedText := ""
+		if prop.ScheduledTime != nil {
+			schedText = fmt.Sprintf(" (Available: %s)", prop.ScheduledTime.Format("Jan 02, 2006 at 03:04 PM"))
+		}
 		if u.notifRepo != nil {
 			notif := entity.Notification{
 				ID:               uuid.New(),
@@ -1346,14 +1442,14 @@ func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid
 				SenderID:         &providerUserID,
 				NotificationType: "PROPOSAL",
 				Title:            "New Proposal",
-				Message:          fmt.Sprintf("You received a new proposal on '%s'", req.Title),
+				Message:          fmt.Sprintf("A provider submitted a proposal on '%s'%s.", req.Title, schedText),
 				Data:             entity.JSONMap{"proposal_id": prop.ID.String(), "request_id": req.ID.String()},
 				CreatedAt:        time.Now(),
 			}
 			_ = u.notifRepo.Create(ctx, &notif)
 		}
 
-		u.sendPush(req.UserID, "New Proposal", fmt.Sprintf("You received a new proposal on '%s'", req.Title), map[string]string{
+		u.sendPush(req.UserID, "New Proposal", fmt.Sprintf("A provider submitted a proposal on '%s'%s.", req.Title, schedText), map[string]string{
 			"notification_type": "proposal",
 			"request_id":        req.ID.String(),
 			"proposal_id":       prop.ID.String(),

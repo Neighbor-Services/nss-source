@@ -156,7 +156,7 @@ func (h *PublicHandler) RenderStaticPage(pageName string) gin.HandlerFunc {
 		// Fallback JSON if static file not found
 		response.JSON(c, http.StatusOK, gin.H{
 			"page":    pageName,
-			"service": "Neighbor Service",
+			"service": "Neighbor Services",
 		})
 	}
 }

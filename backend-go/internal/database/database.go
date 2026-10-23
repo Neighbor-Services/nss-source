@@ -554,10 +554,10 @@ func seedDefaultLegalDocuments(db *gorm.DB) {
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
-			Content: `Welcome to Neighbor Service App ("NSA", "we", "our", or "us"). These Terms of Service ("Terms") govern your access to and use of the Neighbor Service App platform, including our mobile applications, website, and related services (collectively, the "Platform"). By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree to these Terms, you may not use the Platform.
+			Content: `Welcome to Neighbor Services App ("NSA", "we", "our", or "us"). These Terms of Service ("Terms") govern your access to and use of the Neighbor Services App platform, including our mobile applications, website, and related services (collectively, the "Platform"). By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree to these Terms, you may not use the Platform.
 
 1. PLATFORM OVERVIEW
-Neighbor Service App is a technology platform that connects individuals seeking home and personal services ("Seekers") with independent, background-verified service professionals ("Providers"). NSA is a marketplace facilitator and does not directly provide services, employ service providers, or supervise their day-to-day work. All agreements for services are made directly between Seekers and Providers.
+Neighbor Services App is a technology platform that connects individuals seeking home and personal services ("Seekers") with independent, background-verified service professionals ("Providers"). NSA is a marketplace facilitator and does not directly provide services, employ service providers, or supervise their day-to-day work. All agreements for services are made directly between Seekers and Providers.
 
 2. ELIGIBILITY & REGISTRATION
 To use the Platform, you must be at least 18 years of age, legally capable of entering into binding contracts, and provide accurate and complete registration information. You agree to maintain the confidentiality of your account credentials and immediately notify NSA of any unauthorized use or security breaches.
@@ -606,7 +606,7 @@ For questions regarding these Terms, please contact our Legal & Compliance Team 
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
-			Content: `Neighbor Service App ("NSA", "we", "our", or "us") is dedicated to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you access or use our mobile applications, website, and related services.
+			Content: `Neighbor Services App ("NSA", "we", "our", or "us") is dedicated to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you access or use our mobile applications, website, and related services.
 
 1. INFORMATION WE COLLECT
 We collect information you provide directly to us when creating an account, updating your profile, submitting service requests, completing background checks, or contacting support. This includes:

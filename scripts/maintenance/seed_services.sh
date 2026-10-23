@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Neighbor Service - Official Categories & Catalog Services Seeder
+# Neighbor Services - Official Categories & Catalog Services Seeder
 # Populates/Syncs 18 Service Categories and 142 Comprehensive Catalog Services with Searchable Specialties.
 #
 # Usage:
@@ -22,7 +22,7 @@ if [ ! -d "$BACKEND_DIR" ]; then
 fi
 
 echo "=========================================================="
-echo "🌱 Seeding Neighbor Service (NS) Categories & Services..."
+echo "🌱 Seeding Neighbor Services (NS) Categories & Services..."
 echo "=========================================================="
 
 cd "$BACKEND_DIR"

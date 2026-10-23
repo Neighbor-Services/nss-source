@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Neighbor Service - Administrator Account Creator
+# Neighbor Services - Administrator Account Creator
 # Usage:
 #   ./create_admin.sh [email] [password] [firstName] [lastName]
 # Example:

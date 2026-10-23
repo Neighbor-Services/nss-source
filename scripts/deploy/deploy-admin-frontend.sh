@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) - Production Admin Portal Deployment Script
+# Neighbor Services (NSA) - Production Admin Portal Deployment Script
 # Direct Angular SPA Build & Nginx Static Hosting (No Docker required)
 # Usage: sudo bash deploy-admin-frontend.sh
 # ==============================================================================
@@ -35,7 +35,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${BLUE}=====================================================${NC}"
-echo -e "${CYAN}  Neighbor Service (NSA) - Production Admin Deploy   ${NC}"
+echo -e "${CYAN}  Neighbor Services (NSA) - Production Admin Deploy   ${NC}"
 echo -e "${BLUE}=====================================================${NC}"
 echo ""
 

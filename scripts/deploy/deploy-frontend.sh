@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) - Production Public Website Deployment Script
+# Neighbor Services (NSA) - Production Public Website Deployment Script
 # Direct Angular SPA Build & Nginx Static Hosting (No Docker required)
 # Usage: sudo bash deploy-frontend.sh
 # ==============================================================================
@@ -35,7 +35,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${BLUE}=====================================================${NC}"
-echo -e "${CYAN}  Neighbor Service (NSA) - Production Frontend Deploy${NC}"
+echo -e "${CYAN}  Neighbor Services (NSA) - Production Frontend Deploy${NC}"
 echo -e "${BLUE}=====================================================${NC}"
 echo ""
 

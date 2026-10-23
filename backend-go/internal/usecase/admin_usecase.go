@@ -327,7 +327,7 @@ case "SUSPENDED":
 			UserID:           user.ID,
 			NotificationType: "SYSTEM_ALERT",
 			Title:            "Account Reinstated",
-			Message:          "Your Neighbor Service account has been reviewed and reinstated. You may now resume using all services.",
+			Message:          "Your Neighbor Services account has been reviewed and reinstated. You may now resume using all services.",
 			IsRead:           false,
 			CreatedAt:        time.Now(),
 		})
@@ -1631,7 +1631,7 @@ func (u *adminUseCase) TestSendEmailTemplate(ctx context.Context, adminID uuid.U
 		go func() {
 			subject := tpl.Subject
 			if subject == "" {
-				subject = "Neighbor Service Notification Test"
+				subject = "Neighbor Services Notification Test"
 			}
 			body := tpl.BodyHTML
 			if body == "" {
@@ -2271,7 +2271,7 @@ func (u *adminUseCase) TestAlertWebhook(ctx context.Context, adminID uuid.UUID, 
 
 	if strings.ToLower(platform) == "discord" {
 		payload = map[string]interface{}{
-			"content": "🚨 **Neighbor Service Alert System**: Test Webhook Connection Successful!",
+			"content": "🚨 **Neighbor Services Alert System**: Test Webhook Connection Successful!",
 			"embeds": []map[string]interface{}{
 				{
 					"title":       "System Telemetry Ping",
@@ -2283,7 +2283,7 @@ func (u *adminUseCase) TestAlertWebhook(ctx context.Context, adminID uuid.UUID, 
 	} else {
 		// Slack compatible payload default
 		payload = map[string]interface{}{
-			"text": fmt.Sprintf("🚨 *Neighbor Service Alert System*: Test Webhook Connection Successful!\nTriggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
+			"text": fmt.Sprintf("🚨 *Neighbor Services Alert System*: Test Webhook Connection Successful!\nTriggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
 		}
 	}
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) — Universal Services Restart Script
+# Neighbor Services (NSA) — Universal Services Restart Script
 # Centralized script to restart all backend services, replicas, workers,
 # staging environments, Redis, and Nginx.
 #
@@ -23,7 +23,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}================================================================${NC}"
-echo -e "${CYAN}   Neighbor Service (NSA) — Universal Service Manager           ${NC}"
+echo -e "${CYAN}   Neighbor Services (NSA) — Universal Service Manager           ${NC}"
 echo -e "${BLUE}================================================================${NC}"
 echo ""
 

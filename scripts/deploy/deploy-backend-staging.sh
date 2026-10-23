@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) - Staging Backend Deployment Script
+# Neighbor Services (NSA) - Staging Backend Deployment Script
 # Direct On-Server Go Compilation & Systemd Service (No Docker required)
 # Usage: sudo bash deploy-backend-staging.sh
 # ==============================================================================
@@ -39,7 +39,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${BLUE}=====================================================${NC}"
-echo -e "${CYAN}  Neighbor Service (NSA) - Staging Backend Deploy     ${NC}"
+echo -e "${CYAN}  Neighbor Services (NSA) - Staging Backend Deploy     ${NC}"
 echo -e "${BLUE}=====================================================${NC}"
 echo ""
 
@@ -230,7 +230,7 @@ export PATH=$PATH:/usr/local/go/bin
 echo -e "${YELLOW}Downloading Go dependencies...${NC}"
 sudo -u $USER bash -c "cd '$APP_DIR' && env PATH=\"\$PATH:/usr/local/go/bin\" go mod tidy"
 
-echo -e "${YELLOW}Compiling Neighbor Service Staging API Server (cmd/server/main.go)...${NC}"
+echo -e "${YELLOW}Compiling Neighbor Services Staging API Server (cmd/server/main.go)...${NC}"
 sudo -u $USER bash -c "cd '$APP_DIR' && env PATH=\"\$PATH:/usr/local/go/bin\" go build -ldflags='-s -w' -o bin/server ./cmd/server/"
 chmod +x "$APP_DIR/bin/server"
 echo -e "${GREEN}✓ Staging API server compiled: $APP_DIR/bin/server${NC}"
@@ -270,7 +270,7 @@ echo -e "${YELLOW}Phase 5: Systemd Service Setup${NC}"
 
 cat << EOF > /etc/systemd/system/$APP_NAME.service
 [Unit]
-Description=Neighbor Service (NSA) Staging Backend API Server
+Description=Neighbor Services (NSA) Staging Backend API Server
 After=network.target postgresql.service
 Wants=postgresql.service
 

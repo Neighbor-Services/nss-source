@@ -585,6 +585,8 @@ func (h *ServiceHandler) wrapProposals(proposals []entity.Proposal) gin.H {
 			"request_id":      p.RequestID.String(),
 			"request_details": p.Request,
 			"provider":        p.ProviderID.String(),
+			"scheduled_time":  p.ScheduledTime,
+			"available_time":  p.ScheduledTime,
 			"is_approved":     p.IsApproved,
 			"created_at":      p.CreatedAt,
 			"updated_at":      p.UpdatedAt,
@@ -625,8 +627,9 @@ func (h *ServiceHandler) GetProposals(c *gin.Context) {
 }
 
 type CreateProposalPayload struct {
-	RequestID  uuid.UUID
-	IsApproved bool
+	RequestID     uuid.UUID
+	IsApproved    bool
+	ScheduledTime *time.Time
 }
 
 func (p *CreateProposalPayload) UnmarshalJSON(data []byte) error {
@@ -646,6 +649,15 @@ func (p *CreateProposalPayload) UnmarshalJSON(data []byte) error {
 
 	if approved, ok := raw["is_approved"].(bool); ok {
 		p.IsApproved = approved
+	}
+
+	for _, key := range []string{"scheduled_time", "available_time", "proposed_time", "date", "time"} {
+		if val, exists := raw[key]; exists && val != nil {
+			if t := parseTimeField(val); t != nil {
+				p.ScheduledTime = t
+				break
+			}
+		}
 	}
 
 	return nil
@@ -675,9 +687,15 @@ func (h *ServiceHandler) CreateProposal(c *gin.Context) {
 		return
 	}
 
+	if payload.ScheduledTime == nil || payload.ScheduledTime.IsZero() {
+		response.BadRequest(c, "Available date and time is required to accept this request")
+		return
+	}
+
 	prop := entity.Proposal{
-		RequestID:  payload.RequestID,
-		IsApproved: payload.IsApproved,
+		RequestID:     payload.RequestID,
+		IsApproved:    payload.IsApproved,
+		ScheduledTime: payload.ScheduledTime,
 	}
 
 	created, err := h.serviceUC.CreateProposal(c.Request.Context(), userUUID, &prop)

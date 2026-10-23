@@ -64,7 +64,7 @@ func TestPublicHandler_HealthAndReady(t *testing.T) {
 
 func TestPublicHandler_CMSContent(t *testing.T) {
 	mockUC := &mockPublicUseCase{
-		cmsContent: map[string]interface{}{"hero_title": "Welcome to Neighbor Service"},
+		cmsContent: map[string]interface{}{"hero_title": "Welcome to Neighbor Services"},
 	}
 	h := NewPublicHandler(mockUC)
 
@@ -75,7 +75,7 @@ func TestPublicHandler_CMSContent(t *testing.T) {
 
 	h.GetCMSContent(c)
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "Welcome to Neighbor Service")
+	assert.Contains(t, w.Body.String(), "Welcome to Neighbor Services")
 }
 
 func TestPublicHandler_SubmitContactMessage(t *testing.T) {

@@ -88,7 +88,7 @@ func (w *DatabaseBackupWorker) createBackup() {
 		if out, cmdErr := cmd.CombinedOutput(); cmdErr != nil {
 			slog.Warn("pg_dump not available in runtime container, recording logical snapshot", slog.String("output", string(out)))
 			// Create placeholder metadata snapshot file
-			metaContent := fmt.Sprintf("-- Neighbor Service Database Snapshot\n-- Timestamp: %s\n-- Driver: %s\n", now.Format(time.RFC3339), w.cfg.DBDriver)
+			metaContent := fmt.Sprintf("-- Neighbor Services Database Snapshot\n-- Timestamp: %s\n-- Driver: %s\n", now.Format(time.RFC3339), w.cfg.DBDriver)
 			err = os.WriteFile(targetPath, []byte(metaContent), 0644)
 		}
 	}

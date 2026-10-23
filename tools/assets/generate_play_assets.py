@@ -71,7 +71,7 @@ except:
     font_sub = ImageFont.load_default()
 
 # Text details
-draw.text((450, 160), "Neighbor Service", fill=(255, 255, 255, 255), font=font_title)
+draw.text((450, 160), "Neighbor Services", fill=(255, 255, 255, 255), font=font_title)
 draw.text((450, 240), "Connect, Hire & Deliver Services Locally", fill=(56, 189, 248, 255), font=font_tag)
 draw.text((450, 290), "Fast • Reliable • Trusted Local Community", fill=(148, 163, 184, 255), font=font_sub)
 

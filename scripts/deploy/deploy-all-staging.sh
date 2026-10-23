@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) - Master Staging Deployment Orchestrator
+# Neighbor Services (NSA) - Master Staging Deployment Orchestrator
 # Executes full-stack staging deployment in a single run:
 #   1. Staging Backend Go API Server (Port 8001 / Staging DB)
 #   2. Staging Public Website SPA (Angular Build & Nginx Hosting)

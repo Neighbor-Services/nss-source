@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) - Master Production Deployment Orchestrator
+# Neighbor Services (NSA) - Master Production Deployment Orchestrator
 # Executes full-stack production deployment in a single run:
 #   1. Backend Go Cluster (Multi-Instance Systemd & Nginx Load Balancer)
 #   2. Public Website SPA (Angular Build & Nginx Hosting)

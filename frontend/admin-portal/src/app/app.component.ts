@@ -10,5 +10,5 @@ import { DialogModalComponent } from './presentation/components/dialog-modal/dia
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'Neighbor Service Admin Portal';
+  title = 'Neighbor Services Admin Portal';
 }

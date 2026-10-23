@@ -31,7 +31,7 @@ export class LegalRepositoryImpl implements LegalRepository {
             {
               heading: '1. Introduction & Agreement',
               content: [
-                'Welcome to Neighbor Service. By using our application and verified marketplace, you agree to these legal terms.'
+                'Welcome to Neighbor Services. By using our application and verified marketplace, you agree to these legal terms.'
               ]
             }
           ]

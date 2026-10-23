@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Neighbor Service (NSA) — Go Backend Service Restart Script
+# Neighbor Services (NSA) — Go Backend Service Restart Script
 # Restarts all Go backend API instances, cluster workers, and background jobs.
 #
 # Usage:
@@ -24,7 +24,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}================================================================${NC}"
-echo -e "${CYAN}      Neighbor Service (NSA) — Go Backend Restart Manager       ${NC}"
+echo -e "${CYAN}      Neighbor Services (NSA) — Go Backend Restart Manager       ${NC}"
 echo -e "${BLUE}================================================================${NC}"
 echo ""
 

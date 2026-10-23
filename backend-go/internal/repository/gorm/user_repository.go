@@ -225,11 +225,17 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 			Longitude     float64   `gorm:"column:longitude"`
 			AverageRating float64   `gorm:"column:average_rating"`
 			TotalReviews  int       `gorm:"column:total_reviews"`
-			NeighborScore float64   `gorm:"column:neighbor_score"`
+			NeighborScore int       `gorm:"column:neighbor_score"`
 		}
 		var lightProfiles []lightProfile
-		err := query.Select("accounts_profile.id, accounts_profile.latitude, accounts_profile.longitude, accounts_profile.average_rating, accounts_profile.total_reviews, accounts_profile.neighbor_score").
+		// Use MAX() aggregates for all non-key columns so the SELECT is valid
+		// whether or not a GROUP BY was already applied by a category/service JOIN filter.
+		// The values are functionally determined by id, so MAX() is semantically equivalent.
+		err := query.
+			Select("accounts_profile.id, MAX(accounts_profile.latitude) AS latitude, MAX(accounts_profile.longitude) AS longitude, MAX(accounts_profile.average_rating) AS average_rating, MAX(accounts_profile.total_reviews) AS total_reviews, MAX(accounts_profile.neighbor_score) AS neighbor_score").
+			Group("accounts_profile.id").
 			Find(&lightProfiles).Error
+
 		if err != nil {
 			slog.Error("profileRepository.List: light query failed", "error", err)
 			return nil, err
@@ -254,8 +260,9 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 					distance: dist,
 					rating:   lp.AverageRating,
 					reviews:  lp.TotalReviews,
-					score:    lp.NeighborScore,
+					score:    float64(lp.NeighborScore),
 				})
+
 			}
 		}
 

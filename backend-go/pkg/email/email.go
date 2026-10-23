@@ -22,8 +22,8 @@ type Config struct {
 // ─── OTP & AUTHENTICATION EMAILS ─────────────────────────────────────────────
 
 func SendOTPEmail(cfg *Config, toEmail, otp string) error {
-	subject := "Verify your email address - Neighbor Service"
-	plainText := fmt.Sprintf("Welcome to Neighbor Service\n\nThank you for registering. Please use the verification code below to verify your account:\n\n%s\n\nThis code will expire in 10 minutes. If you did not request this verification, please disregard this email.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", otp)
+	subject := "Verify your email address - Neighbor Services"
+	plainText := fmt.Sprintf("Welcome to Neighbor Services\n\nThank you for registering. Please use the verification code below to verify your account:\n\n%s\n\nThis code will expire in 10 minutes. If you did not request this verification, please disregard this email.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", otp)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,15 +42,15 @@ func SendOTPEmail(cfg *Config, toEmail, otp string) error {
 <body>
     <div class="container">
         <div class="header">
-            <h2>Welcome to Neighbor Service</h2>
+            <h2>Welcome to Neighbor Services</h2>
         </div>
         <p>Hello,</p>
         <p>Thank you for registering. Please use the 4-digit verification code below to verify your account:</p>
         <div class="otp-code">%s</div>
         <p style="color: #64748b; font-size: 14px;">This code will expire in 10 minutes. If you did not request this verification, please disregard this email.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -60,8 +60,8 @@ func SendOTPEmail(cfg *Config, toEmail, otp string) error {
 }
 
 func SendPasswordResetEmail(cfg *Config, toEmail, otp string) error {
-	subject := "Reset your password - Neighbor Service"
-	plainText := fmt.Sprintf("Password Reset Request\n\nWe received a request to reset your password. Use the verification code below to set a new password:\n\n%s\n\nThis code will expire in 10 minutes. If you did not request a password reset, your account is safe and you can safely ignore this email.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", otp)
+	subject := "Reset your password - Neighbor Services"
+	plainText := fmt.Sprintf("Password Reset Request\n\nWe received a request to reset your password. Use the verification code below to set a new password:\n\n%s\n\nThis code will expire in 10 minutes. If you did not request a password reset, your account is safe and you can safely ignore this email.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", otp)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,8 +87,8 @@ func SendPasswordResetEmail(cfg *Config, toEmail, otp string) error {
         <div class="otp-code">%s</div>
         <p style="color: #64748b; font-size: 14px;">This code will expire in 10 minutes. If you did not request a password reset, your account is safe and you can safely ignore this email.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -111,7 +111,7 @@ func FormatBudgetOrNegotiable(price float64) string {
 func SendNewProposalEmail(cfg *Config, toEmail, seekerName, providerName, requestTitle string, price float64, description string) error {
 	subject := fmt.Sprintf("New Proposal Received for: %s", requestTitle)
 	priceDisplay := FormatBudgetOrNegotiable(price)
-	plainText := fmt.Sprintf("Hello %s,\n\n%s has submitted a proposal for your request \"%s\".\n\nProposed Amount: %s\nCover Letter: %s\n\nOpen your Neighbor Service app to view the provider's profile, chat, and accept the proposal.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", seekerName, providerName, requestTitle, priceDisplay, description)
+	plainText := fmt.Sprintf("Hello %s,\n\n%s has submitted a proposal for your request \"%s\".\n\nProposed Amount: %s\nCover Letter: %s\n\nOpen your Neighbor Services app to view the provider's profile, chat, and accept the proposal.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", seekerName, providerName, requestTitle, priceDisplay, description)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -137,10 +137,10 @@ func SendNewProposalEmail(cfg *Config, toEmail, seekerName, providerName, reques
             <div class="price">%s</div>
             <p style="margin:12px 0 0 0; font-size:14px;"><strong>Cover Letter:</strong> %s</p>
         </div>
-        <p>Open your Neighbor Service app to view the provider's profile, chat, and accept the proposal.</p>
+        <p>Open your Neighbor Services app to view the provider's profile, chat, and accept the proposal.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -152,7 +152,7 @@ func SendNewProposalEmail(cfg *Config, toEmail, seekerName, providerName, reques
 func SendProposalApprovedEmail(cfg *Config, toEmail, providerName, seekerName, seekerEmail, requestTitle string, price float64, scheduledTime string) error {
 	subject := fmt.Sprintf("Proposal Accepted: %s", requestTitle)
 	priceDisplay := FormatBudgetOrNegotiable(price)
-	plainText := fmt.Sprintf("Congratulations %s!\n\nYour proposal for \"%s\" was accepted by %s.\n\nAgreed Price: %s\nClient Contact: %s\nScheduled Time: %s\n\nAn appointment has been scheduled. Please arrive on time and ask the client for their arrival code when you arrive.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, seekerName, priceDisplay, seekerEmail, scheduledTime)
+	plainText := fmt.Sprintf("Congratulations %s!\n\nYour proposal for \"%s\" was accepted by %s.\n\nAgreed Price: %s\nClient Contact: %s\nScheduled Time: %s\n\nAn appointment has been scheduled. Please arrive on time and ask the client for their arrival code when you arrive.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, requestTitle, seekerName, priceDisplay, seekerEmail, scheduledTime)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -179,8 +179,8 @@ func SendProposalApprovedEmail(cfg *Config, toEmail, providerName, seekerName, s
         </div>
         <p>An appointment has been scheduled. Please arrive on time and ask the client for their 4-digit arrival code when you arrive.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -192,7 +192,7 @@ func SendProposalApprovedEmail(cfg *Config, toEmail, providerName, seekerName, s
 func SendDirectRequestEmail(cfg *Config, toEmail, providerName, seekerName, requestTitle string, price float64, scheduledTime, description string) error {
 	subject := fmt.Sprintf("Direct Service Request: %s", requestTitle)
 	priceDisplay := FormatBudgetOrNegotiable(price)
-	plainText := fmt.Sprintf("Hello %s,\n\n%s has sent a direct request exclusively to you for \"%s\".\n\nBudget: %s\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to accept or submit a customized proposal.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, seekerName, requestTitle, priceDisplay, scheduledTime, description)
+	plainText := fmt.Sprintf("Hello %s,\n\n%s has sent a direct request exclusively to you for \"%s\".\n\nBudget: %s\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Services to accept or submit a customized proposal.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, seekerName, requestTitle, priceDisplay, scheduledTime, description)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -217,10 +217,10 @@ func SendDirectRequestEmail(cfg *Config, toEmail, providerName, seekerName, requ
             <p style="margin:0 0 6px 0;"><strong>Scheduled For:</strong> %s</p>
             <p style="margin:0;"><strong>Details:</strong> %s</p>
         </div>
-        <p>Open Neighbor Service to accept or submit a customized proposal.</p>
+        <p>Open Neighbor Services to accept or submit a customized proposal.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -232,7 +232,7 @@ func SendDirectRequestEmail(cfg *Config, toEmail, providerName, seekerName, requ
 func SendBroadcastRequestEmail(cfg *Config, toEmail, providerName, seekerName, requestTitle string, distance float64, price float64, scheduledTime, description string) error {
 	subject := fmt.Sprintf("New Service Request Nearby: %s", requestTitle)
 	priceDisplay := FormatBudgetOrNegotiable(price)
-	plainText := fmt.Sprintf("Hello %s,\n\nA new service request for \"%s\" was posted %.1f mi away from your location.\n\nCustomer: %s\nBudget: %s\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Service to submit your proposal before another provider is selected!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, requestTitle, distance, seekerName, priceDisplay, scheduledTime, description)
+	plainText := fmt.Sprintf("Hello %s,\n\nA new service request for \"%s\" was posted %.1f mi away from your location.\n\nCustomer: %s\nBudget: %s\nScheduled For: %s\nDetails: %s\n\nOpen Neighbor Services to submit your proposal before another provider is selected!\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, requestTitle, distance, seekerName, priceDisplay, scheduledTime, description)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -258,10 +258,10 @@ func SendBroadcastRequestEmail(cfg *Config, toEmail, providerName, seekerName, r
             <p style="margin:0 0 6px 0;"><strong>Scheduled For:</strong> %s</p>
             <p style="margin:0;"><strong>Details:</strong> %s</p>
         </div>
-        <p>Open Neighbor Service to submit your proposal before another provider is selected!</p>
+        <p>Open Neighbor Services to submit your proposal before another provider is selected!</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -278,7 +278,7 @@ func SendAppointmentBookedEmail(cfg *Config, toEmail, recipientName, otherPartyN
 	if address != "" {
 		locationLine = fmt.Sprintf("Location: %s\n", address)
 	}
-	plainText := fmt.Sprintf("Appointment Confirmed\n\nHello %s,\n\nYour appointment for \"%s\" with %s is confirmed.\n\nTime: %s\n%s\nYou can track the appointment status and communicate directly in the app.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, scheduledTime, locationLine)
+	plainText := fmt.Sprintf("Appointment Confirmed\n\nHello %s,\n\nYour appointment for \"%s\" with %s is confirmed.\n\nTime: %s\n%s\nYou can track the appointment status and communicate directly in the app.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, scheduledTime, locationLine)
 	
 	locHTML := ""
 	if address != "" {
@@ -308,8 +308,8 @@ func SendAppointmentBookedEmail(cfg *Config, toEmail, recipientName, otherPartyN
         </div>
         <p>You can track the appointment status and communicate directly in the app.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -321,7 +321,7 @@ func SendAppointmentBookedEmail(cfg *Config, toEmail, recipientName, otherPartyN
 func SendAppointmentCompletedEmail(cfg *Config, toEmail, recipientName, otherPartyName, serviceTitle string, totalAmount float64) error {
 	subject := fmt.Sprintf("Service Completed: %s", serviceTitle)
 	amountDisplay := FormatBudgetOrNegotiable(totalAmount)
-	plainText := fmt.Sprintf("Service Completed\n\nHello %s,\n\nThe appointment for \"%s\" has been marked completed.\n\nOther Party: %s\nTotal Amount: %s\n\nFunds held in escrow have been released to the provider. Don't forget to leave a review!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, amountDisplay)
+	plainText := fmt.Sprintf("Service Completed\n\nHello %s,\n\nThe appointment for \"%s\" has been marked completed.\n\nOther Party: %s\nTotal Amount: %s\n\nFunds held in escrow have been released to the provider. Don't forget to leave a review!\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, amountDisplay)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -346,8 +346,8 @@ func SendAppointmentCompletedEmail(cfg *Config, toEmail, recipientName, otherPar
         </div>
         <p>Funds held in escrow have been released to the provider. Don't forget to leave a review!</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -358,7 +358,7 @@ func SendAppointmentCompletedEmail(cfg *Config, toEmail, recipientName, otherPar
 
 func SendAppointmentCancelledEmail(cfg *Config, toEmail, recipientName, otherPartyName, serviceTitle, reason string) error {
 	subject := fmt.Sprintf("Appointment Cancelled: %s", serviceTitle)
-	plainText := fmt.Sprintf("Appointment Cancelled\n\nHello %s,\n\nYour appointment for \"%s\" with %s has been cancelled.\n\nReason: %s\n\nIf funds were held in escrow, any applicable refund will be processed automatically.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, reason)
+	plainText := fmt.Sprintf("Appointment Cancelled\n\nHello %s,\n\nYour appointment for \"%s\" with %s has been cancelled.\n\nReason: %s\n\nIf funds were held in escrow, any applicable refund will be processed automatically.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName, serviceTitle, otherPartyName, reason)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -382,8 +382,8 @@ func SendAppointmentCancelledEmail(cfg *Config, toEmail, recipientName, otherPar
         </div>
         <p>If funds were held in escrow, any applicable refund will be processed automatically.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -395,12 +395,12 @@ func SendAppointmentCancelledEmail(cfg *Config, toEmail, recipientName, otherPar
 // ─── PAYOUTS & DISPUTES EMAILS ───────────────────────────────────────────────
 
 func SendPayoutStatusEmail(cfg *Config, toEmail, providerName string, amount float64, status, reason string) error {
-	subject := fmt.Sprintf("Payout Request %s - Neighbor Service", status)
+	subject := fmt.Sprintf("Payout Request %s - Neighbor Services", status)
 	reasonText := ""
 	if reason != "" {
 		reasonText = fmt.Sprintf("Notes: %s\n", reason)
 	}
-	plainText := fmt.Sprintf("Payout Status Update\n\nHello %s,\n\nYour payout request for $%.2f has been %s.\n%s\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, amount, status, reasonText)
+	plainText := fmt.Sprintf("Payout Status Update\n\nHello %s,\n\nYour payout request for $%.2f has been %s.\n%s\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, amount, status, reasonText)
 	
 	reasonHTML := ""
 	if reason != "" {
@@ -426,8 +426,8 @@ func SendPayoutStatusEmail(cfg *Config, toEmail, providerName string, amount flo
         <p>Your payout request for <strong>$%.2f</strong> has been <strong>%s</strong>.</p>
         %s
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -437,8 +437,8 @@ func SendPayoutStatusEmail(cfg *Config, toEmail, providerName string, amount flo
 }
 
 func SendDisputeFiledEmail(cfg *Config, toEmail, recipientName, appointmentID, reason string) error {
-	subject := "Dispute Opened on Appointment - Neighbor Service"
-	plainText := fmt.Sprintf("Dispute Opened\n\nHello %s,\n\nA dispute has been opened for Appointment ID %s.\n\nReason: %s\n\nOur moderation team is reviewing this case. You can upload additional evidence or notes in the app.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, appointmentID, reason)
+	subject := "Dispute Opened on Appointment - Neighbor Services"
+	plainText := fmt.Sprintf("Dispute Opened\n\nHello %s,\n\nA dispute has been opened for Appointment ID %s.\n\nReason: %s\n\nOur moderation team is reviewing this case. You can upload additional evidence or notes in the app.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName, appointmentID, reason)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -462,8 +462,8 @@ func SendDisputeFiledEmail(cfg *Config, toEmail, recipientName, appointmentID, r
         </div>
         <p>Our moderation team is reviewing this case. You can upload additional evidence or notes in the app.</p>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -474,7 +474,7 @@ func SendDisputeFiledEmail(cfg *Config, toEmail, recipientName, appointmentID, r
 
 func SendDisputeResolvedEmail(cfg *Config, toEmail, recipientName, appointmentID, notes, status string) error {
 	subject := fmt.Sprintf("Dispute %s: Appointment %s", status, appointmentID)
-	plainText := fmt.Sprintf("Dispute Decision\n\nHello %s,\n\nThe dispute on Appointment %s has been marked %s.\n\nResolution Notes: %s\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, appointmentID, status, notes)
+	plainText := fmt.Sprintf("Dispute Decision\n\nHello %s,\n\nThe dispute on Appointment %s has been marked %s.\n\nResolution Notes: %s\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName, appointmentID, status, notes)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -497,8 +497,8 @@ func SendDisputeResolvedEmail(cfg *Config, toEmail, recipientName, appointmentID
             <p style="margin:0;"><strong>Resolution Notes:</strong> %s</p>
         </div>
         <div class="footer">
-            <p>You received this transactional email because of activity on your Neighbor Service account.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this transactional email because of activity on your Neighbor Services account.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -512,7 +512,7 @@ func SendDisputeResolvedEmail(cfg *Config, toEmail, recipientName, appointmentID
 // SendFavoriteProOpenSlotsEmail re-engages seekers when their previously booked pro has open calendar slots
 func SendFavoriteProOpenSlotsEmail(cfg *Config, toEmail, seekerName, providerName, serviceName string) error {
 	subject := fmt.Sprintf("%s has open slots this week in your area!", providerName)
-	plainText := fmt.Sprintf("Hello %s,\n\nYour favorite neighborhood pro, %s (%s), has open availability this week!\n\nBook ahead to secure your preferred time slot before their calendar fills up.\n\nOpen Neighbor Service to book instantly: https://neighborservice.com\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", seekerName, providerName, serviceName)
+	plainText := fmt.Sprintf("Hello %s,\n\nYour favorite neighborhood pro, %s (%s), has open availability this week!\n\nBook ahead to secure your preferred time slot before their calendar fills up.\n\nOpen Neighbor Services to book instantly: https://neighborservice.com\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", seekerName, providerName, serviceName)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -542,8 +542,8 @@ func SendFavoriteProOpenSlotsEmail(cfg *Config, toEmail, seekerName, providerNam
             <a href="https://neighborservice.com" class="btn">Book Available Slot</a>
         </div>
         <div class="footer">
-            <p>You received this recommendation based on your past positive experience with %s on Neighbor Service.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this recommendation based on your past positive experience with %s on Neighbor Services.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -555,7 +555,7 @@ func SendFavoriteProOpenSlotsEmail(cfg *Config, toEmail, seekerName, providerNam
 // SendSeasonalCareReminderEmail sends seasonal home maintenance reminders
 func SendSeasonalCareReminderEmail(cfg *Config, toEmail, seekerName, seasonName, tipsSummary string) error {
 	subject := fmt.Sprintf("Seasonal Home Care: %s checklist for your home 🏡", seasonName)
-	plainText := fmt.Sprintf("Hello %s,\n\n%s is here! Protect your home with our seasonal maintenance checklist:\n\n%s\n\nFind top-rated local pros on Neighbor Service to take care of these tasks hassle-free.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", seekerName, seasonName, tipsSummary)
+	plainText := fmt.Sprintf("Hello %s,\n\n%s is here! Protect your home with our seasonal maintenance checklist:\n\n%s\n\nFind top-rated local pros on Neighbor Services to take care of these tasks hassle-free.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", seekerName, seasonName, tipsSummary)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -584,8 +584,8 @@ func SendSeasonalCareReminderEmail(cfg *Config, toEmail, seekerName, seasonName,
             <a href="https://neighborservice.com" class="btn">Find Local Pros</a>
         </div>
         <div class="footer">
-            <p>You received this maintenance guide as part of your Neighbor Service membership.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this maintenance guide as part of your Neighbor Services membership.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -597,7 +597,7 @@ func SendSeasonalCareReminderEmail(cfg *Config, toEmail, seekerName, seasonName,
 // SendPostJobReviewAndReferralEmail triggers 24h after completion for reviews and neighbor referrals
 func SendPostJobReviewAndReferralEmail(cfg *Config, toEmail, seekerName, providerName, serviceName, referralCode string) error {
 	subject := fmt.Sprintf("How was your service with %s? Refer a neighbor & earn $10!", providerName)
-	plainText := fmt.Sprintf("Hello %s,\n\nWe hope your recent %s with %s went smoothly!\n\n1. Leave a quick review in the app to support your local pro.\n2. Share your referral code [%s] with neighbors. When they complete their first booking, you both receive a $10 credit!\n\nOpen Neighbor Service: https://neighborservice.com\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", seekerName, serviceName, providerName, referralCode)
+	plainText := fmt.Sprintf("Hello %s,\n\nWe hope your recent %s with %s went smoothly!\n\n1. Leave a quick review in the app to support your local pro.\n2. Share your referral code [%s] with neighbors. When they complete their first booking, you both receive a $10 credit!\n\nOpen Neighbor Services: https://neighborservice.com\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", seekerName, serviceName, providerName, referralCode)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -630,7 +630,7 @@ func SendPostJobReviewAndReferralEmail(cfg *Config, toEmail, seekerName, provide
         </div>
         <div class="footer">
             <p>Thank you for supporting local neighborhood service professionals.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -642,13 +642,13 @@ func SendPostJobReviewAndReferralEmail(cfg *Config, toEmail, seekerName, provide
 // SendDormantUserWinbackEmail re-engages users inactive for 45+ days
 func SendDormantUserWinbackEmail(cfg *Config, toEmail, userName, recentProsCount string) error {
 	subject := "We miss you! Verified local pros are ready in your neighborhood 🏡"
-	plainText := fmt.Sprintf("Hello %s,\n\nWe haven't seen you in a while! %s verified service professionals are active in your neighborhood right now.\n\nFrom home repairs and lawn care to pet sitting and cleaning, get your tasks completed with trusted neighbors.\n\nOpen the app today: https://neighborservice.com\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", userName, recentProsCount)
+	plainText := fmt.Sprintf("Hello %s,\n\nWe haven't seen you in a while! %s verified service professionals are active in your neighborhood right now.\n\nFrom home repairs and lawn care to pet sitting and cleaning, get your tasks completed with trusted neighbors.\n\nOpen the app today: https://neighborservice.com\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", userName, recentProsCount)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome Back to Neighbor Service</title>
+    <title>Welcome Back to Neighbor Services</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b; line-height: 1.5; margin: 0; }
         .container { max-width: 560px; margin: 0 auto; background-color: #ffffff; padding: 36px; border-radius: 12px; border: 1px solid #e2e8f0; }
@@ -671,8 +671,8 @@ func SendDormantUserWinbackEmail(cfg *Config, toEmail, userName, recentProsCount
             <a href="https://neighborservice.com" class="btn">Explore Neighborhood Services</a>
         </div>
         <div class="footer">
-            <p>You received this update because you are a registered member of Neighbor Service.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this update because you are a registered member of Neighbor Services.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -684,7 +684,7 @@ func SendDormantUserWinbackEmail(cfg *Config, toEmail, userName, recentProsCount
 // SendWeeklyProviderDigestEmail sends Monday morning performance summaries to active providers
 func SendWeeklyProviderDigestEmail(cfg *Config, toEmail, providerName string, weeklyEarnings float64, profileViews int, openJobsCount int) error {
 	subject := fmt.Sprintf("Your Weekly Pro Digest: $%.2f earned & %d open jobs near you 📈", weeklyEarnings, openJobsCount)
-	plainText := fmt.Sprintf("Hello %s,\n\nHere is your Neighbor Service weekly performance summary:\n\n- Weekly Earnings: $%.2f\n- Profile Views: %d\n- Open Local Requests: %d waiting for bids\n\nOpen your app to review open client requests and submit proposals.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, weeklyEarnings, profileViews, openJobsCount)
+	plainText := fmt.Sprintf("Hello %s,\n\nHere is your Neighbor Services weekly performance summary:\n\n- Weekly Earnings: $%.2f\n- Profile Views: %d\n- Open Local Requests: %d waiting for bids\n\nOpen your app to review open client requests and submit proposals.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, weeklyEarnings, profileViews, openJobsCount)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -727,8 +727,8 @@ func SendWeeklyProviderDigestEmail(cfg *Config, toEmail, providerName string, we
             <a href="https://neighborservice.com" class="btn">Review & Bid on Leads</a>
         </div>
         <div class="footer">
-            <p>You received this digest as an active service provider on Neighbor Service.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this digest as an active service provider on Neighbor Services.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -746,7 +746,7 @@ func SendAppointmentUpcomingReminderEmail(cfg *Config, toEmail, recipientName, o
 	} else {
 		arrivalNote = "Your 4-digit arrival code is available inside the app. Provide it to your pro upon arrival to start the service."
 	}
-	plainText := fmt.Sprintf("Hello %s,\n\nThis is a friendly reminder for your upcoming appointment \"%s\" with %s.\n\nScheduled Time: %s\n\n%s\n\nOpen Neighbor Service: https://neighborservice.com\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, title, otherPartyName, scheduledTime, arrivalNote)
+	plainText := fmt.Sprintf("Hello %s,\n\nThis is a friendly reminder for your upcoming appointment \"%s\" with %s.\n\nScheduled Time: %s\n\n%s\n\nOpen Neighbor Services: https://neighborservice.com\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName, title, otherPartyName, scheduledTime, arrivalNote)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -775,8 +775,8 @@ func SendAppointmentUpcomingReminderEmail(cfg *Config, toEmail, recipientName, o
             <a href="https://neighborservice.com" class="btn">View Appointment in App</a>
         </div>
         <div class="footer">
-            <p>You received this automated reminder for your confirmed booking on Neighbor Service.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this automated reminder for your confirmed booking on Neighbor Services.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -788,7 +788,7 @@ func SendAppointmentUpcomingReminderEmail(cfg *Config, toEmail, recipientName, o
 // SendProMilestonePerksEmail congratulates providers upon achieving milestones
 func SendProMilestonePerksEmail(cfg *Config, toEmail, providerName, milestoneText string) error {
 	subject := fmt.Sprintf("Congratulations %s! You reached a new Pro Milestone 🏆", providerName)
-	plainText := fmt.Sprintf("Congratulations %s!\n\nYou just achieved: %s.\n\nYour dedication and quality service make our neighborhood community thrive. Keep up the amazing work!\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", providerName, milestoneText)
+	plainText := fmt.Sprintf("Congratulations %s!\n\nYou just achieved: %s.\n\nYour dedication and quality service make our neighborhood community thrive. Keep up the amazing work!\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, milestoneText)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -811,12 +811,12 @@ func SendProMilestonePerksEmail(cfg *Config, toEmail, providerName, milestoneTex
         <div class="milestone-box">
             <h3 style="margin:0; font-size:20px; color:#92400e;">%s</h3>
         </div>
-        <p style="color:#475569;">Your dedication and high-quality service make Neighbor Service the most trusted community platform. Thank you for being a standout pro!</p>
+        <p style="color:#475569;">Your dedication and high-quality service make Neighbor Services the most trusted community platform. Thank you for being a standout pro!</p>
         <div style="text-align: center;">
             <a href="https://neighborservice.com" class="btn">View Your Pro Profile</a>
         </div>
         <div class="footer">
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -849,7 +849,7 @@ func SendMultipartEmail(cfg *Config, toEmail, subject, plainText, htmlBody strin
 	// Format From with a trusted Display Name if not already present
 	fromFormatted := fromRaw
 	if !strings.Contains(fromRaw, "<") {
-		fromFormatted = fmt.Sprintf("\"Neighbor Service\" <%s>", cleanFromEmail)
+		fromFormatted = fmt.Sprintf("\"Neighbor Services\" <%s>", cleanFromEmail)
 	}
 
 	// Extract domain for Message-ID and headers
@@ -943,7 +943,7 @@ func SendMultipartEmail(cfg *Config, toEmail, subject, plainText, htmlBody strin
 	return smtp.SendMail(addr, auth, cleanFromEmail, []string{toEmail}, []byte(message))
 }
 
-// extractEmail parses plain email from formats like "Neighbor Service <noreply@domain.com>"
+// extractEmail parses plain email from formats like "Neighbor Services <noreply@domain.com>"
 func extractEmail(addr string) string {
 	if start := strings.Index(addr, "<"); start != -1 {
 		if end := strings.Index(addr, ">"); end != -1 && end > start {
@@ -990,7 +990,7 @@ func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, 
 	subject := fmt.Sprintf("New Job Opportunity Nearby: %s", requestTitle)
 	priceStr := FormatBudgetOrNegotiable(price)
 
-	plainText := fmt.Sprintf("Hello %s,\n\nA new job matching your location is now available:\n\nTitle: %s\nService: %s\nDistance: approx %.1f mi away\nBudget: %s\n\nOpen the Neighbor Service app to view full details and send your proposal!\n\n---\nNeighbor Service Solutions LLC", recipientName, requestTitle, serviceType, distanceMiles, priceStr)
+	plainText := fmt.Sprintf("Hello %s,\n\nA new job matching your location is now available:\n\nTitle: %s\nService: %s\nDistance: approx %.1f mi away\nBudget: %s\n\nOpen the Neighbor Services app to view full details and send your proposal!\n\n---\nNeighbor Services Solutions LLC", recipientName, requestTitle, serviceType, distanceMiles, priceStr)
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -1028,8 +1028,8 @@ func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, 
             <a href="https://neighborservice.com" class="btn">View Request in App</a>
         </p>
         <div class="footer">
-            <p>You received this email because you are registered as a service provider on Neighbor Service.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this email because you are registered as a service provider on Neighbor Services.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -1042,8 +1042,8 @@ func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, 
 // ─── STALE REQUEST ────────────────────────────────────────────────────────────
 
 func SendStaleRequestExpiredEmail(cfg *Config, toEmail, seekerName, requestTitle string) error {
-	subject := "Your service request has expired - Neighbor Service"
-	plainText := fmt.Sprintf("Hi %s,\n\nYour service request '%s' has been automatically closed after 30 days with no activity.\n\nFeel free to post a new request anytime.\n\n— Neighbor Service Team", seekerName, requestTitle)
+	subject := "Your service request has expired - Neighbor Services"
+	plainText := fmt.Sprintf("Hi %s,\n\nYour service request '%s' has been automatically closed after 30 days with no activity.\n\nFeel free to post a new request anytime.\n\n— Neighbor Services Team", seekerName, requestTitle)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1061,7 +1061,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 <p style="color:#475569;">No worries — you can post a new request anytime and reach hundreds of providers near you.</p>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">Post a New Request</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, seekerName, requestTitle)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -1081,8 +1081,8 @@ func SendPayoutProcessingEmail(cfg *Config, toEmail, providerName string, amount
 		emoji, headline = "📤", "Payout status update"
 		detail = fmt.Sprintf("Your payout of <strong>$%.2f</strong> — status: %s.", amount, status)
 	}
-	subject := fmt.Sprintf("%s Payout %s - Neighbor Service", emoji, status)
-	plainText := fmt.Sprintf("Hi %s,\n\n%s\nAmount: $%.2f\n%s\n\n— Neighbor Service Team", providerName, headline, amount, notes)
+	subject := fmt.Sprintf("%s Payout %s - Neighbor Services", emoji, status)
+	plainText := fmt.Sprintf("Hi %s,\n\n%s\nAmount: $%.2f\n%s\n\n— Neighbor Services Team", providerName, headline, amount, notes)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1100,7 +1100,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 <div class="card"><div class="amount">$%.2f</div><p style="color:#64748b;margin:0;font-size:13px;">Withdrawal Amount</p></div>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">View Wallet</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, emoji, headline, providerName, detail, amount)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -1108,8 +1108,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 // ─── SUBSCRIPTION EXPIRY ──────────────────────────────────────────────────────
 
 func SendSubscriptionExpiryReminderEmail(cfg *Config, toEmail, userName, planName, expiryDate string) error {
-	subject := "Your subscription is expiring soon ⚠️ - Neighbor Service"
-	plainText := fmt.Sprintf("Hi %s,\n\nYour '%s' plan expires on %s. Renew now to keep your premium benefits.\n\n— Neighbor Service Team", userName, planName, expiryDate)
+	subject := "Your subscription is expiring soon ⚠️ - Neighbor Services"
+	plainText := fmt.Sprintf("Hi %s,\n\nYour '%s' plan expires on %s. Renew now to keep your premium benefits.\n\n— Neighbor Services Team", userName, planName, expiryDate)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1127,14 +1127,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 <p style="color:#475569;">Renew now to keep enjoying priority listings, unlimited messages, and more.</p>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">Renew Subscription</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, userName, planName, expiryDate)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
 func SendSubscriptionExpiredEmail(cfg *Config, toEmail, userName, planName string) error {
-	subject := "Your subscription has expired - Neighbor Service"
-	plainText := fmt.Sprintf("Hi %s,\n\nYour '%s' plan has expired. Resubscribe to restore your premium benefits.\n\n— Neighbor Service Team", userName, planName)
+	subject := "Your subscription has expired - Neighbor Services"
+	plainText := fmt.Sprintf("Hi %s,\n\nYour '%s' plan has expired. Resubscribe to restore your premium benefits.\n\n— Neighbor Services Team", userName, planName)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1152,18 +1152,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 <p style="color:#475569;">Resubscribe today to restore priority listings, unlimited messages, and more premium perks.</p>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">Resubscribe Now</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, userName, planName)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
 func SendUnsubscribedProviderReminderEmail(cfg *Config, toEmail, userName string, serviceCategory string) error {
-	subject := "🚀 Boost Your Client Bookings & Patronage on Neighbor Service"
+	subject := "🚀 Boost Your Client Bookings & Patronage on Neighbor Services"
 	serviceText := ""
 	if serviceCategory != "" {
 		serviceText = fmt.Sprintf("for %s services", serviceCategory)
 	}
-	plainText := fmt.Sprintf("Hi %s,\n\nClients in your neighborhood are actively searching for trusted service providers %s!\n\nTo start receiving live matching requests, submitting proposals, and boosting your business patronage, activate your Neighbor Service subscription today.\n\nBenefits of subscribing:\n- Direct access to Live Request Radar & nearby leads\n- Verified Provider badge to build trust\n- Unlimited client messaging & scheduling\n- Flash dispatch alerts right to your phone\n\nOpen the Neighbor Service app or visit https://neighborservice.com/subscription to choose your plan.\n\n— Neighbor Service Team", userName, serviceText)
+	plainText := fmt.Sprintf("Hi %s,\n\nClients in your neighborhood are actively searching for trusted service providers %s!\n\nTo start receiving live matching requests, submitting proposals, and boosting your business patronage, activate your Neighbor Services subscription today.\n\nBenefits of subscribing:\n- Direct access to Live Request Radar & nearby leads\n- Verified Provider badge to build trust\n- Unlimited client messaging & scheduling\n- Flash dispatch alerts right to your phone\n\nOpen the Neighbor Services app or visit https://neighborservice.com/subscription to choose your plan.\n\n— Neighbor Services Team", userName, serviceText)
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
@@ -1192,7 +1192,7 @@ body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a
 </div>
 <div class="body">
   <h2 class="greeting">Hi %s,</h2>
-  <p class="lead">Thank you for registering as a Service Provider on Neighbor Service! To start receiving client requests, submitting instant proposals, and maximizing your monthly earnings, activate your provider subscription today.</p>
+  <p class="lead">Thank you for registering as a Service Provider on Neighbor Services! To start receiving client requests, submitting instant proposals, and maximizing your monthly earnings, activate your provider subscription today.</p>
   
   <div class="perk-grid">
     <div class="perk-item">
@@ -1223,7 +1223,7 @@ body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a
     <p class="guarantee">Cancel or change your plan anytime. Flexible monthly & annual options available.</p>
   </div>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, userName)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
@@ -1233,8 +1233,8 @@ body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a
 
 
 func SendDisputeEscalatedEmail(cfg *Config, toEmail, recipientName, disputeID, reason string) error {
-	subject := "Your dispute has been escalated to our support team - Neighbor Service"
-	plainText := fmt.Sprintf("Hi %s,\n\nDispute #%s regarding '%s' has been escalated after 48 hours without resolution. Our team will respond within 24 hours.\n\n— Neighbor Service Team", recipientName, disputeID, reason)
+	subject := "Your dispute has been escalated to our support team - Neighbor Services"
+	plainText := fmt.Sprintf("Hi %s,\n\nDispute #%s regarding '%s' has been escalated after 48 hours without resolution. Our team will respond within 24 hours.\n\n— Neighbor Services Team", recipientName, disputeID, reason)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1258,7 +1258,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 </div>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">View Dispute Details</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, recipientName, disputeID, reason)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -1277,8 +1277,8 @@ func SendInactiveUserReengagementEmail(cfg *Config, toEmail, userName, campaignT
 		sub = "It's been over a month. Dozens of trusted providers are near you — don't miss out!"
 		cta = "Come Back & Explore"
 	}
-	subject := headline + " — Neighbor Service"
-	plainText := fmt.Sprintf("%s\n\n%s\n\nhttps://neighborservice.com\n\n— Neighbor Service Team", headline, sub)
+	subject := headline + " — Neighbor Services"
+	plainText := fmt.Sprintf("%s\n\n%s\n\nhttps://neighborservice.com\n\n— Neighbor Services Team", headline, sub)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1300,7 +1300,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 </div>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">%s</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, headline, sub, cta)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -1308,8 +1308,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 // ─── PERFORMANCE BADGE ────────────────────────────────────────────────────────
 
 func SendBadgeAwardedEmail(cfg *Config, toEmail, providerName, badgeName, badgeDescription string) error {
-	subject := fmt.Sprintf("🏅 You've earned a new badge: %s - Neighbor Service", badgeName)
-	plainText := fmt.Sprintf("Hi %s,\n\nCongratulations! You've earned the '%s' badge.\n\n%s\n\nKeep up the great work!\n\n— Neighbor Service Team", providerName, badgeName, badgeDescription)
+	subject := fmt.Sprintf("🏅 You've earned a new badge: %s - Neighbor Services", badgeName)
+	plainText := fmt.Sprintf("Hi %s,\n\nCongratulations! You've earned the '%s' badge.\n\n%s\n\nKeep up the great work!\n\n— Neighbor Services Team", providerName, badgeName, badgeDescription)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1330,7 +1330,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 <p style="color:#475569;">This badge is now visible on your public profile, helping you attract more clients.</p>
 <a href="https://neighborservice.com" class="btn">View Your Profile</a>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, providerName, badgeName, badgeDescription)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -1338,8 +1338,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 // ─── WALLET RECONCILIATION ────────────────────────────────────────────────────
 
 func SendWalletDiscrepancyAlertEmail(cfg *Config, toEmail, adminName, userID, walletID string, bookBalance, txSum, diff float64) error {
-	subject := fmt.Sprintf("🚨 Wallet Discrepancy Detected — User %s - Neighbor Service Admin", userID[:8])
-	plainText := fmt.Sprintf("Admin Alert\n\nWallet discrepancy detected.\n\nUser ID: %s\nWallet ID: %s\nBook Balance: $%.2f\nTransaction Sum: $%.2f\nDifference: $%.2f\n\nPlease review immediately.\n\n— Neighbor Service System", userID, walletID, bookBalance, txSum, diff)
+	subject := fmt.Sprintf("🚨 Wallet Discrepancy Detected — User %s - Neighbor Services Admin", userID[:8])
+	plainText := fmt.Sprintf("Admin Alert\n\nWallet discrepancy detected.\n\nUser ID: %s\nWallet ID: %s\nBook Balance: $%.2f\nTransaction Sum: $%.2f\nDifference: $%.2f\n\nPlease review immediately.\n\n— Neighbor Services System", userID, walletID, bookBalance, txSum, diff)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
 .container{max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);}
@@ -1366,7 +1366,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 <div class="diff">Discrepancy: $%.2f</div>
 <p style="text-align:center;"><a href="https://neighborservice.com/admin" class="btn">Review in Admin Panel</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, adminName, userID, walletID, bookBalance, txSum, diff)
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
@@ -1374,9 +1374,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 // ─── APPOINTMENT NO-SHOW & REVIEW REMINDERS ──────────────────────────────────
 
 func SendAppointmentNoShowEmail(cfg *Config, toEmail, userName, role, aptTitle string, aptTime time.Time) error {
-	subject := fmt.Sprintf("Appointment Follow-up: %s - Neighbor Service", aptTitle)
+	subject := fmt.Sprintf("Appointment Follow-up: %s - Neighbor Services", aptTitle)
 	timeFormatted := aptTime.Format("Jan 02, 2006 at 3:04 PM")
-	plainText := fmt.Sprintf("Hi %s,\n\nYour scheduled appointment '%s' on %s was not marked as completed.\nIf you experienced any issues or need to reschedule or report a dispute, please visit your Neighbor Service dashboard.\n\n— Neighbor Service Team", userName, aptTitle, timeFormatted)
+	plainText := fmt.Sprintf("Hi %s,\n\nYour scheduled appointment '%s' on %s was not marked as completed.\nIf you experienced any issues or need to reschedule or report a dispute, please visit your Neighbor Services dashboard.\n\n— Neighbor Services Team", userName, aptTitle, timeFormatted)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding:0;}
 .container{max-width:580px;margin:30px auto;background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;}
@@ -1397,15 +1397,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding
 <p>If you need to reschedule, submit a completion request, or contact support, please access your appointments.</p>
 <p style="text-align:center;margin-top:24px;"><a href="https://neighborservice.com/appointments" class="btn">View Appointment</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, userName, aptTitle, timeFormatted)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
 func SendReviewReminderEmail(cfg *Config, toEmail, seekerName, providerName, aptTitle string) error {
-	subject := fmt.Sprintf("How was your experience with %s? - Neighbor Service", providerName)
-	plainText := fmt.Sprintf("Hi %s,\n\nYour service '%s' with %s was recently completed. We would love to hear your feedback! Leaving a review helps trusted neighbors find great local providers.\n\nLeave a review: https://neighborservice.com/appointments\n\n— Neighbor Service Team", seekerName, aptTitle, providerName)
+	subject := fmt.Sprintf("How was your experience with %s? - Neighbor Services", providerName)
+	plainText := fmt.Sprintf("Hi %s,\n\nYour service '%s' with %s was recently completed. We would love to hear your feedback! Leaving a review helps trusted neighbors find great local providers.\n\nLeave a review: https://neighborservice.com/appointments\n\n— Neighbor Services Team", seekerName, aptTitle, providerName)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding:0;}
 .container{max-width:580px;margin:30px auto;background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;}
@@ -1425,15 +1425,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding
 <p>Leaving a quick review takes less than a minute and helps your community discover top-rated neighbors.</p>
 <p style="text-align:center;margin:28px 0;"><a href="https://neighborservice.com/appointments" class="btn">Leave a Review</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, seekerName, aptTitle, providerName)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
 func SendProviderRankingEmail(cfg *Config, toEmail, providerName, rankTier string, score int) error {
-	subject := fmt.Sprintf("🌟 Provider Performance Update: You're at %s Tier! - Neighbor Service", rankTier)
-	plainText := fmt.Sprintf("Hi %s,\n\nYour neighbor score is %d, placing you in the %s provider tier. Keep up the amazing work to maintain high search visibility and client trust!\n\n— Neighbor Service Team", providerName, score, rankTier)
+	subject := fmt.Sprintf("🌟 Provider Performance Update: You're at %s Tier! - Neighbor Services", rankTier)
+	plainText := fmt.Sprintf("Hi %s,\n\nYour neighbor score is %d, placing you in the %s provider tier. Keep up the amazing work to maintain high search visibility and client trust!\n\n— Neighbor Services Team", providerName, score, rankTier)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding:0;}
 .container{max-width:580px;margin:30px auto;background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;}
@@ -1456,7 +1456,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding
 <p>Higher scores give your profile priority placement in search results and client discovery.</p>
 <p style="text-align:center;margin-top:24px;"><a href="https://neighborservice.com/provider/stats" class="btn">View Performance Analytics</a></p>
 </div>
-<div class="footer"><p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p></div>
+<div class="footer"><p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p></div>
 </div></body></html>`, providerName, score, rankTier)
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
@@ -1465,8 +1465,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding
 // ─── PUBLIC SITE CONTACT & RESOLUTION EMAILS ────────────────────────────────
 
 func SendContactConfirmationEmail(cfg *Config, toEmail, senderName, inquiryType, messageSnippet string) error {
-	subject := "We've received your message - Neighbor Service Support"
-	plainText := fmt.Sprintf("Hello %s,\n\nThank you for reaching out to Neighbor Service. We have received your message regarding \"%s\".\n\nOur customer care team is reviewing your request and will get back to you shortly (typically within 2 hours during support hours).\n\nYour message summary:\n\"%s\"\n\nIf you need immediate assistance, you can also browse our Help Center at https://neighborservice.com/support.\n\nWarm regards,\nNeighbor Service Support Team\n---\nNeighbor Service Solutions LLC. All rights reserved.", senderName, inquiryType, messageSnippet)
+	subject := "We've received your message - Neighbor Services Support"
+	plainText := fmt.Sprintf("Hello %s,\n\nThank you for reaching out to Neighbor Services. We have received your message regarding \"%s\".\n\nOur customer care team is reviewing your request and will get back to you shortly (typically within 2 hours during support hours).\n\nYour message summary:\n\"%s\"\n\nIf you need immediate assistance, you can also browse our Help Center at https://neighborservice.com/support.\n\nWarm regards,\nNeighbor Services Support Team\n---\nNeighbor Services Solutions LLC. All rights reserved.", senderName, inquiryType, messageSnippet)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1486,7 +1486,7 @@ func SendContactConfirmationEmail(cfg *Config, toEmail, senderName, inquiryType,
     <div class="container">
         <span class="badge">Support Inquiry Received</span>
         <h2 style="margin-top: 14px; color: #0f172a;">Hello %s,</h2>
-        <p>Thank you for contacting Neighbor Service. We have successfully received your inquiry regarding <strong>%s</strong>.</p>
+        <p>Thank you for contacting Neighbor Services. We have successfully received your inquiry regarding <strong>%s</strong>.</p>
         <div class="card">
             <h4 style="margin: 0 0 8px 0; color: #0f172a; font-size: 14px; text-transform: uppercase;">Message Summary</h4>
             <p style="margin: 0; font-size: 14px; color: #475569; font-style: italic;">"%s"</p>
@@ -1496,8 +1496,8 @@ func SendContactConfirmationEmail(cfg *Config, toEmail, senderName, inquiryType,
             <a href="https://neighborservice.com/support" class="btn">Visit Help &amp; Support</a>
         </div>
         <div class="footer">
-            <p>You received this email because you submitted a contact inquiry on Neighbor Service.</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>You received this email because you submitted a contact inquiry on Neighbor Services.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -1507,8 +1507,8 @@ func SendContactConfirmationEmail(cfg *Config, toEmail, senderName, inquiryType,
 }
 
 func SendResolutionConfirmationEmail(cfg *Config, toEmail, submitterRole, issueType, bookingRef string) error {
-	subject := fmt.Sprintf("Resolution Case Filed: %s - Neighbor Service", issueType)
-	plainText := fmt.Sprintf("Hello,\n\nWe have received your dispute resolution submission for \"%s\" (Role: %s, Ref: %s).\n\nOur Trust & Safety moderation team will review the details submitted and coordinate resolution between parties within 24-48 business hours.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", issueType, submitterRole, bookingRef)
+	subject := fmt.Sprintf("Resolution Case Filed: %s - Neighbor Services", issueType)
+	plainText := fmt.Sprintf("Hello,\n\nWe have received your dispute resolution submission for \"%s\" (Role: %s, Ref: %s).\n\nOur Trust & Safety moderation team will review the details submitted and coordinate resolution between parties within 24-48 business hours.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", issueType, submitterRole, bookingRef)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1527,7 +1527,7 @@ func SendResolutionConfirmationEmail(cfg *Config, toEmail, submitterRole, issueT
     <div class="container">
         <span class="badge">Resolution Case Received</span>
         <h2 style="margin-top: 14px; color: #0f172a;">Dispute Report Registered</h2>
-        <p>Thank you for submitting your case to the Neighbor Service Resolution Center.</p>
+        <p>Thank you for submitting your case to the Neighbor Services Resolution Center.</p>
         <div class="card">
             <p style="margin: 0 0 6px 0;"><strong>Issue Category:</strong> %s</p>
             <p style="margin: 0 0 6px 0;"><strong>Role:</strong> %s</p>
@@ -1535,7 +1535,7 @@ func SendResolutionConfirmationEmail(cfg *Config, toEmail, submitterRole, issueT
         </div>
         <p>Our Trust &amp; Safety moderation team is reviewing the submission and will follow up with next steps within 24 to 48 hours.</p>
         <div class="footer">
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -1545,15 +1545,15 @@ func SendResolutionConfirmationEmail(cfg *Config, toEmail, submitterRole, issueT
 }
 
 func SendAccountSuspensionEmail(cfg *Config, toEmail, recipientName, suspensionReason string) error {
-	subject := "Important Notice: Your Neighbor Service Account Has Been Suspended"
+	subject := "Important Notice: Your Neighbor Services Account Has Been Suspended"
 	if recipientName == "" {
-		recipientName = "Neighbor Service Member"
+		recipientName = "Neighbor Services Member"
 	}
 	if suspensionReason == "" {
 		suspensionReason = "Violation of platform terms of service or ongoing safety and compliance review."
 	}
 
-	plainText := fmt.Sprintf("Hello %s,\n\nYour Neighbor Service account has been suspended by administration.\n\nReason for Suspension:\n%s\n\nDuring suspension, you will not be able to log in, accept requests, or book services. If you believe this action was taken in error or wish to submit an appeal, please contact our Trust & Safety Team at support@neighborservice.com.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName, suspensionReason)
+	plainText := fmt.Sprintf("Hello %s,\n\nYour Neighbor Services account has been suspended by administration.\n\nReason for Suspension:\n%s\n\nDuring suspension, you will not be able to log in, accept requests, or book services. If you believe this action was taken in error or wish to submit an appeal, please contact our Trust & Safety Team at support@neighborservice.com.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName, suspensionReason)
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -1577,7 +1577,7 @@ func SendAccountSuspensionEmail(cfg *Config, toEmail, recipientName, suspensionR
         <span class="badge">Account Notice</span>
         <h2 style="margin-top: 14px; color: #0f172a;">Your Account Has Been Suspended</h2>
         <p>Hello <strong>%s</strong>,</p>
-        <p>This email is to notify you that your Neighbor Service account has been suspended by an administrator.</p>
+        <p>This email is to notify you that your Neighbor Services account has been suspended by an administrator.</p>
         
         <div class="card">
             <div class="reason-title">Reason for Action</div>
@@ -1597,8 +1597,8 @@ func SendAccountSuspensionEmail(cfg *Config, toEmail, recipientName, suspensionR
         </div>
 
         <div class="footer">
-            <p>Neighbor Service Trust &amp; Safety Team &bull; support@neighborservice.com</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>Neighbor Services Trust &amp; Safety Team &bull; support@neighborservice.com</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -1608,12 +1608,12 @@ func SendAccountSuspensionEmail(cfg *Config, toEmail, recipientName, suspensionR
 }
 
 func SendAccountReinstatedEmail(cfg *Config, toEmail, recipientName string) error {
-	subject := "Good News: Your Neighbor Service Account Has Been Reinstated"
+	subject := "Good News: Your Neighbor Services Account Has Been Reinstated"
 	if recipientName == "" {
-		recipientName = "Neighbor Service Member"
+		recipientName = "Neighbor Services Member"
 	}
 
-	plainText := fmt.Sprintf("Hello %s,\n\nYour Neighbor Service account has been reviewed and reinstated by administration. You may now log in to the mobile app and resume booking or offering services.\n\n---\nNeighbor Service Solutions LLC. All rights reserved.", recipientName)
+	plainText := fmt.Sprintf("Hello %s,\n\nYour Neighbor Services account has been reviewed and reinstated by administration. You may now log in to the mobile app and resume booking or offering services.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", recipientName)
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -1634,11 +1634,11 @@ func SendAccountReinstatedEmail(cfg *Config, toEmail, recipientName string) erro
         <span class="badge">Account Reinstated</span>
         <h2 style="margin-top: 14px; color: #0f172a;">Welcome Back! Your Account is Active</h2>
         <p>Hello <strong>%s</strong>,</p>
-        <p>Your Neighbor Service account has been successfully reviewed and reinstated by our Trust &amp; Safety team.</p>
+        <p>Your Neighbor Services account has been successfully reviewed and reinstated by our Trust &amp; Safety team.</p>
         <p>All platform privileges, listings, and wallet features have been fully restored. You can now log into your mobile application and resume normal activity.</p>
         <div class="footer">
-            <p>Neighbor Service Team &bull; support@neighborservice.com</p>
-            <p>&copy; Neighbor Service Solutions LLC. All rights reserved.</p>
+            <p>Neighbor Services Team &bull; support@neighborservice.com</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
         </div>
     </div>
 </body>

@@ -1540,7 +1540,7 @@ func (h *AdminHandler) DownloadBackup(c *gin.Context) {
 	if foundPath == "" {
 		tmpDir := os.TempDir()
 		fallbackPath := filepath.Join(tmpDir, cleanFilename)
-		content := fmt.Sprintf("-- Neighbor Service Database Snapshot Archive\n-- Snapshot ID: %s\n-- Filename: %s\n-- Checksum: %s\n-- Created: %s\n-- Status: %s\n",
+		content := fmt.Sprintf("-- Neighbor Services Database Snapshot Archive\n-- Snapshot ID: %s\n-- Filename: %s\n-- Checksum: %s\n-- Created: %s\n-- Status: %s\n",
 			snap.ID.String(), snap.Filename, snap.Checksum, snap.CreatedAt.Format(time.RFC3339), snap.Status)
 		_ = os.WriteFile(fallbackPath, []byte(content), 0644)
 		foundPath = fallbackPath

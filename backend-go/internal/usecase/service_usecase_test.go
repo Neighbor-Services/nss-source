@@ -152,12 +152,14 @@ func TestServiceUseCase_ProposalApprovalFlow(t *testing.T) {
 		CreatedAt: time.Now(),
 	}
 
+	proposedTime := time.Now().Add(24 * time.Hour).Truncate(time.Minute)
 	prop := &entity.Proposal{
-		ID:         propID,
-		RequestID:  reqID,
-		ProviderID: providerID,
-		IsApproved: false,
-		CreatedAt:  time.Now(),
+		ID:            propID,
+		RequestID:     reqID,
+		ProviderID:    providerID,
+		ScheduledTime: &proposedTime,
+		IsApproved:    false,
+		CreatedAt:     time.Now(),
 	}
 
 	catRepo := &mockCategoryRepo{}
@@ -170,7 +172,7 @@ func TestServiceUseCase_ProposalApprovalFlow(t *testing.T) {
 	}}
 	aptRepo := &mockAppointmentRepo{apts: make(map[uuid.UUID]*entity.Appointment)}
 
-	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 
@@ -183,8 +185,15 @@ func TestServiceUseCase_ProposalApprovalFlow(t *testing.T) {
 	if updatedReq.Status != "IN_PROGRESS" {
 		t.Errorf("Expected status IN_PROGRESS, got %s", updatedReq.Status)
 	}
+
 	if len(aptRepo.apts) != 1 {
 		t.Fatalf("Expected 1 appointment created, got %d", len(aptRepo.apts))
+	}
+
+	for _, a := range aptRepo.apts {
+		if a.AppointmentDate == nil || !a.AppointmentDate.Equal(proposedTime) {
+			t.Errorf("Expected appointment date %v, got %v", proposedTime, a.AppointmentDate)
+		}
 	}
 
 	// 2. Cancel approval -> Appointment must be deleted (no duplicate/cancelled remnants)
@@ -242,7 +251,7 @@ func TestServiceUseCase_ImageUploadAndProposalDeletion(t *testing.T) {
 		providerID: {ID: uuid.New(), UserID: providerID, Latitude: 51.5074, Longitude: -0.1278},
 	}}
 
-	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 
@@ -307,7 +316,7 @@ func TestServiceUseCase_DeleteRequest(t *testing.T) {
 		seekerID: {ID: uuid.New(), UserID: seekerID},
 	}}
 
-	srvUC := usecase.NewServiceUseCase(nil, nil, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(nil, nil, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 	// 1. Unauthorized delete attempt
