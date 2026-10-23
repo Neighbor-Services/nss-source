@@ -426,24 +426,12 @@ if [ "$SETUP_SSL" = "y" ]; then
     
     chmod 600 "/etc/nginx/ssl/$API_DOMAIN/key.pem"
     
-    cat << EOF > /etc/nginx/sites-available/$APP_NAME
-# ------------------------------------------------------------------------------
-# Nginx Upstream Load Balancer Pool: $NUM_INSTANCES Instances (Ports $(($BASE_PORT + 1)) - $(($BASE_PORT + $NUM_INSTANCES)))
-# ------------------------------------------------------------------------------
-upstream ns_backend_cluster {
-    least_conn;
-$(echo -e "$UPSTREAM_SERVERS")
-    keepalive 64;
-}
-
-upstream ns_backend_ws_cluster {
-    ip_hash;
-$(echo -e "$UPSTREAM_WS_SERVERS")
-}
-
+    # Configure global Cloudflare Real-IP restoration in conf.d (shared by all virtual hosts)
+    mkdir -p /etc/nginx/conf.d
+    cat << 'EOF' > /etc/nginx/conf.d/cloudflare-realip.conf
 # ------------------------------------------------------------------------------
 # Cloudflare & Reverse Proxy Real-IP Restoration
-# Ensures rate limiting zones and logs record real client IPs instead of CDN proxies
+# Configured globally in http context for all virtual hosts & rate limiting zones
 # ------------------------------------------------------------------------------
 set_real_ip_from 173.245.48.0/20;
 set_real_ip_from 103.21.244.0/22;
@@ -473,6 +461,22 @@ set_real_ip_from 172.16.0.0/12;
 set_real_ip_from 192.168.0.0/16;
 real_ip_header CF-Connecting-IP;
 real_ip_recursive on;
+EOF
+
+    cat << EOF > /etc/nginx/sites-available/$APP_NAME
+# ------------------------------------------------------------------------------
+# Nginx Upstream Load Balancer Pool: $NUM_INSTANCES Instances (Ports $(($BASE_PORT + 1)) - $(($BASE_PORT + $NUM_INSTANCES)))
+# ------------------------------------------------------------------------------
+upstream ns_backend_cluster {
+    least_conn;
+$(echo -e "$UPSTREAM_SERVERS")
+    keepalive 64;
+}
+
+upstream ns_backend_ws_cluster {
+    ip_hash;
+$(echo -e "$UPSTREAM_WS_SERVERS")
+}
 
 # Rate limiting zones
 limit_req_zone \$binary_remote_addr zone=ns_api_limit:10m rate=60r/s;
