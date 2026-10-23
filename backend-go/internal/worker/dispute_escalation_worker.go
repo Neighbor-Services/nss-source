@@ -45,7 +45,7 @@ func NewDisputeEscalationWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.C
 }
 
 func (w *DisputeEscalationWorker) Start() {
-	log.Println("⚖️  Starting Dispute Escalation Background Worker...")
+	log.Println(" Starting Dispute Escalation Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
@@ -56,7 +56,7 @@ func (w *DisputeEscalationWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("⚖️  Stopping Dispute Escalation Worker...")
+				log.Println(" Stopping Dispute Escalation Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("DisputeEscalationWorker.Tick", w.processDisputeEscalations)
@@ -83,11 +83,12 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 		}
 	}
 
-	idleThreshold := time.Now().Add(-48 * time.Hour)
+	now := time.Now()
+	idleThreshold := now.Add(-48 * time.Hour)
 
 	var staleDisputes []entity.Dispute
 	err := w.db.Preload("RaisedBy").Preload("Defendant").
-		Where("status = ? AND updated_at <= ?", "OPEN", idleThreshold).
+		Where("status = ? AND ((sla_deadline IS NOT NULL AND sla_deadline <= ?) OR (sla_deadline IS NULL AND updated_at <= ?))", "OPEN", now, idleThreshold).
 		Find(&staleDisputes).Error
 	if err != nil {
 		log.Printf("[DisputeWorker] Error fetching stale disputes: %v", err)
@@ -98,14 +99,14 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 		return
 	}
 
-	log.Printf("[DisputeWorker] Escalating %d idle dispute(s)", len(staleDisputes))
+	log.Printf("[DisputeWorker] Escalating %d idle dispute(s) due to SLA breach", len(staleDisputes))
 
 	for _, dispute := range staleDisputes {
 		// Escalate status
-		notes := fmt.Sprintf("Auto-escalated after 48h inactivity on %s.", time.Now().Format("Jan 02, 2006 15:04"))
+		notes := fmt.Sprintf("Auto-escalated upon SLA deadline breach on %s.", time.Now().Format("Jan 02, 2006 15:04"))
 		if err := w.db.Model(&dispute).Updates(map[string]interface{}{
-			"status":           "ESCALATED",
-			"resolution_notes": notes,
+ "status": "ESCALATED",
+ "resolution_notes": notes,
 		}).Error; err != nil {
 			log.Printf("[DisputeWorker] Failed to escalate dispute %s: %v", dispute.ID, err)
 			continue
@@ -119,10 +120,10 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 			RiskLevel: "MEDIUM",
 			Flags:     entity.JSONSlice{"UNRESOLVED_DISPUTE_48H"},
 			Details: entity.JSONMap{
-				"dispute_id": dispute.ID.String(),
-				"reason":     dispute.Reason,
+ "dispute_id": dispute.ID.String(),
+ "reason":     dispute.Reason,
 			},
-			Status:    "OPEN",
+			Status: "OPEN",
 			CreatedAt: time.Now(),
 		})
 
@@ -134,14 +135,14 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 				ID:               uuid.New(),
 				UserID:           dispute.RaisedByID,
 				NotificationType: "DISPUTE_ESCALATED",
-				Title:            "Dispute Escalated to Support",
+				Title: "Dispute Escalated to Support",
 				Message:          disputeMsg,
 				Data:             entity.JSONMap{"dispute_id": dispute.ID.String()},
 				CreatedAt:        time.Now(),
 			})
 			w.sendPush(dispute.RaisedByID, "Dispute Escalated", disputeMsg, map[string]string{
-				"notification_type": "dispute_escalated",
-				"dispute_id":        dispute.ID.String(),
+ "notification_type": "dispute_escalated",
+ "dispute_id":        dispute.ID.String(),
 			})
 			if isEmailNotificationEnabled(w.db, dispute.RaisedByID) {
 				_ = email.SendDisputeEscalatedEmail(w.emailCfg, dispute.RaisedBy.Email, dispute.RaisedBy.Email, dispute.ID.String()[:8], dispute.Reason)
@@ -154,14 +155,14 @@ func (w *DisputeEscalationWorker) processDisputeEscalations() {
 				ID:               uuid.New(),
 				UserID:           *dispute.DefendantID,
 				NotificationType: "DISPUTE_ESCALATED",
-				Title:            "Dispute Escalated to Support",
+				Title: "Dispute Escalated to Support",
 				Message:          disputeMsg,
 				Data:             entity.JSONMap{"dispute_id": dispute.ID.String()},
 				CreatedAt:        time.Now(),
 			})
 			w.sendPush(*dispute.DefendantID, "Dispute Escalated", disputeMsg, map[string]string{
-				"notification_type": "dispute_escalated",
-				"dispute_id":        dispute.ID.String(),
+ "notification_type": "dispute_escalated",
+ "dispute_id":        dispute.ID.String(),
 			})
 			if isEmailNotificationEnabled(w.db, *dispute.DefendantID) {
 				_ = email.SendDisputeEscalatedEmail(w.emailCfg, dispute.Defendant.Email, dispute.Defendant.Email, dispute.ID.String()[:8], dispute.Reason)

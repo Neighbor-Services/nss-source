@@ -162,13 +162,13 @@ func TestModerationUseCase_BackgroundCheckFlow(t *testing.T) {
 
 	// 3. Webhook simulation (Report CLEAR)
 	payload := map[string]interface{}{
-		"type": "report.completed",
-		"data": map[string]interface{}{
-			"object": map[string]interface{}{
-				"id":           "rep_test_12345",
-				"candidate_id": check.CheckrCandidateID,
-				"status":       "CLEAR",
-				"adjudication": "engaged",
+ "type": "report.completed",
+ "data": map[string]interface{}{
+ "object": map[string]interface{}{
+ "id": "rep_test_12345",
+ "candidate_id": check.CheckrCandidateID,
+ "status": "CLEAR",
+ "adjudication": "engaged",
 			},
 		},
 	}

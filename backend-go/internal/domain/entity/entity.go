@@ -222,18 +222,58 @@ func (p *Profile) PriorityScore() float64 {
 	}
 }
 
+// CommissionRates holds per-tier commission rate configuration.
+// Rates are expressed as decimals (e.g. 0.05 = 5%). If a rate is 0 the hardcoded
+// default is used, making this struct backward-compatible.
+type CommissionRates struct {
+	Platinum float64
+	Gold     float64
+	Silver   float64
+	Default  float64
+}
+
+// DefaultCommissionRates returns the production commission rate schedule.
+func DefaultCommissionRates() CommissionRates {
+	return CommissionRates{
+		Platinum: 0.05,
+		Gold:     0.10,
+		Silver:   0.15,
+		Default:  0.20,
+	}
+}
+
 func (p *Profile) GetCommissionRate() float64 {
+	return p.GetCommissionRateWithConfig(DefaultCommissionRates())
+}
+
+// GetCommissionRateWithConfig returns the commission rate for this profile's
+// subscription tier using the provided rate table. Use this in usecases that
+// receive rates from config/DB to avoid hardcoded deployments.
+func (p *Profile) GetCommissionRateWithConfig(rates CommissionRates) float64 {
 	switch p.SubscriptionTier {
 	case "PLATINUM":
+		if rates.Platinum > 0 {
+			return rates.Platinum
+		}
 		return 0.05
 	case "GOLD":
+		if rates.Gold > 0 {
+			return rates.Gold
+		}
 		return 0.10
 	case "SILVER":
+		if rates.Silver > 0 {
+			return rates.Silver
+		}
 		return 0.15
 	default:
+		if rates.Default > 0 {
+			return rates.Default
+		}
 		return 0.20
 	}
 }
+
 
 func (p *Profile) GetMaxCatalogServices() int {
 	switch p.SubscriptionTier {
@@ -616,6 +656,9 @@ type Dispute struct {
 	Status          string     `gorm:"size:20;default:'OPEN'" json:"status"`
 	ResolutionNotes string     `gorm:"type:text" json:"resolution_notes,omitempty"`
 	Evidence        string     `gorm:"size:500" json:"evidence,omitempty"`
+	// SlaDeadline is the hard deadline by which this dispute must be resolved.
+	// Defaults to 72 hours after CreatedAt. Overdue disputes are auto-escalated.
+	SlaDeadline *time.Time `gorm:"index" json:"sla_deadline,omitempty"`
 	CreatedAt       time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt       time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 
@@ -627,9 +670,33 @@ type Dispute struct {
 	RaisedByDetails  *Profile `gorm:"-" json:"raised_by_details,omitempty"`
 	DefendantDetails *Profile `gorm:"-" json:"defendant_details,omitempty"`
 	EvidenceURL      string   `gorm:"-" json:"evidence_url,omitempty"`
+	IsOverdue        bool     `gorm:"-" json:"is_overdue"`
 }
 
 func (Dispute) TableName() string { return "interactions_dispute" }
+
+// DefaultSlaDuration is the standard resolution window for open disputes.
+const DefaultSlaDuration = 72 * time.Hour
+
+// SetDefaultSla sets SlaDeadline to CreatedAt + DefaultSlaDuration if not already set.
+func (d *Dispute) SetDefaultSla() {
+	if d.SlaDeadline == nil {
+		deadline := d.CreatedAt.Add(DefaultSlaDuration)
+		d.SlaDeadline = &deadline
+	}
+}
+
+// IsSlaBreached returns true when the dispute is still OPEN but its SLA deadline has passed.
+func (d *Dispute) IsSlaBreached() bool {
+	if d.Status != "OPEN" && d.Status != "ESCALATED" {
+		return false
+	}
+	if d.SlaDeadline == nil {
+		// Fallback: treat disputes older than 48h as breached (previous behaviour)
+		return time.Since(d.UpdatedAt) > 48*time.Hour
+	}
+	return time.Now().After(*d.SlaDeadline)
+}
 
 type Conversation struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`

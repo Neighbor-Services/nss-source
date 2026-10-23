@@ -124,6 +124,12 @@ type appleReceiptResponse struct {
 }
 
 func (u *paymentUseCase) ValidateAppleReceipt(ctx context.Context, userID uuid.UUID, input domainUsecase.AppleValidationInput) (*entity.UserSubscription, error) {
+	if profile, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && profile != nil {
+		if strings.ToUpper(strings.TrimSpace(profile.UserType)) == "PROVIDER" && !profile.IsIdentityVerified {
+			return nil, errors.New("Identity verification required. Your Checkr background check must be cleared before choosing a subscription plan.")
+		}
+	}
+
 	receiptData := strings.ReplaceAll(input.ReceiptData, "\n", "")
 	receiptData = strings.ReplaceAll(receiptData, "\r", "")
 	receiptData = strings.ReplaceAll(receiptData, " ", "")
@@ -145,9 +151,9 @@ func (u *paymentUseCase) ValidateAppleReceipt(ctx context.Context, userID uuid.U
 	} else {
 		verifyURL := "https://buy.itunes.apple.com/verifyReceipt"
 		payload := map[string]interface{}{
-			"receipt-data":             receiptData,
-			"password":                 u.cfg.AppleSharedSecret,
-			"exclude-old-transactions": true,
+ "receipt-data":             receiptData,
+ "password":                 u.cfg.AppleSharedSecret,
+ "exclude-old-transactions": true,
 		}
 
 		payloadBytes, _ := json.Marshal(payload)
@@ -258,7 +264,7 @@ func (u *paymentUseCase) ValidateAppleReceipt(ctx context.Context, userID uuid.U
 			ID:               uuid.New(),
 			UserID:           userID,
 			NotificationType: "SUBSCRIPTION",
-			Title:            "Subscription Activated",
+			Title: "Subscription Activated",
 			Message:          fmt.Sprintf("Your subscription to %s plan is now active!", tier),
 			Data:             entity.JSONMap{"tier": tier, "interval": interval},
 			CreatedAt:        time.Now(),
@@ -266,8 +272,8 @@ func (u *paymentUseCase) ValidateAppleReceipt(ctx context.Context, userID uuid.U
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(userID, "Subscription Activated", fmt.Sprintf("Your subscription to %s plan is now active!", tier), map[string]string{
-		"notification_type": "subscription",
-		"tier":              tier,
+ "notification_type": "subscription",
+ "tier":              tier,
 	})
 
 	return sub, nil
@@ -275,6 +281,12 @@ func (u *paymentUseCase) ValidateAppleReceipt(ctx context.Context, userID uuid.U
 
 
 func (u *paymentUseCase) ValidateGooglePlay(ctx context.Context, userID uuid.UUID, input domainUsecase.GoogleValidationInput) (*entity.UserSubscription, error) {
+	if profile, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && profile != nil {
+		if strings.ToUpper(strings.TrimSpace(profile.UserType)) == "PROVIDER" && !profile.IsIdentityVerified {
+			return nil, errors.New("Identity verification required. Your Checkr background check must be cleared before choosing a subscription plan.")
+		}
+	}
+
 	if u.cfg.GooglePlayServiceAccount == "" {
 		return nil, errors.New("Google Play service account not configured on server")
 	}
@@ -346,7 +358,7 @@ func (u *paymentUseCase) ValidateGooglePlay(ctx context.Context, userID uuid.UUI
 			ID:               uuid.New(),
 			UserID:           userID,
 			NotificationType: "SUBSCRIPTION",
-			Title:            "Subscription Activated",
+			Title: "Subscription Activated",
 			Message:          fmt.Sprintf("Your subscription to %s plan is now active!", tier),
 			Data:             entity.JSONMap{"tier": tier, "interval": interval},
 			CreatedAt:        time.Now(),
@@ -354,8 +366,8 @@ func (u *paymentUseCase) ValidateGooglePlay(ctx context.Context, userID uuid.UUI
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(userID, "Subscription Activated", fmt.Sprintf("Your subscription to %s plan is now active!", tier), map[string]string{
-		"notification_type": "subscription",
-		"tier":              tier,
+ "notification_type": "subscription",
+ "tier":              tier,
 	})
 
 	return sub, nil
@@ -417,7 +429,7 @@ func (u *paymentUseCase) RequestPayout(ctx context.Context, userID uuid.UUID, am
 		ID:          uuid.New(),
 		WalletID:    wallet.ID,
 		Amount:      amount,
-		Status:      "PROCESSED",
+		Status: "PROCESSED",
 		ProcessedAt: &now,
 		CreatedAt:   now,
 	}
@@ -432,7 +444,7 @@ func (u *paymentUseCase) RequestPayout(ctx context.Context, userID uuid.UUID, am
 		Amount:          amount,
 		TransactionType: "DEBIT",
 		Description:     fmt.Sprintf("Stripe Payout: %s", transferID),
-		Status:          "COMPLETED",
+		Status: "COMPLETED",
 		ReferenceID:     transferID,
 		CreatedAt:       now,
 	}
@@ -443,7 +455,7 @@ func (u *paymentUseCase) RequestPayout(ctx context.Context, userID uuid.UUID, am
 			ID:               uuid.New(),
 			UserID:           userID,
 			NotificationType: "PAYOUT",
-			Title:            "Payout Requested",
+			Title: "Payout Requested",
 			Message:          fmt.Sprintf("Your payout of $%.2f has been requested successfully.", amount),
 			Data:             entity.JSONMap{"amount": fmt.Sprintf("%.2f", amount), "transfer_id": transferID},
 			CreatedAt:        now,
@@ -451,14 +463,14 @@ func (u *paymentUseCase) RequestPayout(ctx context.Context, userID uuid.UUID, am
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(userID, "Payout Requested", fmt.Sprintf("Your payout of $%.2f has been requested successfully.", amount), map[string]string{
-		"notification_type": "payout",
-		"amount":            fmt.Sprintf("%.2f", amount),
+ "notification_type": "payout",
+ "amount":            fmt.Sprintf("%.2f", amount),
 	})
 
 	return map[string]interface{}{
-		"status":      "Payout successful",
-		"transfer_id": transferID,
-		"payout_id":   payout.ID.String(),
+ "status": "Payout successful",
+ "transfer_id": transferID,
+ "payout_id":   payout.ID.String(),
 	}, nil
 }
 
@@ -525,9 +537,9 @@ func (u *paymentUseCase) StripeOnboard(ctx context.Context, userID uuid.UUID, em
 	}
 
 	return map[string]interface{}{
-		"url":        onboardingURL,
-		"created":    createdTs,
-		"expires_at": expiresTs,
+ "url":        onboardingURL,
+ "created":    createdTs,
+ "expires_at": expiresTs,
 	}, nil
 }
 
@@ -602,8 +614,8 @@ func (u *paymentUseCase) FundBackgroundCheck(ctx context.Context, userID uuid.UU
 			Customer: stripe.String(cust.StripeCustomerID),
 			Params: stripe.Params{
 				Metadata: map[string]string{
-					"type":    "background_check",
-					"user_id": userID.String(),
+ "type": "background_check",
+ "user_id": userID.String(),
 				},
 			},
 			AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
@@ -628,11 +640,11 @@ func (u *paymentUseCase) FundBackgroundCheck(ctx context.Context, userID uuid.UU
 	}
 
 	return map[string]interface{}{
-		"paymentIntent":  clientSecret,
-		"ephemeralKey":   ephemeralSecret,
-		"customer":       cust.StripeCustomerID,
-		"publishableKey": pubKey,
-		"amount_cents":   amountCents,
+ "paymentIntent":  clientSecret,
+ "ephemeralKey":   ephemeralSecret,
+ "customer":       cust.StripeCustomerID,
+ "publishableKey": pubKey,
+ "amount_cents":   amountCents,
 	}, nil
 }
 
@@ -1038,7 +1050,7 @@ func (u *paymentUseCase) Transfer(ctx context.Context, senderID, targetUserID uu
 			UserID:           targetUserID,
 			SenderID:         &senderID,
 			NotificationType: "TRANSFER",
-			Title:            "Funds Received",
+			Title: "Funds Received",
 			Message:          fmt.Sprintf("You received a transfer of $%.2f into your wallet.", amount),
 			Data:             entity.JSONMap{"amount": fmt.Sprintf("%.2f", amount), "transfer_id": txID},
 			CreatedAt:        time.Now(),
@@ -1046,8 +1058,8 @@ func (u *paymentUseCase) Transfer(ctx context.Context, senderID, targetUserID uu
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(targetUserID, "Funds Received", fmt.Sprintf("You received a transfer of $%.2f into your wallet.", amount), map[string]string{
-		"notification_type": "wallet",
-		"amount":            fmt.Sprintf("%.2f", amount),
+ "notification_type": "wallet",
+ "amount":            fmt.Sprintf("%.2f", amount),
 	})
 
 	return txID, nil
@@ -1104,10 +1116,10 @@ func (u *paymentUseCase) PaymentSheet(ctx context.Context, userID uuid.UUID, amo
 	}
 
 	return map[string]string{
-		"paymentIntent":  clientSecret,
-		"ephemeralKey":   ephemeralSecret,
-		"customer":       cust.StripeCustomerID,
-		"publishableKey": pubKey,
+ "paymentIntent":  clientSecret,
+ "ephemeralKey":   ephemeralSecret,
+ "customer":       cust.StripeCustomerID,
+ "publishableKey": pubKey,
 	}, nil
 }
 
@@ -1143,9 +1155,9 @@ func (u *paymentUseCase) FundAppointment(ctx context.Context, userID, appointmen
 			ApplicationFeeAmount: stripe.Int64(applicationFee),
 			Params: stripe.Params{
 				Metadata: map[string]string{
-					"appointment_id": appointmentID.String(),
-					"seeker_id":      userID.String(),
-					"type":           "job_funding",
+ "appointment_id": appointmentID.String(),
+ "seeker_id":      userID.String(),
+ "type": "job_funding",
 				},
 			},
 			AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
@@ -1170,10 +1182,10 @@ func (u *paymentUseCase) FundAppointment(ctx context.Context, userID, appointmen
 	}
 
 	return map[string]string{
-		"paymentIntent":  clientSecret,
-		"ephemeralKey":   ephemeralSecret,
-		"customer":       cust.StripeCustomerID,
-		"publishableKey": pubKey,
+ "paymentIntent":  clientSecret,
+ "ephemeralKey":   ephemeralSecret,
+ "customer":       cust.StripeCustomerID,
+ "publishableKey": pubKey,
 	}, nil
 }
 
@@ -1189,7 +1201,7 @@ func (u *paymentUseCase) TipProvider(ctx context.Context, senderID, providerID, 
 			ID:        uuid.New(),
 			UserID:    senderID,
 			Balance:   0.0,
-			Currency:  "USD",
+			Currency: "USD",
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -1207,7 +1219,7 @@ func (u *paymentUseCase) TipProvider(ctx context.Context, senderID, providerID, 
 			ID:        uuid.New(),
 			UserID:    providerID,
 			Balance:   0.0,
-			Currency:  "USD",
+			Currency: "USD",
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
@@ -1247,15 +1259,15 @@ func (u *paymentUseCase) TipProvider(ctx context.Context, senderID, providerID, 
 		ID:               uuid.New(),
 		UserID:           providerID,
 		NotificationType: "TIP_RECEIVED",
-		Title:            "🎉 You received a Tip!",
+		Title: " You received a Tip!",
 		Message:          fmt.Sprintf("A happy client tipped you $%.2f for your stellar work!", amount),
 		Data:             entity.JSONMap{"appointment_id": appointmentID.String(), "amount": amount},
 		CreatedAt:        time.Now(),
 	})
 
-	u.sendPush(providerID, "🎉 You received a Tip!", fmt.Sprintf("A client tipped you $%.2f!", amount), map[string]string{
-		"notification_type": "tip_received",
-		"appointment_id":    appointmentID.String(),
+	u.sendPush(providerID, " You received a Tip!", fmt.Sprintf("A client tipped you $%.2f!", amount), map[string]string{
+ "notification_type": "tip_received",
+ "appointment_id":    appointmentID.String(),
 	})
 
 	return txCredit.ID.String(), nil
@@ -1316,22 +1328,22 @@ func (u *paymentUseCase) ProcessStripeWebhook(ctx context.Context, payload []byt
 
 							// Real-time WebSocket broadcast to seeker and provider
 							websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
-								"type":           "appointment_funded",
-								"appointment_id": apt.ID.String(),
-								"is_funded":      true,
-								"total_price":    apt.TotalPrice,
-								"title":          "Escrow Secured!",
-								"message":        fmt.Sprintf("Payment for '%s' is securely held in escrow.", apt.Title),
-								"created_at":     time.Now().UTC(),
+ "type": "appointment_funded",
+ "appointment_id": apt.ID.String(),
+ "is_funded":      true,
+ "total_price":    apt.TotalPrice,
+ "title": "Escrow Secured!",
+ "message":        fmt.Sprintf("Payment for '%s' is securely held in escrow.", apt.Title),
+ "created_at":     time.Now().UTC(),
 							})
 							websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
-								"type":           "appointment_funded",
-								"appointment_id": apt.ID.String(),
-								"is_funded":      true,
-								"total_price":    apt.TotalPrice,
-								"title":          "Job Funded by Client!",
-								"message":        fmt.Sprintf("Funds for '%s' are verified and held in escrow.", apt.Title),
-								"created_at":     time.Now().UTC(),
+ "type": "appointment_funded",
+ "appointment_id": apt.ID.String(),
+ "is_funded":      true,
+ "total_price":    apt.TotalPrice,
+ "title": "Job Funded by Client!",
+ "message":        fmt.Sprintf("Funds for '%s' are verified and held in escrow.", apt.Title),
+ "created_at":     time.Now().UTC(),
 							})
 
 							if u.notifRepo != nil {
@@ -1340,7 +1352,7 @@ func (u *paymentUseCase) ProcessStripeWebhook(ctx context.Context, payload []byt
 									UserID:           apt.ProviderID,
 									SenderID:         &seekerID,
 									NotificationType: "APPOINTMENT",
-									Title:            "Job Funded by Client",
+									Title: "Job Funded by Client",
 									Message:          fmt.Sprintf("Funds for '%s' are verified and held in escrow.", apt.Title),
 									Data:             entity.JSONMap{"appointment_id": apt.ID.String(), "is_funded": true},
 									CreatedAt:        time.Now(),
@@ -1349,9 +1361,9 @@ func (u *paymentUseCase) ProcessStripeWebhook(ctx context.Context, payload []byt
 							}
 
 							u.sendPush(apt.ProviderID, "Job Funded by Client!", fmt.Sprintf("Funds for '%s' are verified and held in escrow.", apt.Title), map[string]string{
-								"notification_type": "appointment_funded",
-								"appointment_id":    apt.ID.String(),
-								"sender_id":         seekerID.String(),
+ "notification_type": "appointment_funded",
+ "appointment_id":    apt.ID.String(),
+ "sender_id":         seekerID.String(),
 							})
 						}
 					}

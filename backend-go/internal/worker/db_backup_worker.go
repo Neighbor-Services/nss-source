@@ -40,7 +40,7 @@ func NewDatabaseBackupWorker(db *gorm.DB, cfg *config.Config) *DatabaseBackupWor
 }
 
 func (w *DatabaseBackupWorker) Start() {
-	slog.Info("💾 Starting Automated Database Backup Background Worker...")
+	slog.Info(" Starting Automated Database Backup Background Worker...")
 
 	go func() {
 		// Run every 24 hours
@@ -52,7 +52,7 @@ func (w *DatabaseBackupWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				slog.Info("💾 Stopping Database Backup Worker...")
+				slog.Info(" Stopping Database Backup Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("DatabaseBackupWorker.Tick", w.createBackup)
@@ -73,7 +73,7 @@ func (w *DatabaseBackupWorker) createBackup() {
 	snapshot := entity.BackupSnapshot{
 		ID:          uuid.New(),
 		Filename:    filename,
-		Status:      "PENDING",
+		Status: "PENDING",
 		StoragePath: targetPath,
 		CreatedAt:   now,
 	}
@@ -110,10 +110,10 @@ func (w *DatabaseBackupWorker) createBackup() {
 	completedTime := time.Now().UTC()
 
 	w.db.Model(&snapshot).Updates(map[string]interface{}{
-		"status":       "COMPLETED",
-		"file_size":    fileSize,
-		"checksum":     checksum,
-		"completed_at": &completedTime,
+ "status": "COMPLETED",
+ "file_size":    fileSize,
+ "checksum":     checksum,
+ "completed_at": &completedTime,
 	})
 
 	slog.Info("Database backup completed successfully",

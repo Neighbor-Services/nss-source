@@ -57,9 +57,9 @@ func (h *InteractionHandler) wrapAppointments(appointments []entity.Appointment,
 		}
 
 		wrapped = append(wrapped, gin.H{
-			"appointment": apt,
-			"user":        userProfile,
-			"role":        role,
+ "appointment": apt,
+ "user":        userProfile,
+ "role":        role,
 		})
 	}
 	return wrapped
@@ -420,9 +420,9 @@ func (h *InteractionHandler) CompleteAppointment(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":              "appointment completed",
-		"funds_released":      released,
-		"commission_deducted": commission,
+ "status": "appointment completed",
+ "funds_released":      released,
+ "commission_deducted": commission,
 	})
 }
 

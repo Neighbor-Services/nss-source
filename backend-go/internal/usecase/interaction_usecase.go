@@ -79,11 +79,11 @@ func (u *interactionUseCase) sendPush(userID uuid.UUID, title, body string, data
 
 	// Broadcast over WebSocket immediately to any active sessions
 	websocket.GlobalHub.SendToUser(userID.String(), map[string]interface{}{
-		"type":       "notification",
-		"title":      title,
-		"body":       body,
-		"data":       data,
-		"created_at": time.Now().UTC(),
+ "type": "notification",
+ "title":      title,
+ "body":       body,
+ "data":       data,
+ "created_at": time.Now().UTC(),
 	})
 
 	if u.fcmClient == nil || u.tokenRepo == nil {
@@ -192,7 +192,7 @@ func (u *interactionUseCase) CreateReview(ctx context.Context, reviewerID uuid.U
 			UserID:           review.ProviderID,
 			SenderID:         &reviewerID,
 			NotificationType: "REVIEW",
-			Title:            "New Review Received",
+			Title: "New Review Received",
 			Message:          fmt.Sprintf("A client left you a %d-star review!", int(review.Rating)),
 			Data:             entity.JSONMap{"review_id": review.ID.String(), "provider_id": review.ProviderID.String()},
 			CreatedAt:        time.Now(),
@@ -201,9 +201,9 @@ func (u *interactionUseCase) CreateReview(ctx context.Context, reviewerID uuid.U
 	}
 
 	u.sendPush(review.ProviderID, "New Review Received", fmt.Sprintf("A client left you a %d-star review!", int(review.Rating)), map[string]string{
-		"notification_type": "review",
-		"provider_id":       review.ProviderID.String(),
-		"review_id":         review.ID.String(),
+ "notification_type": "review",
+ "provider_id":       review.ProviderID.String(),
+ "review_id":         review.ID.String(),
 	})
 
 	return review, nil
@@ -273,12 +273,12 @@ func parseAppointmentDate(val interface{}) *time.Time {
 	formats := []string{
 		time.RFC3339,
 		time.RFC3339Nano,
-		"2006-01-02T15:04:05.000Z",
-		"2006-01-02T15:04:05Z",
-		"2006-01-02T15:04:05",
-		"2006-01-02 15:04:05",
-		"2006-01-02 15:04",
-		"2006-01-02",
+ "2006-01-02T15:04:05.000Z",
+ "2006-01-02T15:04:05Z",
+ "2006-01-02T15:04:05",
+ "2006-01-02 15:04:05",
+ "2006-01-02 15:04",
+ "2006-01-02",
 	}
 	for _, layout := range formats {
 		if t, err := time.Parse(layout, strings.TrimSpace(str)); err == nil {
@@ -365,20 +365,20 @@ func (u *interactionUseCase) UpdateAppointment(ctx context.Context, userID, appo
 
 	// Broadcast real-time update over WebSocket to both parties
 	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
-		"type":           "appointment_updated",
-		"appointment_id": apt.ID.String(),
-		"status":         apt.Status,
-		"title":          "Appointment Updated",
-		"message":        fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title),
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_updated",
+ "appointment_id": apt.ID.String(),
+ "status":         apt.Status,
+ "title": "Appointment Updated",
+ "message":        fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title),
+ "created_at":     time.Now().UTC(),
 	})
 	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
-		"type":           "appointment_updated",
-		"appointment_id": apt.ID.String(),
-		"status":         apt.Status,
-		"title":          "Appointment Updated",
-		"message":        fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title),
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_updated",
+ "appointment_id": apt.ID.String(),
+ "status":         apt.Status,
+ "title": "Appointment Updated",
+ "message":        fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title),
+ "created_at":     time.Now().UTC(),
 	})
 
 	otherPartyID := apt.ProviderID
@@ -386,9 +386,9 @@ func (u *interactionUseCase) UpdateAppointment(ctx context.Context, userID, appo
 		otherPartyID = apt.SeekerID
 	}
 	u.sendPush(otherPartyID, "Appointment Updated", fmt.Sprintf("The appointment for '%s' has been updated.", apt.Title), map[string]string{
-		"notification_type": "appointment",
-		"appointment_id":    apt.ID.String(),
-		"sender_id":         userID.String(),
+ "notification_type": "appointment",
+ "appointment_id":    apt.ID.String(),
+ "sender_id":         userID.String(),
 	})
 
 	return u.GetAppointmentByID(ctx, userID, appointmentID)
@@ -418,7 +418,7 @@ func (u *interactionUseCase) CreateAppointment(ctx context.Context, customerID u
 			UserID:           apt.ProviderID,
 			SenderID:         &customerID,
 			NotificationType: "APPOINTMENT",
-			Title:            "New Appointment Booked",
+			Title: "New Appointment Booked",
 			Message:          fmt.Sprintf("You have a new appointment for %s", apt.Title),
 			Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
 			CreatedAt:        time.Now(),
@@ -426,9 +426,9 @@ func (u *interactionUseCase) CreateAppointment(ctx context.Context, customerID u
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(apt.ProviderID, "New Appointment Booked", fmt.Sprintf("You have a new appointment for %s", apt.Title), map[string]string{
-		"notification_type": "appointment",
-		"appointment_id":    apt.ID.String(),
-		"sender_id":         customerID.String(),
+ "notification_type": "appointment",
+ "appointment_id":    apt.ID.String(),
+ "sender_id":         customerID.String(),
 	})
 
 	// Asynchronously send appointment confirmation email to both Seeker and Provider
@@ -493,17 +493,17 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 	if strings.TrimSpace(code) != strings.TrimSpace(apt.SecretCode) {
 		// Real-time security alert to seeker that an invalid code was entered
 		websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
-			"type":           "appointment_code_failed",
-			"appointment_id": apt.ID.String(),
-			"title":          "Security Alert: Invalid Code Attempt",
-			"message":        "An incorrect arrival code was entered for your appointment.",
-			"created_at":     time.Now().UTC(),
+ "type": "appointment_code_failed",
+ "appointment_id": apt.ID.String(),
+ "title": "Security Alert: Invalid Code Attempt",
+ "message": "An incorrect arrival code was entered for your appointment.",
+ "created_at":     time.Now().UTC(),
 		})
 
 		u.sendPush(apt.SeekerID, "Security Alert: Invalid Code Attempt", "An incorrect arrival code was entered for your appointment.", map[string]string{
-			"notification_type": "appointment_code_failed",
-			"appointment_id":    apt.ID.String(),
-			"sender_id":         providerID.String(),
+ "notification_type": "appointment_code_failed",
+ "appointment_id":    apt.ID.String(),
+ "sender_id":         providerID.String(),
 		})
 
 		return nil, errors.New("invalid verification code. Please check with the seeker.")
@@ -517,20 +517,20 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 
 	// Real-time WebSocket broadcast to seeker and provider
 	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
-		"type":           "appointment_code_verified",
-		"appointment_id": apt.ID.String(),
-		"status":         "IN_PROGRESS",
-		"title":          "Appointment Code Verified!",
-		"message":        "Your provider has verified the arrival code! Appointment is now in progress.",
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_code_verified",
+ "appointment_id": apt.ID.String(),
+ "status": "IN_PROGRESS",
+ "title": "Appointment Code Verified!",
+ "message": "Your provider has verified the arrival code! Appointment is now in progress.",
+ "created_at":     time.Now().UTC(),
 	})
 	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
-		"type":           "appointment_code_verified",
-		"appointment_id": apt.ID.String(),
-		"status":         "IN_PROGRESS",
-		"title":          "Code Verified!",
-		"message":        "Arrival code verified. Appointment is now in progress.",
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_code_verified",
+ "appointment_id": apt.ID.String(),
+ "status": "IN_PROGRESS",
+ "title": "Code Verified!",
+ "message": "Arrival code verified. Appointment is now in progress.",
+ "created_at":     time.Now().UTC(),
 	})
 
 	if u.notifRepo != nil {
@@ -539,18 +539,18 @@ func (u *interactionUseCase) VerifyArrivalCode(ctx context.Context, providerID, 
 			UserID:           apt.SeekerID,
 			SenderID:         &providerID,
 			NotificationType: "APPOINTMENT",
-			Title:            "Appointment Code Verified",
-			Message:          "Your provider has verified the arrival code! Appointment started.",
+			Title: "Appointment Code Verified",
+			Message: "Your provider has verified the arrival code! Appointment started.",
 			Data:             entity.JSONMap{"appointment_id": apt.ID.String(), "status": "IN_PROGRESS"},
 			CreatedAt:        time.Now(),
 		}
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(apt.SeekerID, "Appointment Code Verified", "Your provider has verified the arrival code! Appointment started.", map[string]string{
-		"notification_type": "appointment_code_verified",
-		"appointment_id":    apt.ID.String(),
-		"status":            "IN_PROGRESS",
-		"sender_id":         providerID.String(),
+ "notification_type": "appointment_code_verified",
+ "appointment_id":    apt.ID.String(),
+ "status": "IN_PROGRESS",
+ "sender_id":         providerID.String(),
 	})
 
 	return apt, nil
@@ -592,9 +592,9 @@ func (u *interactionUseCase) NotifyOnTheWay(ctx context.Context, providerID, app
 			Title:            title,
 			Message:          msg,
 			Data: entity.JSONMap{
-				"notification_type": "provider_on_the_way",
-				"appointment_id":    apt.ID.String(),
-				"request_id":        apt.ID.String(),
+ "notification_type": "provider_on_the_way",
+ "appointment_id":    apt.ID.String(),
+ "request_id":        apt.ID.String(),
 			},
 			CreatedAt: time.Now(),
 		}
@@ -602,10 +602,10 @@ func (u *interactionUseCase) NotifyOnTheWay(ctx context.Context, providerID, app
 	}
 
 	u.sendPush(apt.SeekerID, title, msg, map[string]string{
-		"notification_type": "provider_on_the_way",
-		"appointment_id":    apt.ID.String(),
-		"request_id":        apt.ID.String(),
-		"sender_id":         providerID.String(),
+ "notification_type": "provider_on_the_way",
+ "appointment_id":    apt.ID.String(),
+ "request_id":        apt.ID.String(),
+ "sender_id":         providerID.String(),
 	})
 
 	return apt, nil
@@ -640,7 +640,7 @@ func (u *interactionUseCase) NotifyArrived(ctx context.Context, providerID, appo
 	apt.UpdatedAt = now
 	_ = u.aptRepo.Update(ctx, apt)
 
-	title := "📍 Provider Has Arrived!"
+	title := " Provider Has Arrived!"
 	msg := fmt.Sprintf("%s has arrived at your location for '%s'. Please meet them outside.", providerName, apt.Title)
 
 	if u.notifRepo != nil {
@@ -652,12 +652,12 @@ func (u *interactionUseCase) NotifyArrived(ctx context.Context, providerID, appo
 			Title:            title,
 			Message:          msg,
 			Data: entity.JSONMap{
-				"notification_type": "provider_arrived",
-				"appointment_id":    apt.ID.String(),
-				"request_id":        apt.ID.String(),
-				"provider_lat":      providerLat,
-				"provider_lng":      providerLng,
-				"arrived_at":        now.Format(time.RFC3339),
+ "notification_type": "provider_arrived",
+ "appointment_id":    apt.ID.String(),
+ "request_id":        apt.ID.String(),
+ "provider_lat":      providerLat,
+ "provider_lng":      providerLng,
+ "arrived_at":        now.Format(time.RFC3339),
 			},
 			CreatedAt: now,
 		}
@@ -665,10 +665,10 @@ func (u *interactionUseCase) NotifyArrived(ctx context.Context, providerID, appo
 	}
 
 	u.sendPush(apt.SeekerID, title, msg, map[string]string{
-		"notification_type": "provider_arrived",
-		"appointment_id":    apt.ID.String(),
-		"request_id":        apt.ID.String(),
-		"sender_id":         providerID.String(),
+ "notification_type": "provider_arrived",
+ "appointment_id":    apt.ID.String(),
+ "request_id":        apt.ID.String(),
+ "sender_id":         providerID.String(),
 	})
 
 	return apt, nil
@@ -712,7 +712,7 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 			UserID:           otherPartyID,
 			SenderID:         &userID,
 			NotificationType: "APPOINTMENT",
-			Title:            "Appointment Completed",
+			Title: "Appointment Completed",
 			Message:          fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title),
 			Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
 			CreatedAt:        time.Now(),
@@ -720,27 +720,27 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(otherPartyID, "Appointment Completed", fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title), map[string]string{
-		"notification_type": "appointment",
-		"appointment_id":    apt.ID.String(),
-		"sender_id":         userID.String(),
+ "notification_type": "appointment",
+ "appointment_id":    apt.ID.String(),
+ "sender_id":         userID.String(),
 	})
 
 	// Real-time WebSocket broadcast to both seeker and provider
 	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
-		"type":           "appointment_completed",
-		"appointment_id": apt.ID.String(),
-		"status":         "COMPLETED",
-		"title":          "Appointment Completed",
-		"message":        fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title),
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_completed",
+ "appointment_id": apt.ID.String(),
+ "status": "COMPLETED",
+ "title": "Appointment Completed",
+ "message":        fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title),
+ "created_at":     time.Now().UTC(),
 	})
 	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
-		"type":           "appointment_completed",
-		"appointment_id": apt.ID.String(),
-		"status":         "COMPLETED",
-		"title":          "Appointment Completed",
-		"message":        fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title),
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_completed",
+ "appointment_id": apt.ID.String(),
+ "status": "COMPLETED",
+ "title": "Appointment Completed",
+ "message":        fmt.Sprintf("The appointment for '%s' has been marked as completed.", apt.Title),
+ "created_at":     time.Now().UTC(),
 	})
 
 	// Award XP
@@ -762,22 +762,19 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 			total = amount
 		}
 
-		// Tier rates: NONE=20%, SILVER=15%, GOLD=10%, PLATINUM=5%
-		tier := "NONE"
-		if p, err := u.profileRepo.GetByUserID(ctx, apt.ProviderID); err == nil && p != nil {
-			tier = p.SubscriptionTier
+		// Tier rates: NONE=20%, SILVER=15%, GOLD=10%, PLATINUM=5% (configurable via config)
+		rates := entity.DefaultCommissionRates()
+		if u.cfg != nil {
+			rates = entity.CommissionRates{
+				Platinum: u.cfg.CommissionRatePlatinum,
+				Gold:     u.cfg.CommissionRateGold,
+				Silver:   u.cfg.CommissionRateSilver,
+				Default:  u.cfg.CommissionRateDefault,
+			}
 		}
-
-		rate := 0.20
-		switch tier {
-		case "PLATINUM":
-			rate = 0.05
-		case "GOLD":
-			rate = 0.10
-		case "SILVER":
-			rate = 0.15
-		default:
-			rate = 0.20
+		rate := rates.Default
+		if p, err := u.profileRepo.GetByUserID(ctx, apt.ProviderID); err == nil && p != nil {
+			rate = p.GetCommissionRateWithConfig(rates)
 		}
 
 		commission = total * rate
@@ -795,7 +792,7 @@ func (u *interactionUseCase) CompleteAppointment(ctx context.Context, userID, ap
 				Amount:          netAmount,
 				TransactionType: "CREDIT",
 				Description:     fmt.Sprintf("Job Completion (Funded): %s", apt.Title),
-				Status:          "COMPLETED",
+				Status: "COMPLETED",
 				ReferenceID:     apt.ID.String(),
 				CreatedAt:       time.Now(),
 			}
@@ -880,7 +877,7 @@ func (u *interactionUseCase) CancelAppointment(ctx context.Context, userID, appo
 			UserID:           cancelOtherID,
 			SenderID:         &userID,
 			NotificationType: "APPOINTMENT",
-			Title:            "Appointment Cancelled",
+			Title: "Appointment Cancelled",
 			Message:          fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title),
 			Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
 			CreatedAt:        time.Now(),
@@ -888,27 +885,27 @@ func (u *interactionUseCase) CancelAppointment(ctx context.Context, userID, appo
 		_ = u.notifRepo.Create(ctx, &notif)
 	}
 	u.sendPush(cancelOtherID, "Appointment Cancelled", fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title), map[string]string{
-		"notification_type": "appointment",
-		"appointment_id":    apt.ID.String(),
-		"sender_id":         userID.String(),
+ "notification_type": "appointment",
+ "appointment_id":    apt.ID.String(),
+ "sender_id":         userID.String(),
 	})
 
 	// Real-time WebSocket broadcast to both seeker and provider
 	websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
-		"type":           "appointment_cancelled",
-		"appointment_id": apt.ID.String(),
-		"status":         "CANCELLED",
-		"title":          "Appointment Cancelled",
-		"message":        fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title),
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_cancelled",
+ "appointment_id": apt.ID.String(),
+ "status": "CANCELLED",
+ "title": "Appointment Cancelled",
+ "message":        fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title),
+ "created_at":     time.Now().UTC(),
 	})
 	websocket.GlobalHub.SendToUser(apt.ProviderID.String(), map[string]interface{}{
-		"type":           "appointment_cancelled",
-		"appointment_id": apt.ID.String(),
-		"status":         "CANCELLED",
-		"title":          "Appointment Cancelled",
-		"message":        fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title),
-		"created_at":     time.Now().UTC(),
+ "type": "appointment_cancelled",
+ "appointment_id": apt.ID.String(),
+ "status": "CANCELLED",
+ "title": "Appointment Cancelled",
+ "message":        fmt.Sprintf("The appointment for '%s' has been cancelled.", apt.Title),
+ "created_at":     time.Now().UTC(),
 	})
 
 	// Asynchronously send cancellation emails
@@ -964,6 +961,9 @@ func (u *interactionUseCase) CreateDispute(ctx context.Context, initiatorID uuid
 	if dispute.Status == "" {
 		dispute.Status = "OPEN"
 	}
+	if dispute.SlaDeadline == nil {
+		dispute.SetDefaultSla()
+	}
 	dispute.CreatedAt = time.Now()
 	dispute.UpdatedAt = time.Now()
 
@@ -983,7 +983,7 @@ func (u *interactionUseCase) CreateDispute(ctx context.Context, initiatorID uuid
 					UserID:           otherPartyID,
 					SenderID:         &initiatorID,
 					NotificationType: "DISPUTE",
-					Title:            "Dispute Filed",
+					Title: "Dispute Filed",
 					Message:          fmt.Sprintf("A dispute was filed regarding '%s'.", apt.Title),
 					Data:             entity.JSONMap{"dispute_id": dispute.ID.String(), "appointment_id": apt.ID.String()},
 					CreatedAt:        time.Now(),
@@ -991,9 +991,9 @@ func (u *interactionUseCase) CreateDispute(ctx context.Context, initiatorID uuid
 				_ = u.notifRepo.Create(ctx, &notif)
 			}
 			u.sendPush(otherPartyID, "Dispute Filed", fmt.Sprintf("A dispute was filed regarding '%s'.", apt.Title), map[string]string{
-				"notification_type": "dispute",
-				"dispute_id":        dispute.ID.String(),
-				"appointment_id":    apt.ID.String(),
+ "notification_type": "dispute",
+ "dispute_id":        dispute.ID.String(),
+ "appointment_id":    apt.ID.String(),
 			})
 		}
 	}

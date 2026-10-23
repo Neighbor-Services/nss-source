@@ -135,8 +135,8 @@ func (h *LocationHandler) ServeWsLocation(c *gin.Context) {
 
 			go func(uid uuid.UUID, m locationUpdateMsg) {
 				updates := map[string]interface{}{
-					"latitude":  m.Lat,
-					"longitude": m.Lng,
+ "latitude":  m.Lat,
+ "longitude": m.Lng,
 				}
 				if m.City != "" {
 					updates["city"] = m.City

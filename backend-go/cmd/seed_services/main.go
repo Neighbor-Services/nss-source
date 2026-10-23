@@ -30,9 +30,9 @@ type ServiceData struct {
 
 var categoriesSeed = []CategoryData{
 	{
-		Name:        "Home Repairs and Improvements",
+		Name: "Home Repairs and Improvements",
 		Description: "Professional residential and commercial repairs, plumbing, electrical, HVAC, carpentry, painting, roofing, and remodeling services.",
-		Image:       "categories/home_repairs.jpg",
+		Image: "categories/home_repairs.jpg",
 		Services: []ServiceData{
 			{"Handyman Services", "General home repairs, fixture installations, drywall patching, furniture assembly, and small maintenance projects.", 50.00, "CUSTOMER_LOCATION", []string{"Drywall repair", "Furniture assembly", "TV mounting", "Fixture installation", "Door repair", "Minor home repairs"}},
 			{"Plumbing", "Certified plumbing repairs, leak detection, drain clearing, water heater installation, and pipe maintenance.", 85.00, "CUSTOMER_LOCATION", []string{"Leak repair", "Drain cleaning", "Water heaters", "Fixture installation", "Pipe repair", "Toilet repair"}},
@@ -49,9 +49,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Cleaning and Household Services",
+		Name: "Cleaning and Household Services",
 		Description: "Residential home cleaning, deep cleaning, commercial janitorial, pressure washing, pest control, and junk removal.",
-		Image:       "categories/cleaning.jpg",
+		Image: "categories/cleaning.jpg",
 		Services: []ServiceData{
 			{"House Cleaning", "Recurring maid service, deep cleaning, move-in/move-out cleans, and eco-friendly home sanitization.", 45.00, "CUSTOMER_LOCATION", []string{"Standard recurring cleaning", "Deep cleaning", "Move-in/move-out cleaning", "Eco-friendly cleaning", "Post-renovation"}},
 			{"Commercial Cleaning", "Office cleaning, retail space sanitization, janitorial maintenance, and commercial facility care.", 60.00, "CUSTOMER_LOCATION", []string{"Office cleaning", "Janitorial services", "Retail cleaning", "Medical office sanitization"}},
@@ -65,9 +65,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Lawn and Outdoor Services",
+		Name: "Lawn and Outdoor Services",
 		Description: "Lawn mowing, landscaping design, tree trimming, irrigation systems, fences, patios, and pool care.",
-		Image:       "categories/lawn_outdoor.jpg",
+		Image: "categories/lawn_outdoor.jpg",
 		Services: []ServiceData{
 			{"Lawn Care", "Lawn mowing, edging, weed trimming, fertilization, aeration, overseeding, and seasonal yard cleanup.", 40.00, "CUSTOMER_LOCATION", []string{"Lawn mowing", "Edging", "Fertilization", "Aeration and overseeding", "Weed control"}},
 			{"Landscaping", "Landscape design, plant installation, mulching, sod laying, garden bed edging, and rock features.", 65.00, "CUSTOMER_LOCATION", []string{"Landscape design", "Mulching", "Sod installation", "Plant and shrub planting", "Retaining walls"}},
@@ -80,9 +80,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Moving and Storage",
+		Name: "Moving and Storage",
 		Description: "Residential moving, commercial office moves, packing/unpacking, furniture assembly, and storage solutions.",
-		Image:       "categories/moving_storage.jpg",
+		Image: "categories/moving_storage.jpg",
 		Services: []ServiceData{
 			{"Residential Moving", "Local and long-distance home moving, apartment relocations, and professional furniture handling.", 95.00, "CUSTOMER_LOCATION", []string{"Local home moving", "Long distance moving", "Apartment moving", "Senior relocation"}},
 			{"Commercial Moving", "Office relocations, cubicle moves, corporate equipment transfer, and business transitions.", 120.00, "CUSTOMER_LOCATION", []string{"Office relocation", "Business equipment move", "Retail store moving"}},
@@ -93,9 +93,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Automotive Services",
+		Name: "Automotive Services",
 		Description: "Mobile mechanics, car detailing, mobile tire service, auto glass, battery replacement, and towing.",
-		Image:       "categories/automotive.jpg",
+		Image: "categories/automotive.jpg",
 		Services: []ServiceData{
 			{"Auto Repair and Maintenance", "On-site brake pad replacement, oil changes, engine diagnostic scans, starters, and alternators.", 80.00, "CUSTOMER_LOCATION", []string{"Brake service", "Oil change", "Engine diagnostics", "Transmission repair", "Tune-ups", "Alternators"}},
 			{"Car Washing and Detailing", "Mobile hand car wash, interior shampooing, exterior buffing, clay bar, and ceramic coating.", 55.00, "CUSTOMER_LOCATION", []string{"Mobile car wash", "Interior deep detail", "Paint correction", "Ceramic coating", "Leather conditioning"}},
@@ -108,9 +108,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Transportation and Delivery",
+		Name: "Transportation and Delivery",
 		Description: "Passenger transit, private chauffeurs, airport shuttles, couriers, freight delivery, and errand runs.",
-		Image:       "categories/transportation.jpg",
+		Image: "categories/transportation.jpg",
 		Services: []ServiceData{
 			{"Passenger Transportation", "Reliable point-to-point passenger rides, private transportation, and non-emergency transit.", 35.00, "CUSTOMER_LOCATION", []string{"Local rides", "Point-to-point transit", "Group shuttle", "Non-emergency medical transit"}},
 			{"Chauffeur Services", "Executive black car services, luxury sedan travel, dedicated personal drivers, and VIP transit.", 75.00, "CUSTOMER_LOCATION", []string{"Executive black car", "Luxury sedan", "Hourly private driver", "Special event transport"}},
@@ -122,9 +122,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Beauty and Personal Style",
+		Name: "Beauty and Personal Style",
 		Description: "Hair styling, barbering, nail care, makeup artistry, facials, waxing, lash extensions, and personal styling.",
-		Image:       "categories/beauty_grooming.jpg",
+		Image: "categories/beauty_grooming.jpg",
 		Services: []ServiceData{
 			{"Hair Services", "Haircuts, blowouts, hair coloring, balayage, braiding, natural hair care, locs, and extensions.", 55.00, "CUSTOMER_LOCATION", []string{"Braiding", "Natural hair", "Coloring", "Extensions", "Locs", "Blowouts", "Haircuts", "Balayage"}},
 			{"Barbering", "Classic fades, men haircuts, beard sculpting, line-ups, and luxury hot towel straight-razor shaves.", 35.00, "CUSTOMER_LOCATION", []string{"Men haircuts", "Fades", "Beard sculpting", "Hot towel shave", "Edge ups", "Lineups"}},
@@ -138,9 +138,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Fitness and Wellness",
+		Name: "Fitness and Wellness",
 		Description: "Personal fitness training, group classes, yoga, sports coaching, massage therapy, and wellness coaching.",
-		Image:       "categories/fitness_wellness.jpg",
+		Image: "categories/fitness_wellness.jpg",
 		Services: []ServiceData{
 			{"Personal Training", "One-on-one fitness training, strength conditioning, fat loss programs, and home workout routines.", 60.00, "CUSTOMER_LOCATION", []string{"One-on-one training", "Weight loss", "Strength and conditioning", "Mobility training", "In-home fitness"}},
 			{"Fitness Classes", "High-intensity interval training (HIIT), bootcamps, spin cycling, Zumba, and cardio fitness classes.", 25.00, "PROVIDER_LOCATION", []string{"HIIT classes", "Bootcamps", "Group cycling", "Zumba", "Barre classes"}},
@@ -151,9 +151,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Childcare and Early Learning",
+		Name: "Childcare and Early Learning",
 		Description: "Vetted babysitters, full-time nannies, licensed daycares, preschool programs, and after-school care.",
-		Image:       "categories/childcare.jpg",
+		Image: "categories/childcare.jpg",
 		Services: []ServiceData{
 			{"Babysitting", "Trusted on-demand babysitting, date-night childcare, infant care, and weekend daytime sitting.", 22.00, "CUSTOMER_LOCATION", []string{"Date night babysitting", "Evening sitting", "Infant care", "Weekend care"}},
 			{"Nanny Services", "Experienced full-time, part-time, and live-in nannies, mother helpers, and newborn care specialists.", 28.00, "CUSTOMER_LOCATION", []string{"Full-time nanny", "Part-time nanny", "Live-in nanny", "Newborn care specialist"}},
@@ -164,9 +164,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Adult and Senior Support",
+		Name: "Adult and Senior Support",
 		Description: "In-home daily living assistance, senior companionship, respite care, disability support, and care coordination.",
-		Image:       "categories/senior_support.jpg",
+		Image: "categories/senior_support.jpg",
 		Services: []ServiceData{
 			{"Personal Care and Daily Living Assistance", "Assistance with bathing, dressing, grooming, mobility, meal preparation, and medication reminders.", 32.00, "CUSTOMER_LOCATION", []string{"Bathing", "Dressing", "Meal assistance", "Mobility support", "Medication reminders"}},
 			{"Companionship", "Friendly conversation, reading, accompanied walks, games, errands, and emotional engagement for seniors.", 25.00, "CUSTOMER_LOCATION", []string{"Senior conversation", "Reading", "Board games", "Accompanied walks", "Social stimulation"}},
@@ -176,9 +176,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Pet Services",
+		Name: "Pet Services",
 		Description: "Mobile dog grooming, pet sitting, daily dog walking, pet boarding, behavioral training, and vet transport.",
-		Image:       "categories/pet_services.jpg",
+		Image: "categories/pet_services.jpg",
 		Services: []ServiceData{
 			{"Pet Grooming", "Mobile van dog and cat grooming, hydrobaths, breed haircuts, deshedding, and nail clipping.", 60.00, "CUSTOMER_LOCATION", []string{"Mobile dog grooming", "Breed haircut", "Deshedding treatment", "Nail trim", "Cat grooming", "Flea bath"}},
 			{"Pet Sitting", "In-home pet visits, cat feeding and playtime, puppy check-ins, and overnight stay pet sitting.", 25.00, "CUSTOMER_LOCATION", []string{"In-home pet sitting", "Cat drop-in visits", "Puppy care", "Overnight sitting"}},
@@ -190,9 +190,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Education and Lessons",
+		Name: "Education and Lessons",
 		Description: "Academic tutoring, SAT/ACT test prep, language learning, music lessons, art classes, and coding lessons.",
-		Image:       "categories/education.jpg",
+		Image: "categories/education.jpg",
 		Services: []ServiceData{
 			{"Academic Tutoring", "One-on-one K-12 and college tutoring in math, science, reading, writing, history, and chemistry.", 45.00, "ONLINE", []string{"Reading", "Mathematics", "Science", "Specific grades", "Chemistry", "Physics", "History"}},
 			{"Test Preparation", "Strategic coaching and practice exams for SAT, ACT, GRE, GMAT, AP tests, and state exams.", 60.00, "ONLINE", []string{"SAT prep", "ACT prep", "GRE/GMAT", "AP exam prep", "State standardized tests"}},
@@ -205,9 +205,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Healthcare and Mental Health",
+		Name: "Healthcare and Mental Health",
 		Description: "Primary healthcare, dentistry, optometry, in-home nursing, physical therapy, counseling, and medical testing.",
-		Image:       "categories/healthcare.jpg",
+		Image: "categories/healthcare.jpg",
 		Services: []ServiceData{
 			{"Primary Care", "Routine medical wellness exams, chronic disease management, vitals monitoring, and health consults.", 100.00, "CUSTOMER_LOCATION", []string{"Routine health checkup", "Blood pressure monitoring", "Wellness visits", "Preventative care"}},
 			{"Dental Care", "Dental cleanings, oral examinations, teeth whitening, fillings, and mobile dental van care.", 90.00, "PROVIDER_LOCATION", []string{"Dental exams", "Teeth cleaning", "Fluoride treatment", "Cavity fillings", "Teeth whitening"}},
@@ -224,9 +224,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Food and Catering",
+		Name: "Food and Catering",
 		Description: "Catering for events, in-home personal chefs, custom bakeries, meal prep delivery, and dessert bars.",
-		Image:       "categories/food_catering.jpg",
+		Image: "categories/food_catering.jpg",
 		Services: []ServiceData{
 			{"Catering", "Full-service wedding and corporate catering, hot buffet stations, box lunches, and BBQ catering.", 30.00, "CUSTOMER_LOCATION", []string{"Corporate buffet catering", "Wedding catering", "Box lunches", "Barbecue catering", "Plated dinners"}},
 			{"Personal Chef Services", "Private in-home chef for intimate dinner parties, romantic dates, custom menus, and culinary events.", 75.00, "CUSTOMER_LOCATION", []string{"In-home private chef", "Multi-course dinner parties", "Romantic dinners", "Dietary custom cooking"}},
@@ -238,9 +238,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Events and Entertainment",
+		Name: "Events and Entertainment",
 		Description: "Event coordination, party rentals, floral decor, live DJs, musicians, performers, and professional bartending.",
-		Image:       "categories/events_entertainment.jpg",
+		Image: "categories/events_entertainment.jpg",
 		Services: []ServiceData{
 			{"Event Planning", "Full-service wedding planning, corporate gala coordination, birthday party management, and design.", 80.00, "CUSTOMER_LOCATION", []string{"Wedding planning", "Corporate galas", "Birthday party coordination", "Full-service event design"}},
 			{"Event Decoration", "Balloon arches, floral centerpieces, photo backdrops, mood lighting, and aesthetic table styling.", 60.00, "CUSTOMER_LOCATION", []string{"Balloon arches", "Floral arrangements", "Backdrops and photo booths", "Table centerpieces"}},
@@ -253,9 +253,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Photography and Creative Services",
+		Name: "Photography and Creative Services",
 		Description: "Professional photography, videography, photo retouching, graphic design, copywriting, and printing.",
-		Image:       "categories/photography.jpg",
+		Image: "categories/photography.jpg",
 		Services: []ServiceData{
 			{"Photography", "Wedding photography, family portraits, newborn sessions, corporate headshots, and real estate photos.", 95.00, "CUSTOMER_LOCATION", []string{"Weddings", "Family portraits", "Newborns", "Events", "Product photography", "Headshots", "Real estate"}},
 			{"Videography", "Cinematic wedding films, corporate promos, drone aerial videography, social media reels, and event videos.", 120.00, "CUSTOMER_LOCATION", []string{"Wedding films", "Commercial video", "Drone aerial footage", "Social media reels", "Event recaps"}},
@@ -266,9 +266,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Business and Professional Services",
+		Name: "Business and Professional Services",
 		Description: "Accounting, tax preparation, legal contracts, notary public, consulting, real estate, and digital marketing.",
-		Image:       "categories/business_services.jpg",
+		Image: "categories/business_services.jpg",
 		Services: []ServiceData{
 			{"Accounting and Bookkeeping", "Monthly business bookkeeping, QuickBooks management, financial reporting, and payroll processing.", 65.00, "ONLINE", []string{"Quickbooks setup", "Monthly bookkeeping", "Financial statement preparation", "Payroll"}},
 			{"Tax Preparation", "Individual tax return filing, corporate business taxes, tax deduction planning, and IRS advisory.", 85.00, "ONLINE", []string{"Individual tax returns", "Business corporate taxes", "Tax planning", "IRS resolution"}},
@@ -283,9 +283,9 @@ var categoriesSeed = []CategoryData{
 		},
 	},
 	{
-		Name:        "Technology Services",
+		Name: "Technology Services",
 		Description: "Device repair, IT technical support, home Wi-Fi networks, TV mounting, smart home setup, and web/app development.",
-		Image:       "categories/technology.jpg",
+		Image: "categories/technology.jpg",
 		Services: []ServiceData{
 			{"Computer and Device Repair", "PC and Mac repair, laptop screen replacement, virus removal, hardware upgrades, and data recovery.", 70.00, "CUSTOMER_LOCATION", []string{"Laptop screen repair", "PC troubleshooting", "Virus and malware removal", "Data recovery"}},
 			{"Technical Support", "Remote and on-site IT help, software installations, printer troubleshooting, and operating system updates.", 55.00, "ONLINE", []string{"Printer setup", "Remote desktop support", "Software installation", "OS upgrades"}},
@@ -300,32 +300,32 @@ var categoriesSeed = []CategoryData{
 }
 
 func main() {
-	log.Println("🌱 ====================================================================")
-	log.Println("🌱 Neighbor Services - Syncing Official Categories & Catalog Services")
-	log.Println("🌱 Source of Truth: NS Category Listing Documentation")
-	log.Println("🌱 ====================================================================")
+	log.Println(" ====================================================================")
+	log.Println(" Neighbor Services - Syncing Official Categories & Catalog Services")
+	log.Println(" Source of Truth: NS Category Listing Documentation")
+	log.Println(" ====================================================================")
 
 	cfg := config.Load()
 
 	db, err := database.Connect(cfg)
 	if err != nil {
-		log.Fatalf("❌ Failed to connect to database: %v", err)
+		log.Fatalf(" Failed to connect to database: %v", err)
 	}
 
 	// AutoMigrate tables to ensure schema parity with Specialties and Location attributes
 	if err := database.AutoMigrate(db); err != nil {
-		log.Fatalf("❌ AutoMigrate failed: %v", err)
+		log.Fatalf(" AutoMigrate failed: %v", err)
 	}
 
-	log.Println("🧹 Cleaning up previous legacy seeded categories & catalog services...")
+	log.Println(" Cleaning up previous legacy seeded categories & catalog services...")
 	// Clear previous mappings and catalog services to ensure pristine alignment
 	db.Exec("DELETE FROM accounts_profile_catalog_services")
 	db.Exec("UPDATE services_servicerequest SET catalog_service_id = NULL")
 	if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&entity.CatalogService{}).Error; err != nil {
-		log.Printf("⚠️ Warning deleting catalog services: %v", err)
+		log.Printf(" Warning deleting catalog services: %v", err)
 	}
 	if err := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&entity.Category{}).Error; err != nil {
-		log.Printf("⚠️ Warning deleting categories: %v", err)
+		log.Printf(" Warning deleting categories: %v", err)
 	}
 
 	totalCategories := 0
@@ -343,7 +343,7 @@ func main() {
 		}
 
 		if err := db.Create(&cat).Error; err != nil {
-			log.Fatalf("❌ Failed to create category %s: %v", cat.Name, err)
+			log.Fatalf(" Failed to create category %s: %v", cat.Name, err)
 		}
 		totalCategories++
 
@@ -362,7 +362,7 @@ func main() {
 			}
 
 			if err := db.Create(&catalogService).Error; err != nil {
-				log.Fatalf("❌ Failed to create catalog service %s: %v", srvData.Name, err)
+				log.Fatalf(" Failed to create catalog service %s: %v", srvData.Name, err)
 			}
 			totalServices++
 		}
@@ -377,5 +377,5 @@ func main() {
 	_ = redisCache.DeleteByPattern(ctx, "cache:*catalog*")
 	redisCache.Close()
 
-	log.Printf("✅ Successfully seeded %d Parent Categories and %d Child Catalog Services with Searchable Specialties!", totalCategories, totalServices)
+	log.Printf(" Successfully seeded %d Parent Categories and %d Child Catalog Services with Searchable Specialties!", totalCategories, totalServices)
 }

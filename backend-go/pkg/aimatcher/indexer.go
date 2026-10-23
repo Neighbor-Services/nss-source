@@ -316,7 +316,7 @@ func SummarizeProviderReviews(reviews []entity.Review, profile entity.Profile) P
 			PositiveRatio:         1.0,
 			AverageSentimentScore: 0.5,
 			PerformanceScore:      basePerf,
-			SentimentBadge:        "New Verified Provider",
+			SentimentBadge: "New Verified Provider",
 		}
 	}
 
@@ -409,13 +409,13 @@ func SummarizeProviderReviews(reviews []entity.Review, profile entity.Profile) P
 	performanceScore := math.Min(100.0, math.Max(0.0, ratingPart+sentimentPart+volumePart+verifiedPart+tierPart))
 
 	// Generate Sentiment Badge
-	badge := "👍 Reliable Service"
+	badge := " Reliable Service"
 	if posRatio >= 0.90 && total >= 3 {
-		badge = "🌟 Highly Recommended (Top Customer Praise)"
+		badge = " Highly Recommended (Top Customer Praise)"
 	} else if posRatio >= 0.80 {
-		badge = "⭐ 80%+ Positive Client Satisfaction"
+		badge = " 80%+ Positive Client Satisfaction"
 	} else if negCount > posCount {
-		badge = "⚠️ Needs Service Quality Attention"
+		badge = " Needs Service Quality Attention"
 	}
 
 	return ProviderSentimentSummary{

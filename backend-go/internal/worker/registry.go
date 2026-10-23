@@ -34,7 +34,7 @@ func (r *WorkerRegistry) RegisterWorker(name, category, interval, description st
 		Name:        name,
 		Category:    category,
 		Interval:    interval,
-		Status:      "RUNNING",
+		Status: "RUNNING",
 		LastRun:     time.Now().UTC(),
 		Description: description,
 	}

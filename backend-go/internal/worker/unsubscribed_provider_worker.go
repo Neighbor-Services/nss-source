@@ -43,7 +43,7 @@ func NewUnsubscribedProviderWorker(db *gorm.DB, cfg *config.Config, fcmClient fc
 }
 
 func (w *UnsubscribedProviderWorker) Start() {
-	log.Println("🚀 Starting Unsubscribed Provider Engagement Worker...")
+	log.Println(" Starting Unsubscribed Provider Engagement Worker...")
 
 	go func() {
 		// Initial delay before first run
@@ -57,7 +57,7 @@ func (w *UnsubscribedProviderWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("🛑 Stopping Unsubscribed Provider Worker...")
+				log.Println(" Stopping Unsubscribed Provider Worker...")
 				return
 			case <-ticker.C:
 				w.processUnsubscribedProviders()
@@ -116,7 +116,7 @@ func (w *UnsubscribedProviderWorker) processUnsubscribedProviders() {
 			displayName = "Service Provider"
 		}
 
-		title := "🚀 Boost Your Client Bookings & Patronage!"
+		title := " Boost Your Client Bookings & Patronage!"
 		msg := fmt.Sprintf("Hi %s, local clients are looking for services in your area. Subscribe to activate Live Request Radar, submit direct proposals, and boost your monthly earnings!", displayName)
 
 		// 1. In-App Notification
@@ -127,17 +127,17 @@ func (w *UnsubscribedProviderWorker) processUnsubscribedProviders() {
 			Title:            title,
 			Message:          msg,
 			Data: entity.JSONMap{
-				"action":    "open_subscription",
-				"route":     "/subscription",
-				"user_type": "PROVIDER",
+ "action": "open_subscription",
+ "route": "/subscription",
+ "user_type": "PROVIDER",
 			},
 			CreatedAt: time.Now(),
 		})
 
 		// 2. Push Notification via FCM
 		w.sendPush(p.UserID, title, msg, map[string]string{
-			"notification_type": "provider_subscription_promo",
-			"route":             "/subscription",
+ "notification_type": "provider_subscription_promo",
+ "route": "/subscription",
 		})
 
 		// 3. Marketing Email

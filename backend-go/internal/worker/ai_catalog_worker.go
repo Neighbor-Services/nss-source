@@ -35,7 +35,7 @@ func NewAICatalogKnowledgeWorker(db *gorm.DB, cfg *config.Config) *AICatalogKnow
 }
 
 func (w *AICatalogKnowledgeWorker) Start() {
-	slog.Info("🤖 Starting AI Catalog Knowledge & Continuous Learning Background Worker...")
+	slog.Info(" Starting AI Catalog Knowledge & Continuous Learning Background Worker...")
 
 	go func() {
 		// Run every 30 minutes to dynamically assimilate new services, reviews, and search patterns
@@ -48,7 +48,7 @@ func (w *AICatalogKnowledgeWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				slog.Info("🤖 Stopping AI Catalog Knowledge Worker...")
+				slog.Info(" Stopping AI Catalog Knowledge Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("AICatalogKnowledgeWorker.Tick", w.analyzeCatalogAndLearn)
@@ -70,18 +70,18 @@ func (w *AICatalogKnowledgeWorker) analyzeCatalogAndLearn() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	slog.Info("🧠 [AI Catalog Worker] Starting catalog semantic analysis and knowledge indexing...")
+	slog.Info(" [AI Catalog Worker] Starting catalog semantic analysis and knowledge indexing...")
 
 	// 1. Fetch all categories and catalog services from PostgreSQL
 	var categories []entity.Category
 	if err := w.db.WithContext(ctx).Preload("Services").Find(&categories).Error; err != nil {
-		slog.Error("❌ [AI Catalog Worker] Failed to query categories", "err", err)
+		slog.Error(" [AI Catalog Worker] Failed to query categories", "err", err)
 		return
 	}
 
 	var services []entity.CatalogService
 	if err := w.db.WithContext(ctx).Preload("Category").Find(&services).Error; err != nil {
-		slog.Error("❌ [AI Catalog Worker] Failed to query catalog services", "err", err)
+		slog.Error(" [AI Catalog Worker] Failed to query catalog services", "err", err)
 		return
 	}
 
@@ -112,7 +112,7 @@ func (w *AICatalogKnowledgeWorker) analyzeCatalogAndLearn() {
 				PraiseSignals:      pq.StringArray{"punctual", "clean work", "skilled", "professional", "fair price"},
 				ComplaintSignals:   pq.StringArray{"delayed", "unprofessional", "overpriced", "mess"},
 				ConfidenceScore:    1.0,
-				Source:             "CATALOG_ANALYZER",
+				Source: "CATALOG_ANALYZER",
 			}
 			generatedItems = append(generatedItems, item)
 		}
@@ -130,11 +130,11 @@ func (w *AICatalogKnowledgeWorker) analyzeCatalogAndLearn() {
 				Keyword:            strings.ToLower(c.Name),
 				CategoryName:       c.Name,
 				SearchQueryPattern: q,
-				SentimentIntent:    "STANDARD",
+				SentimentIntent: "STANDARD",
 				PraiseSignals:      pq.StringArray{"expert", "licensed", "reliable", "on time"},
 				ComplaintSignals:   pq.StringArray{"no show", "rude"},
 				ConfidenceScore:    0.95,
-				Source:             "CATALOG_ANALYZER",
+				Source: "CATALOG_ANALYZER",
 			}
 			generatedItems = append(generatedItems, item)
 		}
@@ -148,14 +148,14 @@ func (w *AICatalogKnowledgeWorker) analyzeCatalogAndLearn() {
 			if len(sentiment.PraiseSignals) > 0 || len(sentiment.ComplaintSignals) > 0 {
 				item := entity.CatalogKnowledgeIndex{
 					ID:                 uuid.New(),
-					TradeConcept:       "customer_feedback_signal",
+					TradeConcept: "customer_feedback_signal",
 					Keyword:            fmt.Sprintf("review_%s", rev.ID.String()[:8]),
 					SearchQueryPattern: "",
 					SentimentIntent:    sentiment.Polarity,
 					PraiseSignals:      pq.StringArray(sentiment.PraiseSignals),
 					ComplaintSignals:   pq.StringArray(sentiment.ComplaintSignals),
 					ConfidenceScore:    mathMin(1.0, mathMax(0.5, sentiment.SentimentScore)),
-					Source:             "SENTIMENT_MINER",
+					Source: "SENTIMENT_MINER",
 				}
 				generatedItems = append(generatedItems, item)
 			}
@@ -173,14 +173,14 @@ func (w *AICatalogKnowledgeWorker) analyzeCatalogAndLearn() {
 		if err == nil {
 			// Update existing record
 			w.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
-				"category_name":    item.CategoryName,
-				"service_name":     item.ServiceName,
-				"service_id":       item.ServiceID,
-				"sentiment_intent": item.SentimentIntent,
-				"praise_signals":   item.PraiseSignals,
-				"complaint_signals": item.ComplaintSignals,
-				"confidence_score": item.ConfidenceScore,
-				"updated_at":       time.Now(),
+ "category_name":    item.CategoryName,
+ "service_name":     item.ServiceName,
+ "service_id":       item.ServiceID,
+ "sentiment_intent": item.SentimentIntent,
+ "praise_signals":   item.PraiseSignals,
+ "complaint_signals": item.ComplaintSignals,
+ "confidence_score": item.ConfidenceScore,
+ "updated_at":       time.Now(),
 			})
 			savedCount++
 		} else {
@@ -194,10 +194,10 @@ func (w *AICatalogKnowledgeWorker) analyzeCatalogAndLearn() {
 	var allKnowledge []entity.CatalogKnowledgeIndex
 	if err := w.db.WithContext(ctx).Find(&allKnowledge).Error; err == nil {
 		aimatcher.GlobalKnowledge.LoadFromDatabase(allKnowledge)
-		slog.Info("✅ [AI Catalog Worker] Successfully indexed catalog knowledge and updated dynamic ontology",
-			"generated", len(generatedItems),
-			"saved_or_updated", savedCount,
-			"total_active_knowledge", len(allKnowledge),
+		slog.Info(" [AI Catalog Worker] Successfully indexed catalog knowledge and updated dynamic ontology",
+ "generated", len(generatedItems),
+ "saved_or_updated", savedCount,
+ "total_active_knowledge", len(allKnowledge),
 		)
 	}
 }

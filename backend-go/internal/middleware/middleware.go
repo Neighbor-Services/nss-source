@@ -33,20 +33,20 @@ func CORS(cfg *config.Config) gin.HandlerFunc {
 		}
 	} else {
 		allowedOrigins = []string{
-			"http://localhost:3000",
-			"http://localhost:8080",
-			"http://127.0.0.1:3000",
-			"http://127.0.0.1:8080",
-			"https://admin.neighborservice.com",
-			"https://app.neighborservice.com",
-			"https://neighborservice.com",
-			"https://admin.neighborservices.com",
-			"https://app.neighborservices.com",
-			"https://neighborservices.com",
+ "http://localhost:3000",
+ "http://localhost:8080",
+ "http://127.0.0.1:3000",
+ "http://127.0.0.1:8080",
+ "https://admin.neighborservice.com",
+ "https://app.neighborservice.com",
+ "https://neighborservice.com",
+ "https://admin.neighborservices.com",
+ "https://app.neighborservices.com",
+ "https://neighborservices.com",
 
-			"https://www.neighborservice.com",
+ "https://www.neighborservice.com",
 
-			"https://api.neighborservice.com",
+ "https://api.neighborservice.com",
 		}
 	}
 
@@ -205,11 +205,11 @@ func AuthRequired(cfg *config.Config, userRepo ...repository.UserRepository) gin
 					reason = "Your account has been suspended by an administrator."
 				}
 				c.JSON(http.StatusForbidden, gin.H{
-					"code":              "ACCOUNT_SUSPENDED",
-					"error":             "Account suspended",
-					"message":           "Your account has been suspended by an administrator.",
-					"suspension_reason": reason,
-					"support_email":     "support@neighborservice.com",
+ "code": "ACCOUNT_SUSPENDED",
+ "error": "Account suspended",
+ "message": "Your account has been suspended by an administrator.",
+ "suspension_reason": reason,
+ "support_email": "support@neighborservice.com",
 				})
 				c.Abort()
 				return
@@ -455,11 +455,11 @@ func AdminAuditLogger(adminRepo repository.AdminRepository) gin.HandlerFunc {
 
 		go func(aid *uuid.UUID, m, p, ip, ua string, dur int64, statusCode int) {
 			details := entity.JSONMap{
-				"method":      m,
-				"path":        p,
-				"status_code": statusCode,
-				"duration_ms": dur,
-				"user_agent":  ua,
+ "method":      m,
+ "path":        p,
+ "status_code": statusCode,
+ "duration_ms": dur,
+ "user_agent":  ua,
 			}
 			logEntry := entity.AuditLog{
 				ID:           uuid.New(),
@@ -570,10 +570,10 @@ func UserAuditLogger(auditRepo repository.AuditLogRepository) gin.HandlerFunc {
 
 		go func(uid *uuid.UUID, act, rType, rID, ip, ua, p, m string, sc int) {
 			details := entity.JSONMap{
-				"path":        p,
-				"method":      m,
-				"status_code": sc,
-				"user_agent":  ua,
+ "path":        p,
+ "method":      m,
+ "status_code": sc,
+ "user_agent":  ua,
 			}
 			logEntry := entity.AuditLog{
 				ID:           uuid.New(),

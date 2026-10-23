@@ -64,7 +64,7 @@ func main() {
 				UserID:    existingUser.ID,
 				FirstName: firstName,
 				LastName:  lastName,
-				UserType:  "SEEKER",
+				UserType: "SEEKER",
 			}
 			_ = db.Create(&prof).Error
 		} else {
@@ -74,12 +74,12 @@ func main() {
 		}
 
 		fmt.Println("\n========================================================")
-		fmt.Println("  ✨ Existing user updated to Administrator successfully!")
+		fmt.Println(" Existing user updated to Administrator successfully!")
 		fmt.Println("========================================================")
-		fmt.Printf("  Email:       %s\n", email)
-		fmt.Printf("  Password:    %s\n", password)
-		fmt.Printf("  Role:        Superuser / Admin Staff (is_staff=true)\n")
-		fmt.Printf("  Portal URL:  http://localhost:4200/login\n")
+		fmt.Printf(" Email:       %s\n", email)
+		fmt.Printf(" Password:    %s\n", password)
+		fmt.Printf(" Role:        Superuser / Admin Staff (is_staff=true)\n")
+		fmt.Printf(" Portal URL:  http://localhost:4200/login\n")
 		fmt.Println("========================================================")
 		return
 	}
@@ -105,19 +105,19 @@ func main() {
 		UserID:    newUserID,
 		FirstName: firstName,
 		LastName:  lastName,
-		UserType:  "SEEKER",
+		UserType: "SEEKER",
 	}
 	if err := db.Create(&newProfile).Error; err != nil {
 		log.Printf("Warning: Created user but profile creation gave: %v", err)
 	}
 
 	fmt.Println("\n========================================================")
-	fmt.Println("  🚀 New Administrator account created successfully!")
+	fmt.Println(" New Administrator account created successfully!")
 	fmt.Println("========================================================")
-	fmt.Printf("  Email:       %s\n", email)
-	fmt.Printf("  Password:    %s\n", password)
-	fmt.Printf("  Role:        Superuser / Admin Staff (is_staff=true)\n")
-	fmt.Printf("  Portal URL:  http://localhost:4200/login\n")
+	fmt.Printf(" Email:       %s\n", email)
+	fmt.Printf(" Password:    %s\n", password)
+	fmt.Printf(" Role:        Superuser / Admin Staff (is_staff=true)\n")
+	fmt.Printf(" Portal URL:  http://localhost:4200/login\n")
 	fmt.Println("========================================================")
 	os.Exit(0)
 }

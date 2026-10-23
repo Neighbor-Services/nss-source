@@ -45,7 +45,7 @@ func NewPayoutProcessingWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Cl
 }
 
 func (w *PayoutProcessingWorker) Start() {
-	log.Println("💸 Starting Payout Processing Background Worker...")
+	log.Println(" Starting Payout Processing Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(30 * time.Minute)
@@ -57,7 +57,7 @@ func (w *PayoutProcessingWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("💸 Stopping Payout Processing Worker...")
+				log.Println(" Stopping Payout Processing Worker...")
 				return
 			case <-ticker.C:
 				w.processPayouts()
@@ -113,12 +113,12 @@ func (w *PayoutProcessingWorker) processPayouts() {
 		if wallet.Balance < payout.Amount {
 			notes := fmt.Sprintf("Insufficient balance (%.2f available, %.2f requested). Request held.", wallet.Balance, payout.Amount)
 			w.db.Model(&payout).Updates(map[string]interface{}{
-				"status":      "FAILED",
-				"admin_notes": notes,
+ "status": "FAILED",
+ "admin_notes": notes,
 			})
 			w.notifyUser(
 				user.ID,
-				"Payout Failed",
+ "Payout Failed",
 				fmt.Sprintf("Your payout of $%.2f could not be processed: insufficient balance.", payout.Amount),
 				map[string]string{"notification_type": "payout_failed", "payout_id": payout.ID.String()},
 			)
@@ -143,9 +143,9 @@ func (w *PayoutProcessingWorker) processPayouts() {
 
 			// Transition to PROCESSING
 			if err := tx.Model(&payout).Updates(map[string]interface{}{
-				"status":       "PROCESSING",
-				"processed_at": now,
-				"admin_notes":  "Queued for bank/Stripe transfer.",
+ "status": "PROCESSING",
+ "processed_at": now,
+ "admin_notes": "Queued for bank/Stripe transfer.",
 			}).Error; err != nil {
 				return err
 			}
@@ -162,7 +162,7 @@ func (w *PayoutProcessingWorker) processPayouts() {
 				Amount:          -payout.Amount,
 				TransactionType: "DEBIT",
 				Description:     fmt.Sprintf("Payout withdrawal — request #%s", payout.ID.String()[:8]),
-				Status:          "COMPLETED",
+				Status: "COMPLETED",
 				ReferenceID:     payout.ID.String(),
 				CreatedAt:       now,
 			}
@@ -171,6 +171,15 @@ func (w *PayoutProcessingWorker) processPayouts() {
 
 		if txErr != nil {
 			log.Printf("[PayoutWorker] Transaction failed for payout %s: %v", payout.ID, txErr)
+			if w.cfg != nil && w.cfg.AdminEmail != "" {
+				_ = email.SendWorkerAlertEmail(
+					w.emailCfg,
+					w.cfg.AdminEmail,
+ "PayoutProcessingWorker",
+					fmt.Sprintf("Failed processing payout #%s", payout.ID.String()[:8]),
+					fmt.Sprintf("Payout ID: %s\nUser ID: %s\nAmount: $%.2f\nError: %v", payout.ID, user.ID, payout.Amount, txErr),
+				)
+			}
 			continue
 		}
 
@@ -179,7 +188,7 @@ func (w *PayoutProcessingWorker) processPayouts() {
 			ID:               uuid.New(),
 			UserID:           user.ID,
 			NotificationType: "PAYOUT_PROCESSING",
-			Title:            "Payout in Progress",
+			Title: "Payout in Progress",
 			Message:          fmt.Sprintf("Your payout of $%.2f is now being processed. Funds typically arrive within 2–5 business days.", payout.Amount),
 			Data:             entity.JSONMap{"payout_id": payout.ID.String(), "amount": fmt.Sprintf("%.2f", payout.Amount)},
 			CreatedAt:        time.Now(),
@@ -187,7 +196,7 @@ func (w *PayoutProcessingWorker) processPayouts() {
 
 		w.notifyUser(
 			user.ID,
-			"Payout in Progress 💰",
+ "Payout in Progress ",
 			fmt.Sprintf("Your $%.2f payout is being processed. Expect funds in 2–5 business days.", payout.Amount),
 			map[string]string{"notification_type": "payout_processing", "payout_id": payout.ID.String()},
 		)

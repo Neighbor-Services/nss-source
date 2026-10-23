@@ -15,23 +15,23 @@ func TestMaskPII(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "Empty string",
-			input:    "",
+			name: "Empty string",
+			input: "",
 			expected: "",
 		},
 		{
-			name:     "Email masking",
-			input:    "Contact john.doe@example.com for help",
+			name: "Email masking",
+			input: "Contact john.doe@example.com for help",
 			expected: "Contact j***@example.com for help",
 		},
 		{
-			name:     "Phone masking",
-			input:    "Call 123-456-7890 immediately",
+			name: "Phone masking",
+			input: "Call 123-456-7890 immediately",
 			expected: "Call ***-***-**** immediately",
 		},
 		{
-			name:     "Bearer token masking",
-			input:    "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+			name: "Bearer token masking",
+			input: "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
 			expected: "Authorization: Bearer [REDACTED]",
 		},
 	}

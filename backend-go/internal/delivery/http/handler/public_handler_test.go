@@ -131,8 +131,8 @@ func TestPublicHandler_SubmitResolutionReport(t *testing.T) {
 
 	t.Run("Valid Resolution Report", func(t *testing.T) {
 		report := entity.ResolutionReport{
-			Role:        "seeker",
-			IssueType:   "dispute",
+			Role: "seeker",
+			IssueType: "dispute",
 			Description: "Provider did not show up on time.",
 		}
 		data, _ := json.Marshal(report)

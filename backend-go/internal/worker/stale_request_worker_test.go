@@ -15,8 +15,8 @@ import (
 func TestStaleRequestWorker_ProcessStaleRequests(t *testing.T) {
 	cfg := &config.Config{
 		DBDriver: "sqlite",
-		DBDSN:    ":memory:",
-		Env:      "testing",
+		DBDSN: ":memory:",
+		Env: "testing",
 	}
 
 	db, err := database.Connect(cfg)
@@ -25,7 +25,7 @@ func TestStaleRequestWorker_ProcessStaleRequests(t *testing.T) {
 
 	user := entity.User{
 		ID:        uuid.New(),
-		Email:     "seeker@example.com",
+		Email: "seeker@example.com",
 		IsActive:  true,
 		CreatedAt: time.Now().Add(-60 * 24 * time.Hour),
 	}
@@ -35,7 +35,7 @@ func TestStaleRequestWorker_ProcessStaleRequests(t *testing.T) {
 		ID:        uuid.New(),
 		UserID:    user.ID,
 		FirstName: "Jane",
-		LastName:  "Doe",
+		LastName: "Doe",
 	}
 	assert.NoError(t, db.Create(&profile).Error)
 
@@ -43,9 +43,9 @@ func TestStaleRequestWorker_ProcessStaleRequests(t *testing.T) {
 	staleReq := entity.ServiceRequest{
 		ID:          uuid.New(),
 		UserID:      user.ID,
-		Title:       "Old Garden Maintenance",
+		Title: "Old Garden Maintenance",
 		Description: "Need lawn mowing",
-		Status:      "OPEN",
+		Status: "OPEN",
 		CreatedAt:   time.Now().Add(-40 * 24 * time.Hour),
 	}
 	assert.NoError(t, db.Create(&staleReq).Error)
@@ -54,9 +54,9 @@ func TestStaleRequestWorker_ProcessStaleRequests(t *testing.T) {
 	freshReq := entity.ServiceRequest{
 		ID:          uuid.New(),
 		UserID:      user.ID,
-		Title:       "Fresh Plumbing Fix",
+		Title: "Fresh Plumbing Fix",
 		Description: "Leak under sink",
-		Status:      "OPEN",
+		Status: "OPEN",
 		CreatedAt:   time.Now().Add(-5 * 24 * time.Hour),
 	}
 	assert.NoError(t, db.Create(&freshReq).Error)

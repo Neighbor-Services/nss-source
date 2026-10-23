@@ -70,190 +70,190 @@ var stopWords = map[string]bool{
 var conceptOntology = map[string][]string{
 	// ─── 1. BEAUTY & GROOMING ───
 	"beauty_barber_hair": {
-		"mobile barber", "barbershop", "barber shop", "barber", "haircut", "hair cut",
-		"fade", "beard trim", "shave", "razor", "mobile hairstylist", "mobile hair stylist",
-		"hair stylist", "hair styling", "braiding", "braids", "braider", "loctician", "locs",
-		"dreadlocks", "hair extensions", "blowout", "hair color", "hair salon", "salon",
+ "mobile barber", "barbershop", "barber shop", "barber", "haircut", "hair cut",
+ "fade", "beard trim", "shave", "razor", "mobile hairstylist", "mobile hair stylist",
+ "hair stylist", "hair styling", "braiding", "braids", "braider", "loctician", "locs",
+ "dreadlocks", "hair extensions", "blowout", "hair color", "hair salon", "salon",
 	},
 	"beauty_nails_skincare": {
-		"mobile nail technician", "mobile nail tech", "nail salon", "nail technician", "manicure",
-		"pedicure", "acrylic nails", "gel nails", "nail art", "mobile makeup artist", "makeup artist",
-		"mobile make-up specialist", "makeup specialist", "cosmetics", "mobile beautician", "beautician",
-		"waxing studio", "waxing", "facial", "skincare", "lash extensions", "lashes", "eyebrows",
+ "mobile nail technician", "mobile nail tech", "nail salon", "nail technician", "manicure",
+ "pedicure", "acrylic nails", "gel nails", "nail art", "mobile makeup artist", "makeup artist",
+ "mobile make-up specialist", "makeup specialist", "cosmetics", "mobile beautician", "beautician",
+ "waxing studio", "waxing", "facial", "skincare", "lash extensions", "lashes", "eyebrows",
 	},
 	"wellness_massage_spa": {
-		"mobile massage", "mobile massage therapist", "massage therapist", "massage parlor",
-		"massage", "mobile spa", "spa", "deep tissue", "swedish massage", "hot stone",
-		"reflexology", "sports massage", "bodywork", "in-home massage",
+ "mobile massage", "mobile massage therapist", "massage therapist", "massage parlor",
+ "massage", "mobile spa", "spa", "deep tissue", "swedish massage", "hot stone",
+ "reflexology", "sports massage", "bodywork", "in-home massage",
 	},
 
 	// ─── 2. HEALTHCARE, WELLNESS & ELDERCARE ───
 	"healthcare_medical": {
-		"mobile primary care", "primary care", "nurse practitioner", "physician assistant",
-		"mobile urgent care", "urgent care", "mobile dental", "dental clinic", "dentist",
-		"mobile physical therapy", "physical therapy", "occupational therapy", "chiropractic",
-		"mobile phlebotomy", "phlebotomy", "blood draw", "lab work", "mobile iv hydration",
-		"iv hydration therapy", "iv drip", "mobile immunization", "vaccine", "vaccination",
-		"mobile imaging", "x-ray", "ultrasound", "imaging center", "pharmacy", "refills",
-		"mental health", "counseling", "therapy", "telehealth", "doctor",
+ "mobile primary care", "primary care", "nurse practitioner", "physician assistant",
+ "mobile urgent care", "urgent care", "mobile dental", "dental clinic", "dentist",
+ "mobile physical therapy", "physical therapy", "occupational therapy", "chiropractic",
+ "mobile phlebotomy", "phlebotomy", "blood draw", "lab work", "mobile iv hydration",
+ "iv hydration therapy", "iv drip", "mobile immunization", "vaccine", "vaccination",
+ "mobile imaging", "x-ray", "ultrasound", "imaging center", "pharmacy", "refills",
+ "mental health", "counseling", "therapy", "telehealth", "doctor",
 	},
 	"childcare_eldercare": {
-		"baby sitter", "babysitter", "babysitting", "child care", "childcare", "daycare",
-		"preschool", "nanny", "adult homecare", "adult home care", "eldercare", "senior care",
-		"in-home caregiver", "caregiver", "companion care", "home health aide",
+ "baby sitter", "babysitter", "babysitting", "child care", "childcare", "daycare",
+ "preschool", "nanny", "adult homecare", "adult home care", "eldercare", "senior care",
+ "in-home caregiver", "caregiver", "companion care", "home health aide",
 	},
 
 	// ─── 3. PET SERVICES ───
 	"pet_care_grooming": {
-		"mobile dog grooming", "mobile pet grooming", "dog grooming", "pet groomer",
-		"dog walker", "dog walking", "dog sitter", "pet sitter", "pet sitting",
-		"dog training", "puppy training", "dog obedience", "cat care", "pet boarding",
+ "mobile dog grooming", "mobile pet grooming", "dog grooming", "pet groomer",
+ "dog walker", "dog walking", "dog sitter", "pet sitter", "pet sitting",
+ "dog training", "puppy training", "dog obedience", "cat care", "pet boarding",
 	},
 
 	// ─── 4. AUTOMOTIVE & TRANSPORTATION ───
 	"auto_mobile_mechanic": {
-		"mobile mechanic", "mechanic", "mobile oil change", "oil change", "mobile tire service",
-		"tire service", "tire shop", "flat tire", "mobile windshield repair", "windshield repair",
-		"auto glass", "auto repair", "auto repair shop", "brakes", "brake pads", "battery replacement",
-		"car battery", "alternator", "starter", "diagnostic", "engine repair", "transmission",
-		"car dealership", "concierge car buyer", "car buyer", "car buying", "auto consultant",
-		"vehicle inspection", "vehicle", "automobile",
+ "mobile mechanic", "mechanic", "mobile oil change", "oil change", "mobile tire service",
+ "tire service", "tire shop", "flat tire", "mobile windshield repair", "windshield repair",
+ "auto glass", "auto repair", "auto repair shop", "brakes", "brake pads", "battery replacement",
+ "car battery", "alternator", "starter", "diagnostic", "engine repair", "transmission",
+ "car dealership", "concierge car buyer", "car buyer", "car buying", "auto consultant",
+ "vehicle inspection", "vehicle", "automobile",
 	},
 	"auto_detailing_wash": {
-		"mobile car wash", "car wash", "car detailing", "auto detailing", "interior shampoo",
-		"waxing", "buffing", "ceramic coating", "vehicle wash", "fleet washing",
+ "mobile car wash", "car wash", "car detailing", "auto detailing", "interior shampoo",
+ "waxing", "buffing", "ceramic coating", "vehicle wash", "fleet washing",
 	},
 	"transportation_chauffeur_delivery": {
-		"personal chauffeur", "chauffeur", "personal driver", "private driver", "executive driver",
-		"delivery driver", "delivery", "courier", "freight", "hauling", "package delivery",
+ "personal chauffeur", "chauffeur", "personal driver", "private driver", "executive driver",
+ "delivery driver", "delivery", "courier", "freight", "hauling", "package delivery",
 	},
 
 	// ─── 5. FOOD & HOSPITALITY ───
 	"culinary_food_hospitality": {
-		"personal chef", "personal cheff", "private chef", "chef", "catering", "caterer", "catering services",
-		"mobile food truck", "food truck", "mobile coffee van", "coffee van", "mobile ice cream truck",
-		"ice cream truck", "restaurant", "café", "cafe", "bakery", "dessert shop", "pastry", "bar", "lounge",
-		"cloud kitchen", "catering kitchen", "grocery store", "super market", "supermarket",
-		"meal prep", "private dinner", "dinner", "cuisine", "anniversary dinner",
+ "personal chef", "personal cheff", "private chef", "chef", "catering", "caterer", "catering services",
+ "mobile food truck", "food truck", "mobile coffee van", "coffee van", "mobile ice cream truck",
+ "ice cream truck", "restaurant", "café", "cafe", "bakery", "dessert shop", "pastry", "bar", "lounge",
+ "cloud kitchen", "catering kitchen", "grocery store", "super market", "supermarket",
+ "meal prep", "private dinner", "dinner", "cuisine", "anniversary dinner",
 	},
 
 	// ─── 6. HOME TRADES, REPAIRS & INSPECTIONS ───
 	"plumbing": {
-		"plumbing", "plumber", "pipe", "pipes", "leak", "leaks", "leaking", "sink", "faucet",
-		"drain", "drainage", "clog", "clogged", "toilet", "sewer", "shower", "bathtub",
-		"water heater", "garbage disposal", "spigot", "valve", "p-trap", "sewage", "boiler",
+ "plumbing", "plumber", "pipe", "pipes", "leak", "leaks", "leaking", "sink", "faucet",
+ "drain", "drainage", "clog", "clogged", "toilet", "sewer", "shower", "bathtub",
+ "water heater", "garbage disposal", "spigot", "valve", "p-trap", "sewage", "boiler",
 	},
 	"electrical": {
-		"electrical", "electrician", "wiring", "wire", "wires", "switch", "switches", "socket",
-		"outlet", "breaker", "circuit", "panel", "ceiling fan", "light", "lighting", "fixture",
-		"chandelier", "short circuit", "voltage", "amperage", "re-wiring", "fuse", "generator",
+ "electrical", "electrician", "wiring", "wire", "wires", "switch", "switches", "socket",
+ "outlet", "breaker", "circuit", "panel", "ceiling fan", "light", "lighting", "fixture",
+ "chandelier", "short circuit", "voltage", "amperage", "re-wiring", "fuse", "generator",
 	},
 	"hvac": {
-		"hvac", "ac", "air condition", "air conditioning", "ac repair", "cooling", "heat", "heater",
-		"heating", "furnace", "thermostat", "duct", "ductwork", "freon", "compressor",
-		"ventilation", "filter", "radiator", "heat pump", "central air",
+ "hvac", "ac", "air condition", "air conditioning", "ac repair", "cooling", "heat", "heater",
+ "heating", "furnace", "thermostat", "duct", "ductwork", "freon", "compressor",
+ "ventilation", "filter", "radiator", "heat pump", "central air",
 	},
 	"roofing_gutters": {
-		"roof repair", "roofing", "roofer", "roof", "roof leak", "shingles", "gutter",
-		"gutters", "gutter cleaning", "flashing", "skylight", "siding", "downspout", "soffit", "fascia",
+ "roof repair", "roofing", "roofer", "roof", "roof leak", "shingles", "gutter",
+ "gutters", "gutter cleaning", "flashing", "skylight", "siding", "downspout", "soffit", "fascia",
 	},
 	"locksmith": {
-		"locksmith", "lock smith", "lock", "locks", "deadbolt", "rekey", "rekeying", "lockout",
-		"key", "smart lock", "keyless", "keypad", "padlock", "door lock repair",
+ "locksmith", "lock smith", "lock", "locks", "deadbolt", "rekey", "rekeying", "lockout",
+ "key", "smart lock", "keyless", "keypad", "padlock", "door lock repair",
 	},
 	"home_inspection": {
-		"home inspection", "home inspector", "property inspection", "house inspection", "building inspection",
-		"roof inspection", "foundation inspection", "mold inspection", "radon testing", "pre-purchase inspection",
+ "home inspection", "home inspector", "property inspection", "house inspection", "building inspection",
+ "roof inspection", "foundation inspection", "mold inspection", "radon testing", "pre-purchase inspection",
 	},
 	"handyman_mounting": {
-		"handyman", "mobile handyman", "mounting", "tv mount", "tv mounting", "hang", "hanging",
-		"curtain rod", "mirror", "shelf", "drilling", "patch", "patching", "drywall repair",
-		"tile", "tiling", "grout", "caulk", "caulking", "general repair",
+ "handyman", "mobile handyman", "mounting", "tv mount", "tv mounting", "hang", "hanging",
+ "curtain rod", "mirror", "shelf", "drilling", "patch", "patching", "drywall repair",
+ "tile", "tiling", "grout", "caulk", "caulking", "general repair",
 	},
 	"carpentry_furniture": {
-		"carpentry", "carpenter", "mobile furniture repair", "furniture repair", "furniture assembly",
-		"assemble", "assembly", "cabinet", "cabinets", "desk", "table", "chair", "bed", "wardrobe",
-		"bookshelf", "shelving", "woodwork", "wood", "framing", "door", "deck", "patio", "ikea",
+ "carpentry", "carpenter", "mobile furniture repair", "furniture repair", "furniture assembly",
+ "assemble", "assembly", "cabinet", "cabinets", "desk", "table", "chair", "bed", "wardrobe",
+ "bookshelf", "shelving", "woodwork", "wood", "framing", "door", "deck", "patio", "ikea",
 	},
 	"painting": {
-		"painting", "painter", "paint", "wall", "walls", "wall painting", "interior paint",
-		"exterior paint", "primer", "stain", "staining", "drywall", "plaster", "trim", "roller",
+ "painting", "painter", "paint", "wall", "walls", "wall painting", "interior paint",
+ "exterior paint", "primer", "stain", "staining", "drywall", "plaster", "trim", "roller",
 	},
 
 	// ─── 7. CLEANING, DEBRIS & JUNK ───
 	"cleaning_sanitation": {
-		"mobile cleaning", "cleaning & sanitation", "house cleaning", "clean", "cleaner",
-		"maid", "maid service", "housekeeping", "deep house clean", "deep clean", "deep cleaning",
-		"mop", "vacuum", "sanitize", "sanitization", "carpet cleaning", "window washer",
-		"window washing", "window cleaning", "move in move out", "janitorial", "pressure wash",
+ "mobile cleaning", "cleaning & sanitation", "house cleaning", "clean", "cleaner",
+ "maid", "maid service", "housekeeping", "deep house clean", "deep clean", "deep cleaning",
+ "mop", "vacuum", "sanitize", "sanitization", "carpet cleaning", "window washer",
+ "window washing", "window cleaning", "move in move out", "janitorial", "pressure wash",
 	},
 	"debris_junk_moving": {
-		"debris removal service", "debris removal", "junk removal", "trash haul", "hauling",
-		"haul", "moving", "mover", "movers", "relocation", "loading", "unloading", "truck",
-		"heavy lifting", "furniture move", "warehouse storage",
+ "debris removal service", "debris removal", "junk removal", "trash haul", "hauling",
+ "haul", "moving", "mover", "movers", "relocation", "loading", "unloading", "truck",
+ "heavy lifting", "furniture move", "warehouse storage",
 	},
 
 	// ─── 8. OUTDOOR, LANDSCAPING & PEST CONTROL ───
 	"landscaping_lawn_tree": {
-		"mobile landscaping", "landscaping", "lawn care", "lawn", "mowing", "lawn mowing",
-		"mower", "grass", "yard", "garden", "tree service", "tree trimming", "tree removal",
-		"tree", "hedges", "mulch", "mulching", "sprinkler", "irrigation", "weed", "weeding",
-		"leaf removal", "stump grinding",
+ "mobile landscaping", "landscaping", "lawn care", "lawn", "mowing", "lawn mowing",
+ "mower", "grass", "yard", "garden", "tree service", "tree trimming", "tree removal",
+ "tree", "hedges", "mulch", "mulching", "sprinkler", "irrigation", "weed", "weeding",
+ "leaf removal", "stump grinding",
 	},
 	"pest_control": {
-		"pest control", "pest", "exterminator", "bugs", "insects", "ants", "roaches",
-		"cockroaches", "termites", "bed bugs", "rodents", "mice", "rats", "mosquitoes",
-		"wasps", "hornets", "fumigation",
+ "pest control", "pest", "exterminator", "bugs", "insects", "ants", "roaches",
+ "cockroaches", "termites", "bed bugs", "rodents", "mice", "rats", "mosquitoes",
+ "wasps", "hornets", "fumigation",
 	},
 
 	// ─── 9. APPAREL, FASHION & SHOPPING ───
 	"apparel_fashion_shopping": {
-		"dress maker", "dressmaker", "alteration", "alterations", "seamstress", "tailor",
-		"tailoring", "clothing repair", "hem", "hems", "wedding dress", "dry cleaning", "dry cleaner",
-		"fashion consultant", "wardrobe stylist", "personal shopper", "shopper", "concierge shopping",
+ "dress maker", "dressmaker", "alteration", "alterations", "seamstress", "tailor",
+ "tailoring", "clothing repair", "hem", "hems", "wedding dress", "dry cleaning", "dry cleaner",
+ "fashion consultant", "wardrobe stylist", "personal shopper", "shopper", "concierge shopping",
 	},
 
 	// ─── 10. REAL ESTATE & PROFESSIONAL ───
 	"real_estate": {
-		"realtor", "real estate agent", "real estate", "property agent", "broker",
-		"home buying", "home selling", "house listing", "apartment rental", "lease",
+ "realtor", "real estate agent", "real estate", "property agent", "broker",
+ "home buying", "home selling", "house listing", "apartment rental", "lease",
 	},
 	"professional_accounting_notary_it": {
-		"mobile notary", "notary public", "notary", "mobile accounting", "tax prep",
-		"accounting", "bookkeeping", "cpa", "mobile it support", "it support", "computer repair",
-		"wifi setup", "network setup", "tech support",
+ "mobile notary", "notary public", "notary", "mobile accounting", "tax prep",
+ "accounting", "bookkeeping", "cpa", "mobile it support", "it support", "computer repair",
+ "wifi setup", "network setup", "tech support",
 	},
 
 	// ─── 11. EDUCATION, FITNESS & DIGITAL ───
 	"education_tutoring": {
-		"tutoring", "tutor", "test prep", "sat prep", "act prep", "math tutor", "science tutor",
-		"music school", "music lessons", "piano lessons", "guitar lessons", "dance studio",
-		"dance school", "art school", "trade school", "vocational training",
+ "tutoring", "tutor", "test prep", "sat prep", "act prep", "math tutor", "science tutor",
+ "music school", "music lessons", "piano lessons", "guitar lessons", "dance studio",
+ "dance school", "art school", "trade school", "vocational training",
 	},
 	"fitness_wellness": {
-		"gym", "fitness center", "yoga studio", "yoga", "martial arts", "boxing gym",
-		"boxing", "personal trainer", "fitness coaching",
+ "gym", "fitness center", "yoga studio", "yoga", "martial arts", "boxing gym",
+ "boxing", "personal trainer", "fitness coaching",
 	},
 	"digital_remote_services": {
-		"online consulting", "consulting", "digital marketing", "social media management",
-		"graphic design", "branding", "logo design", "web development", "web design",
-		"app development", "virtual assistant", "online course creation", "e-book publishing",
-		"print on demand", "dropshipping", "ecommerce store",
+ "online consulting", "consulting", "digital marketing", "social media management",
+ "graphic design", "branding", "logo design", "web development", "web design",
+ "app development", "virtual assistant", "online course creation", "e-book publishing",
+ "print on demand", "dropshipping", "ecommerce store",
 	},
 	// ─── 12. EVENTS, ENTERTAINMENT & PHOTOGRAPHY ───
 	"events_entertainment_creative": {
-		"photography", "photographer", "wedding photography", "family portraits", "newborn photos",
-		"headshots", "videography", "videographer", "wedding film", "drone footage", "video editing",
-		"photo editing", "retouching", "graphic design", "branding", "logo design", "copywriting",
-		"event planning", "wedding planning", "party decorator", "balloon arch", "event rentals",
-		"party tent", "dj", "wedding dj", "live band", "musician", "magician", "face painter",
-		"bounce house", "bartender", "bartending", "mixologist", "cocktail bar",
+ "photography", "photographer", "wedding photography", "family portraits", "newborn photos",
+ "headshots", "videography", "videographer", "wedding film", "drone footage", "video editing",
+ "photo editing", "retouching", "graphic design", "branding", "logo design", "copywriting",
+ "event planning", "wedding planning", "party decorator", "balloon arch", "event rentals",
+ "party tent", "dj", "wedding dj", "live band", "musician", "magician", "face painter",
+ "bounce house", "bartender", "bartending", "mixologist", "cocktail bar",
 	},
 	// ─── 13. SPECIALTY BAKERY & FOOD ───
 	"bakery_specialty_food": {
-		"bakery", "baker", "birthday cake", "wedding cake", "donuts", "pastries", "artisan bread",
-		"gluten-free", "cupcakes", "ice cream cart", "dessert table", "churros", "smoothie bar",
-		"espresso bar", "boba tea", "personal chef", "meal prep", "buffet catering", "bbq catering",
+ "bakery", "baker", "birthday cake", "wedding cake", "donuts", "pastries", "artisan bread",
+ "gluten-free", "cupcakes", "ice cream cart", "dessert table", "churros", "smoothie bar",
+ "espresso bar", "boba tea", "personal chef", "meal prep", "buffet catering", "bbq catering",
 	},
 }
 
@@ -887,15 +887,15 @@ func generateMatchReason(p entity.Profile, matchPct int, queryConcepts []string,
 	// Add sentiment badge prefix if strongly present
 	switch sentiment.PrimarySentiment {
 	case "URGENT":
-		sb.WriteString("⚡ Emergency Response • ")
+		sb.WriteString(" Emergency Response • ")
 	case "QUALITY":
-		sb.WriteString("⭐ Master Pro • ")
+		sb.WriteString(" Master Pro • ")
 	case "TRUST":
-		sb.WriteString("🛡️ Verified & Trusted • ")
+		sb.WriteString(" Verified & Trusted • ")
 	case "BUDGET":
-		sb.WriteString("💰 High Value • ")
+		sb.WriteString(" High Value • ")
 	case "DISTRESS":
-		sb.WriteString("🤝 Reliable Distress Relief • ")
+		sb.WriteString(" Reliable Distress Relief • ")
 	}
 
 	sb.WriteString(svcName)

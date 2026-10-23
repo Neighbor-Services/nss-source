@@ -34,9 +34,9 @@ func TestProleadClientStreaming(t *testing.T) {
 
 	cfg := ProleadConfig{
 		ServerURL:     server.URL,
-		APIKey:        "test_api_key_123",
-		Service:       "ns-test",
-		Environment:   "testing",
+		APIKey: "test_api_key_123",
+		Service: "ns-test",
+		Environment: "testing",
 		BatchSize:     2,
 		FlushInterval: 50 * time.Millisecond,
 		Enabled:       true,
@@ -47,11 +47,11 @@ func TestProleadClientStreaming(t *testing.T) {
 
 	// Send logs with PII
 	client.Log(&LogPayload{
-		Level:   "INFO",
+		Level: "INFO",
 		Message: "User contact@neighbor.com registered",
 	})
 	client.Log(&LogPayload{
-		Level:   "ERROR",
+		Level: "ERROR",
 		Message: "Failed payment for 123-456-7890",
 	})
 
@@ -83,9 +83,9 @@ func TestMultiHandlerWithSlog(t *testing.T) {
 
 	l := InitGlobalLogger("debug", ProleadConfig{
 		ServerURL:     server.URL,
-		APIKey:        "key_multi_test",
-		Service:       "test-service",
-		Environment:   "test",
+		APIKey: "key_multi_test",
+		Service: "test-service",
+		Environment: "test",
 		BatchSize:     1,
 		FlushInterval: 20 * time.Millisecond,
 		Enabled:       true,

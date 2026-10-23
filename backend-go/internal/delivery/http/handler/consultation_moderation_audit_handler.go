@@ -448,9 +448,9 @@ func (h *ModerationHandler) InitiateBackgroundCheck(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"id":             check.ID.String(),
-		"invitation_url": check.InvitationURL,
-		"status":         check.Status,
+ "id":             check.ID.String(),
+ "invitation_url": check.InvitationURL,
+ "status":         check.Status,
 	})
 }
 
@@ -486,8 +486,8 @@ func (h *ModerationHandler) GetMyBackgroundCheck(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"has_check":        true,
-		"background_check": check,
+ "has_check":        true,
+ "background_check": check,
 	})
 }
 
@@ -567,13 +567,13 @@ func (h *AuditHandler) GetLogs(c *gin.Context) {
 		_ = h.auditUC.LogAction(
 			c.Request.Context(),
 			targetUUID,
-			"LOGIN",
-			"AUTH",
-			"SESSION",
+ "LOGIN",
+ "AUTH",
+ "SESSION",
 			clientIP,
 			map[string]interface{}{
-				"status": "active_session",
-				"info":   "Account session verified and activity logging active",
+ "status": "active_session",
+ "info": "Account session verified and activity logging active",
 			},
 		)
 		logs, _ = h.auditUC.GetLogs(c.Request.Context(), targetUUID, limit, offset)

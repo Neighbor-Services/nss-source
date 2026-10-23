@@ -80,7 +80,7 @@ func (c *fcmClient) buildMessagePayload(title, body string, data map[string]stri
 		Priority: "high",
 		Notification: &messaging.AndroidNotification{
 			ChannelID: "high_importance_channel",
-			Sound:     "default",
+			Sound: "default",
 			Priority:  messaging.PriorityHigh,
 		},
 	}
@@ -88,7 +88,7 @@ func (c *fcmClient) buildMessagePayload(title, body string, data map[string]stri
 	apnsConfig := &messaging.APNSConfig{
 		Payload: &messaging.APNSPayload{
 			Aps: &messaging.Aps{
-				Sound:            "default",
+				Sound: "default",
 				ContentAvailable: true,
 			},
 		},

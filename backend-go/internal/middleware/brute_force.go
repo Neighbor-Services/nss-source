@@ -287,11 +287,11 @@ func RespondBruteForceLocked(c *gin.Context, remaining time.Duration, reason str
 
 	c.Header("Retry-After", fmt.Sprintf("%d", seconds))
 	response.JSON(c, http.StatusTooManyRequests, gin.H{
-		"code":                "TOO_MANY_FAILED_ATTEMPTS",
-		"error":               "Too Many Requests",
-		"message":             fmt.Sprintf("Too many failed login attempts. To protect system security, access is temporarily locked for %d minutes. Please try again later.", minutes),
-		"retry_after_seconds": seconds,
-		"lock_reason":         reason,
+ "code": "TOO_MANY_FAILED_ATTEMPTS",
+ "error": "Too Many Requests",
+ "message":             fmt.Sprintf("Too many failed login attempts. To protect system security, access is temporarily locked for %d minutes. Please try again later.", minutes),
+ "retry_after_seconds": seconds,
+ "lock_reason":         reason,
 	})
 	c.Abort()
 }
@@ -305,7 +305,7 @@ func LogSecurityBruteForce(c *gin.Context, clientIP, email, details string) {
 		traceID, _ := c.Get("trace_id")
 		tID, _ := traceID.(string)
 		client.Log(&logger.LogPayload{
-			Level:   "WARN",
+			Level: "WARN",
 			Message: msg,
 			TraceID: tID,
 			HTTP: &logger.HTTPMetadata{
@@ -316,10 +316,10 @@ func LogSecurityBruteForce(c *gin.Context, clientIP, email, details string) {
 				UserAgent:  c.Request.UserAgent(),
 			},
 			Context: map[string]interface{}{
-				"security_alert": "login_brute_force_lockout",
-				"client_ip":      clientIP,
-				"targeted_email": logger.MaskPII(email),
-				"details":        details,
+ "security_alert": "login_brute_force_lockout",
+ "client_ip":      clientIP,
+ "targeted_email": logger.MaskPII(email),
+ "details":        details,
 			},
 		})
 	}

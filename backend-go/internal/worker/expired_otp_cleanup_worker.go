@@ -27,7 +27,7 @@ func NewExpiredOTPCleanupWorker(db *gorm.DB, cfg *config.Config) *ExpiredOTPClea
 }
 
 func (w *ExpiredOTPCleanupWorker) Start() {
-	slog.Info("🧹 Starting Expired OTP Cleanup Background Worker...")
+	slog.Info(" Starting Expired OTP Cleanup Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
@@ -38,7 +38,7 @@ func (w *ExpiredOTPCleanupWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				slog.Info("🧹 Stopping Expired OTP Cleanup Worker...")
+				slog.Info(" Stopping Expired OTP Cleanup Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("ExpiredOTPCleanupWorker.Tick", w.cleanupExpiredOTPs)
@@ -66,8 +66,8 @@ func (w *ExpiredOTPCleanupWorker) cleanupExpiredOTPs() {
 	userRes := w.db.Model(&entity.User{}).
 		Where("otp_expiry IS NOT NULL AND otp_expiry < ?", now).
 		Updates(map[string]interface{}{
-			"otp_code":   "",
-			"otp_expiry": nil,
+ "otp_code": "",
+ "otp_expiry": nil,
 		})
 	if userRes.Error != nil {
 		slog.Error("Error clearing user expired OTPs", slog.Any("error", userRes.Error))

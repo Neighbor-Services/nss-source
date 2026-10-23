@@ -2,16 +2,19 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"backend-go/internal/config"
 	"backend-go/internal/delivery/http/handler"
 	"backend-go/internal/domain/repository"
 	"backend-go/internal/middleware"
+	"backend-go/pkg/cache"
 	"github.com/gin-gonic/gin"
 )
 
 type RouterDependencies struct {
 	Config          *config.Config
+	Cache           cache.Cache
 	UserRepo        repository.UserRepository
 	AdminRepo       repository.AdminRepository
 	AuditRepo       repository.AuditLogRepository
@@ -39,13 +42,14 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS(deps.Config))
 	r.Use(middleware.Anti404Scanner(nil)) // Automatically blocks scanner IPs hitting 10+ 404s in 5m for 7 days
+	r.Use(middleware.Idempotency(deps.Cache, 24*time.Hour))
 
 	// Uniform 404 response for non-existent routes
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
-			"code":    "NOT_FOUND",
-			"error":   "Not Found",
-			"message": "The requested endpoint does not exist",
+ "code": "NOT_FOUND",
+ "error": "Not Found",
+ "message": "The requested endpoint does not exist",
 		})
 	})
 
@@ -255,8 +259,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			// Requests ViewSet
 			srv.GET("/requests/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequests)
 			srv.GET("/requests", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequests)
-			srv.POST("/requests/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CreateRequest)
-			srv.POST("/requests", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CreateRequest)
+			srv.POST("/requests/", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.SensitiveActionRateLimit(), deps.ServiceHandler.CreateRequest)
+			srv.POST("/requests", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.SensitiveActionRateLimit(), deps.ServiceHandler.CreateRequest)
 			srv.GET("/requests/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequestByID)
 			srv.GET("/requests/:id", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetRequestByID)
 			srv.PATCH("/requests/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UpdateRequest)
@@ -280,8 +284,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			srv.DELETE("/proposals/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.DeleteProposal)
 
 			// Emergency Flash Dispatch
-			srv.POST("/flash-dispatch/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CreateFlashDispatch)
-			srv.POST("/flash-dispatch", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.CreateFlashDispatch)
+			srv.POST("/flash-dispatch/", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.SensitiveActionRateLimit(), deps.ServiceHandler.CreateFlashDispatch)
+			srv.POST("/flash-dispatch", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.SensitiveActionRateLimit(), deps.ServiceHandler.CreateFlashDispatch)
 			srv.GET("/flash-dispatch/:id/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetFlashDispatch)
 			srv.GET("/flash-dispatch/:id", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetFlashDispatch)
 			srv.POST("/flash-dispatch/:id/accept/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.AcceptFlashDispatch)
@@ -321,8 +325,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			// Appointments
 			inter.GET("/appointments", deps.InterHandler.GetAppointments)
 			inter.GET("/appointments/", deps.InterHandler.GetAppointments)
-			inter.POST("/appointments", deps.InterHandler.CreateAppointment)
-			inter.POST("/appointments/", deps.InterHandler.CreateAppointment)
+			inter.POST("/appointments", middleware.SensitiveActionRateLimit(), deps.InterHandler.CreateAppointment)
+			inter.POST("/appointments/", middleware.SensitiveActionRateLimit(), deps.InterHandler.CreateAppointment)
 			inter.GET("/appointments/:id", deps.InterHandler.GetAppointmentByID)
 			inter.GET("/appointments/:id/", deps.InterHandler.GetAppointmentByID)
 			inter.PUT("/appointments/:id", deps.InterHandler.UpdateAppointment)
@@ -405,7 +409,7 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			pay.GET("/wallet/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetWallet)
 			pay.GET("/wallet/my_wallet/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.MyWallet)
 			pay.GET("/wallet/transactions/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.Transactions)
-			pay.POST("/wallet/request_payout/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.RequestPayout)
+			pay.POST("/wallet/request_payout/", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.PaymentRateLimit(), deps.PaymentHandler.RequestPayout)
 			pay.POST("/wallet/onboard/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.Onboard)
 			pay.GET("/wallet/onboarding-status/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.OnboardingStatus)
 			pay.GET("/wallet/stripe-dashboard/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.StripeDashboard)
@@ -423,12 +427,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			pay.POST("/ephemeral/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.CreateEphemeralKey)
 			pay.PATCH("/paymentmethod/update/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.UpdatePaymentMethod)
 			pay.POST("/account/connect/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.AccountConnect)
-			pay.POST("/transfer/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.Transfer)
-			pay.POST("/fund-appointment/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.FundAppointment)
+			pay.POST("/transfer/", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.PaymentRateLimit(), deps.PaymentHandler.Transfer)
+			pay.POST("/fund-appointment/", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.PaymentRateLimit(), deps.PaymentHandler.FundAppointment)
 			pay.POST("/fund-background-check/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.FundBackgroundCheck)
 			pay.POST("/payment-sheet/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.PaymentSheet)
-			pay.POST("/tip/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.TipProvider)
-			pay.POST("/tip", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.TipProvider)
+			pay.POST("/tip/", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.PaymentRateLimit(), deps.PaymentHandler.TipProvider)
+			pay.POST("/tip", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.PaymentRateLimit(), deps.PaymentHandler.TipProvider)
 
 			// Webhooks
 			pay.POST("/webhook/", deps.PaymentHandler.StripeWebhook)

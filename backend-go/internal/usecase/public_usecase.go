@@ -49,16 +49,16 @@ func (u *publicUseCase) GetCMSContent(ctx context.Context) (map[string]interface
 	catalogServices, _ := u.catalogRepo.List(ctx, "", "")
 
 	return map[string]interface{}{
-		"hero":             hero,
-		"features":         features,
-		"testimonials":     testimonials,
-		"faqs":             faqs,
-		"steps":            steps,
-		"stats":            stats,
-		"about":            about,
-		"settings":         settings,
-		"categories":       categories,
-		"catalog_services": catalogServices,
+ "hero":             hero,
+ "features":         features,
+ "testimonials":     testimonials,
+ "faqs":             faqs,
+ "steps":            steps,
+ "stats":            stats,
+ "about":            about,
+ "settings":         settings,
+ "categories":       categories,
+ "catalog_services": catalogServices,
 	}, nil
 }
 
@@ -90,9 +90,9 @@ func (u *publicUseCase) SubmitContactMessage(ctx context.Context, msg *entity.Co
 				snippet = snippet[:197] + "..."
 			}
 			if err := email.SendContactConfirmationEmail(mailCfg, toEmail, senderName, inquiryType, snippet); err != nil {
-				log.Printf("⚠️ Failed to send contact confirmation email to %s: %v", toEmail, err)
+				log.Printf(" Failed to send contact confirmation email to %s: %v", toEmail, err)
 			} else {
-				log.Printf("📧 Automated contact confirmation email sent to %s", toEmail)
+				log.Printf(" Automated contact confirmation email sent to %s", toEmail)
 			}
 		}(msg.Email, msg.FirstName, msg.InquiryType, msg.Message)
 	}

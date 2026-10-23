@@ -107,14 +107,14 @@ func (w *AppointmentNoShowWorker) processNoShows() {
 				ID:               uuid.New(),
 				UserID:           apt.SeekerID,
 				NotificationType: "APPOINTMENT_NO_SHOW",
-				Title:            "Appointment Status Check",
+				Title: "Appointment Status Check",
 				Message:          msg,
 				Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
 				CreatedAt:        now,
 			})
 			w.sendPush(apt.SeekerID, "Appointment Follow-up", msg, map[string]string{
-				"notification_type": "appointment_no_show",
-				"appointment_id":    apt.ID.String(),
+ "notification_type": "appointment_no_show",
+ "appointment_id":    apt.ID.String(),
 			})
 			seekerName := apt.Seeker.Email
 			if apt.Seeker.Profile != nil && apt.Seeker.Profile.FirstName != "" {
@@ -131,14 +131,14 @@ func (w *AppointmentNoShowWorker) processNoShows() {
 				ID:               uuid.New(),
 				UserID:           apt.ProviderID,
 				NotificationType: "APPOINTMENT_NO_SHOW",
-				Title:            "Appointment Status Check",
+				Title: "Appointment Status Check",
 				Message:          msg,
 				Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
 				CreatedAt:        now,
 			})
 			w.sendPush(apt.ProviderID, "Appointment Follow-up", msg, map[string]string{
-				"notification_type": "appointment_no_show",
-				"appointment_id":    apt.ID.String(),
+ "notification_type": "appointment_no_show",
+ "appointment_id":    apt.ID.String(),
 			})
 			providerName := apt.Provider.Email
 			if apt.Provider.Profile != nil && apt.Provider.Profile.FirstName != "" {

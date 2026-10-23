@@ -42,7 +42,7 @@ func NewReviewReminderWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Clie
 }
 
 func (w *ReviewReminderWorker) Start() {
-	slog.Info("⭐ Starting Review Reminder Background Worker...")
+	slog.Info(" Starting Review Reminder Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(30 * time.Minute)
@@ -53,7 +53,7 @@ func (w *ReviewReminderWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				slog.Info("⭐ Stopping Review Reminder Worker...")
+				slog.Info(" Stopping Review Reminder Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("ReviewReminderWorker.Tick", w.processReviewReminders)
@@ -121,17 +121,17 @@ func (w *ReviewReminderWorker) processReviewReminders() {
 			Title:            pushTitle,
 			Message:          pushMsg,
 			Data: entity.JSONMap{
-				"appointment_id": apt.ID.String(),
-				"provider_id":    apt.ProviderID.String(),
+ "appointment_id": apt.ID.String(),
+ "provider_id":    apt.ProviderID.String(),
 			},
 			CreatedAt: now,
 		})
 
 		// 2. FCM Push
 		w.sendPush(apt.SeekerID, pushTitle, pushMsg, map[string]string{
-			"notification_type": "review_reminder",
-			"appointment_id":    apt.ID.String(),
-			"provider_id":       apt.ProviderID.String(),
+ "notification_type": "review_reminder",
+ "appointment_id":    apt.ID.String(),
+ "provider_id":       apt.ProviderID.String(),
 		})
 
 		// 3. Email

@@ -44,8 +44,8 @@ func TestSeedServicesDataIntegrity(t *testing.T) {
 func TestSeedServicesExecutionOnDB(t *testing.T) {
 	cfg := &config.Config{
 		DBDriver: "sqlite",
-		DBDSN:    ":memory:",
-		Env:      "testing",
+		DBDSN: ":memory:",
+		Env: "testing",
 	}
 
 	db, err := database.Connect(cfg)

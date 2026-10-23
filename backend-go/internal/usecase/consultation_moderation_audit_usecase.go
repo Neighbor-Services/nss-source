@@ -137,7 +137,7 @@ func (u *moderationUseCase) SubmitReport(ctx context.Context, reporterID uuid.UU
 		Reason:         reason,
 		Evidence:       primaryEvidence,
 		EvidenceList:   evidence,
-		Status:         "PENDING",
+		Status: "PENDING",
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -222,9 +222,9 @@ func (u *moderationUseCase) GetBackgroundCheckConfig(ctx context.Context) (map[s
 	}
 	skipVerification := env == "staging" || env == "stage" || env == "dev" || env == "development"
 	return map[string]interface{}{
-		"payment_mode":      mode,
-		"env":               env,
-		"skip_verification": skipVerification,
+ "payment_mode":      mode,
+ "env":               env,
+ "skip_verification": skipVerification,
 	}, nil
 }
 
@@ -514,11 +514,11 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 	packageName := u.resolvePackageForCountry(country)
 
 	candidatePayload := map[string]interface{}{
-		"first_name": firstName,
-		"last_name":  lastName,
-		"email":      user.Email,
-		"custom_id":  user.ID.String(),
-		"country":    country,
+ "first_name": firstName,
+ "last_name":  lastName,
+ "email":      user.Email,
+ "custom_id":  user.ID.String(),
+ "country":    country,
 	}
 	if profile.Phone != "" {
 		candidatePayload["phone"] = profile.Phone
@@ -544,12 +544,12 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 		}
 
 		invitationPayload := map[string]interface{}{
-			"candidate_id": candidateID,
-			"package":      packageName,
-			"work_locations": []map[string]string{
+ "candidate_id": candidateID,
+ "package":      packageName,
+ "work_locations": []map[string]string{
 				{
-					"country": country,
-					"state":   state,
+ "country": country,
+ "state":   state,
 				},
 			},
 		}
@@ -599,7 +599,7 @@ func (u *moderationUseCase) InitiateBackgroundCheck(ctx context.Context, userID 
 		CheckrInvitationID: invitationID,
 		InvitationURL:      invitationURL,
 		Package:            packageName,
-		Status:             "pending",
+		Status: "pending",
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}
@@ -680,18 +680,21 @@ func (u *moderationUseCase) applyReportToBackgroundCheck(ctx context.Context, bc
 			profile.IsIdentityVerified = true
 			_ = u.profileRepo.Update(ctx, profile)
 			if u.notifUC != nil {
-				_ = u.notifUC.SendPushNotification(ctx, bc.ProviderID, "Background Check Verified 🎉", "Congratulations! Your Checkr screening has passed. Your provider profile is now active.", map[string]string{
-					"type":     "BACKGROUND_CHECK_CLEARED",
-					"check_id": bc.ID.String(),
+				_ = u.notifUC.SendPushNotification(ctx, bc.ProviderID, "Background Check Verified", "Congratulations! Your Checkr screening has passed. Your provider profile is now active.", map[string]string{
+ "type": "BACKGROUND_CHECK_CLEARED",
+ "check_id": bc.ID.String(),
 				})
 			}
 		case "consider", "suspended", "canceled":
-			profile.IsIdentityVerified = false
-			_ = u.profileRepo.Update(ctx, profile)
+			// Monotonic forward safety (Slide 9): A late or duplicate webhook cannot demote an already cleared profile
+			if !profile.IsIdentityVerified {
+				profile.IsIdentityVerified = false
+				_ = u.profileRepo.Update(ctx, profile)
+			}
 			if u.notifUC != nil {
 				_ = u.notifUC.SendPushNotification(ctx, bc.ProviderID, "Background Check Update", "Your background screening status was updated. Please check your email for details from Checkr.", map[string]string{
-					"type":   "BACKGROUND_CHECK_UPDATED",
-					"status": bc.Status,
+ "type": "BACKGROUND_CHECK_UPDATED",
+ "status": bc.Status,
 				})
 			}
 		}

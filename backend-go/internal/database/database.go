@@ -51,14 +51,22 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 	// Configure database connection pooling to prevent connection leaks and starvation
 	if sqlDB, err := db.DB(); err == nil {
-		sqlDB.SetMaxOpenConns(50)
-		sqlDB.SetMaxIdleConns(25)
+		maxOpen := 10
+		if cfg != nil && cfg.DBMaxOpenConns > 0 {
+			maxOpen = cfg.DBMaxOpenConns
+		}
+		maxIdle := 5
+		if cfg != nil && cfg.DBMaxIdleConns > 0 {
+			maxIdle = cfg.DBMaxIdleConns
+		}
+		sqlDB.SetMaxOpenConns(maxOpen)
+		sqlDB.SetMaxIdleConns(maxIdle)
 		sqlDB.SetConnMaxLifetime(15 * time.Minute)
 		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
-		log.Printf("✓ Database connection pool configured (MaxOpen: 50, MaxIdle: 25)")
+		log.Printf(" Database connection pool configured (MaxOpen: %d, MaxIdle: %d)", maxOpen, maxIdle)
 	}
 
-	log.Printf("✓ Database connected successfully (%s)", cfg.DBDriver)
+	log.Printf(" Database connected successfully (%s)", cfg.DBDriver)
 
 	return db, nil
 }
@@ -153,7 +161,7 @@ func AutoMigrate(db *gorm.DB) error {
 
 	for _, m := range models {
 		if err := migrateDB.AutoMigrate(m); err != nil {
-			log.Printf("⚠️ AutoMigrate model (%T) note: %v", m, err)
+			log.Printf(" AutoMigrate model (%T) note: %v", m, err)
 		}
 	}
 
@@ -219,7 +227,7 @@ func ensureExplicitTables(db *gorm.DB) {
 	}
 	for _, ddl := range ddls {
 		if err := db.Exec(ddl).Error; err != nil {
-			log.Printf("⚠️ DDL table creation warning: %v", err)
+			log.Printf(" DDL table creation warning: %v", err)
 		}
 	}
 }
@@ -310,51 +318,53 @@ func createCompositeIndexes(db *gorm.DB) {
 
 	indexes := []string{
 		// Geospatial & Profile query performance
-		"CREATE INDEX IF NOT EXISTS idx_profile_lat_lng ON accounts_profile (latitude, longitude)",
-		"CREATE INDEX IF NOT EXISTS idx_profile_user_type_sub ON accounts_profile (user_type, subscription_tier)",
-		"CREATE INDEX IF NOT EXISTS idx_profile_user_id ON accounts_profile (user_id)",
-		"CREATE INDEX IF NOT EXISTS idx_profile_city ON accounts_profile (city)",
-		"CREATE INDEX IF NOT EXISTS idx_profile_rating_score ON accounts_profile (average_rating DESC, neighbor_score DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_profile_lat_lng ON accounts_profile (latitude, longitude)",
+ "CREATE INDEX IF NOT EXISTS idx_profile_user_type_sub ON accounts_profile (user_type, subscription_tier)",
+ "CREATE INDEX IF NOT EXISTS idx_profile_user_id ON accounts_profile (user_id)",
+ "CREATE INDEX IF NOT EXISTS idx_profile_city ON accounts_profile (city)",
+ "CREATE INDEX IF NOT EXISTS idx_profile_rating_score ON accounts_profile (average_rating DESC, neighbor_score DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_profile_popular ON accounts_profile (neighbor_score DESC, average_rating DESC, total_reviews DESC)",
 
 		// Service requests & dispatch
-		"CREATE INDEX IF NOT EXISTS idx_servicerequest_lat_lng ON services_servicerequest (latitude, longitude)",
-		"CREATE INDEX IF NOT EXISTS idx_servicerequest_status_created ON services_servicerequest (status, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_servicerequest_user_status ON services_servicerequest (user_id, status)",
-		"CREATE INDEX IF NOT EXISTS idx_servicerequest_target_provider ON services_servicerequest (target_provider_id, status)",
-		"CREATE INDEX IF NOT EXISTS idx_servicerequest_catalog_status ON services_servicerequest (catalog_service_id, status)",
-		"CREATE INDEX IF NOT EXISTS idx_proposals_request_provider ON services_proposal (request_id, provider_id)",
-		"CREATE INDEX IF NOT EXISTS idx_proposals_provider_created ON services_proposal (provider_id, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_servicerequest_lat_lng ON services_servicerequest (latitude, longitude)",
+ "CREATE INDEX IF NOT EXISTS idx_servicerequest_status_created ON services_servicerequest (status, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_servicerequest_user_status ON services_servicerequest (user_id, status)",
+ "CREATE INDEX IF NOT EXISTS idx_servicerequest_target_provider ON services_servicerequest (target_provider_id, status)",
+ "CREATE INDEX IF NOT EXISTS idx_servicerequest_catalog_status ON services_servicerequest (catalog_service_id, status)",
+ "CREATE INDEX IF NOT EXISTS idx_proposals_request_provider ON services_proposal (request_id, provider_id)",
+ "CREATE INDEX IF NOT EXISTS idx_proposals_provider_created ON services_proposal (provider_id, created_at DESC)",
 
 		// Appointments & Disputes
-		"CREATE INDEX IF NOT EXISTS idx_appointment_status_date ON interactions_appointment (status, appointment_date)",
-		"CREATE INDEX IF NOT EXISTS idx_appointment_provider_status ON interactions_appointment (provider_id, status, appointment_date)",
-		"CREATE INDEX IF NOT EXISTS idx_appointment_seeker_status ON interactions_appointment (seeker_id, status, appointment_date)",
-		"CREATE INDEX IF NOT EXISTS idx_dispute_status_created ON interactions_dispute (status, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_dispute_appointment_id ON interactions_dispute (appointment_id)",
-		"CREATE INDEX IF NOT EXISTS idx_dispute_raised_by ON interactions_dispute (raised_by_id)",
+ "CREATE INDEX IF NOT EXISTS idx_appointment_status_date ON interactions_appointment (status, appointment_date)",
+ "CREATE INDEX IF NOT EXISTS idx_appointment_provider_status ON interactions_appointment (provider_id, status, appointment_date)",
+ "CREATE INDEX IF NOT EXISTS idx_appointment_seeker_status ON interactions_appointment (seeker_id, status, appointment_date)",
+ "CREATE INDEX IF NOT EXISTS idx_dispute_status_created ON interactions_dispute (status, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_dispute_sla_deadline ON interactions_dispute (sla_deadline, status)",
+ "CREATE INDEX IF NOT EXISTS idx_dispute_appointment_id ON interactions_dispute (appointment_id)",
+ "CREATE INDEX IF NOT EXISTS idx_dispute_raised_by ON interactions_dispute (raised_by_id)",
 
 		// Chat & Messaging
-		"CREATE INDEX IF NOT EXISTS idx_chat_message_conv_created ON chat_message (conversation_id, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_conversation_participants (user_id, conversation_id)",
+ "CREATE INDEX IF NOT EXISTS idx_chat_message_conv_created ON chat_message (conversation_id, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_conversation_participants (user_id, conversation_id)",
 
 		// Notifications & Tokens
-		"CREATE INDEX IF NOT EXISTS idx_notification_user_unread ON notifications_notification (user_id, is_read, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_device_token_user_active ON notifications_devicetoken (user_id, is_active)",
+ "CREATE INDEX IF NOT EXISTS idx_notification_user_unread ON notifications_notification (user_id, is_read, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_device_token_user_active ON notifications_devicetoken (user_id, is_active)",
 
 		// Wallets, Payouts & Subscriptions
-		"CREATE INDEX IF NOT EXISTS idx_wallettx_wallet_created ON payments_wallettransaction (wallet_id, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_payoutrequest_status_created ON payments_payoutrequest (status, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_subscription_user_active ON payments_subscription (user_id, is_active)",
+ "CREATE INDEX IF NOT EXISTS idx_wallettx_wallet_created ON payments_wallettransaction (wallet_id, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_payoutrequest_status_created ON payments_payoutrequest (status, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_subscription_user_active ON payments_subscription (user_id, is_active)",
 
 		// Auth & AI Search
-		"CREATE INDEX IF NOT EXISTS idx_otp_email_created ON accounts_otpverification (email, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_status_created ON services_flashdispatch (status, created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_seeker ON services_flashdispatch (seeker_id)",
-		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_trade ON services_flashdispatch (trade_concept)",
-		"CREATE INDEX IF NOT EXISTS idx_flashdispatch_expires ON services_flashdispatch (expires_at)",
-		"CREATE INDEX IF NOT EXISTS idx_catknowledge_trade ON services_catalog_knowledge_index (trade_concept)",
-		"CREATE INDEX IF NOT EXISTS idx_catknowledge_keyword ON services_catalog_knowledge_index (keyword)",
-		"CREATE INDEX IF NOT EXISTS idx_aisearchlog_created ON services_ai_search_log (created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_otp_email_created ON accounts_otpverification (email, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_flashdispatch_status_created ON services_flashdispatch (status, created_at DESC)",
+ "CREATE INDEX IF NOT EXISTS idx_flashdispatch_seeker ON services_flashdispatch (seeker_id)",
+ "CREATE INDEX IF NOT EXISTS idx_flashdispatch_trade ON services_flashdispatch (trade_concept)",
+ "CREATE INDEX IF NOT EXISTS idx_flashdispatch_expires ON services_flashdispatch (expires_at)",
+ "CREATE INDEX IF NOT EXISTS idx_catknowledge_trade ON services_catalog_knowledge_index (trade_concept)",
+ "CREATE INDEX IF NOT EXISTS idx_catknowledge_keyword ON services_catalog_knowledge_index (keyword)",
+ "CREATE INDEX IF NOT EXISTS idx_aisearchlog_created ON services_ai_search_log (created_at DESC)",
 	}
 	for _, idx := range indexes {
 		_ = db.Exec(idx).Error
@@ -375,39 +385,39 @@ func seedDefaultCategoriesAndServices(db *gorm.DB) {
 		Services    []string
 	}{
 		{
-			Name:        "Home Cleaning",
+			Name: "Home Cleaning",
 			Description: "Professional residential and commercial cleaning services",
-			Image:       "spray-can",
+			Image: "spray-can",
 			Services:    []string{"Deep House Cleaning", "Standard Cleaning", "Move-In / Move-Out Cleaning", "Carpet Cleaning", "Window Cleaning"},
 		},
 		{
-			Name:        "Plumbing",
+			Name: "Plumbing",
 			Description: "Licensed plumbing repair, installation, and maintenance",
-			Image:       "wrench",
+			Image: "wrench",
 			Services:    []string{"Pipe Leak Repair", "Drain Unclogging", "Water Heater Installation", "Faucet & Toilet Repair", "Garbage Disposal Fix"},
 		},
 		{
-			Name:        "Electrical",
+			Name: "Electrical",
 			Description: "Certified electrical diagnostics, wiring, and fixtures",
-			Image:       "bolt",
+			Image: "bolt",
 			Services:    []string{"Lighting & Fixture Installation", "Outlet & Switch Repair", "Circuit Breaker Troubleshooting", "Ceiling Fan Installation", "EV Charger Setup"},
 		},
 		{
-			Name:        "Carpentry & Handyman",
+			Name: "Carpentry & Handyman",
 			Description: "General home repair, custom carpentry, and assembly",
-			Image:       "hammer",
+			Image: "hammer",
 			Services:    []string{"Furniture Assembly", "Drywall Repair & Patching", "Door & Lock Installation", "Custom Shelving", "Deck & Fence Repair"},
 		},
 		{
-			Name:        "Lawn & Garden",
+			Name: "Lawn & Garden",
 			Description: "Landscaping, lawn mowing, and garden care",
-			Image:       "leaf",
+			Image: "leaf",
 			Services:    []string{"Lawn Mowing & Edging", "Hedge Trimming", "Garden Weeding & Planting", "Tree Pruning", "Irrigation Sprinkler Repair"},
 		},
 		{
-			Name:        "Painting",
+			Name: "Painting",
 			Description: "Interior and exterior painting, staining, and finishing",
-			Image:       "paintbrush",
+			Image: "paintbrush",
 			Services:    []string{"Interior Room Painting", "Exterior House Painting", "Cabinet Refinishing", "Deck Staining", "Wallpaper Removal"},
 		},
 	}
@@ -447,90 +457,90 @@ func seedDefaultSubscriptionPlans(db *gorm.DB) {
 	defaultPlans := []entity.SubscriptionPlan{
 		{
 			ID:                 uuid.New(),
-			Name:               "Silver Monthly",
-			Tier:               "SILVER",
-			Interval:           "month",
-			Description:        "Basic provider tier with essential listing and direct client messaging.",
+			Name: "Silver Monthly",
+			Tier: "SILVER",
+			Interval: "month",
+			Description: "Basic provider tier with essential listing and direct client messaging.",
 			Price:              19.99,
-			Currency:           "USD",
+			Currency: "USD",
 			Features:           entity.JSONSlice{"Standard Profile Placement", "Direct Client Messaging", "Up to 1 Catalog Service"},
-			AppleProductID:     "silver_monthly",
-			GoogleProductID:    "silver_monthly",
+			AppleProductID: "silver_monthly",
+			GoogleProductID: "silver_monthly",
 			MaxCatalogServices: 1,
 			IsActive:           true,
 			DisplayOrder:       1,
 		},
 		{
 			ID:                 uuid.New(),
-			Name:               "Gold Monthly",
-			Tier:               "GOLD",
-			Interval:           "month",
-			Description:        "Featured badge, top search placement, and multiple service catalog packages.",
+			Name: "Gold Monthly",
+			Tier: "GOLD",
+			Interval: "month",
+			Description: "Featured badge, top search placement, and multiple service catalog packages.",
 			Price:              38.89,
-			Currency:           "USD",
+			Currency: "USD",
 			Features:           entity.JSONSlice{"Featured Provider Badge", "Priority Local Search Placement", "Up to 3 Catalog Services", "Instant Booking Acceptance"},
-			AppleProductID:     "gold_monthly",
-			GoogleProductID:    "gold_monthly",
+			AppleProductID: "gold_monthly",
+			GoogleProductID: "gold_monthly",
 			MaxCatalogServices: 3,
 			IsActive:           true,
 			DisplayOrder:       2,
 		},
 		{
 			ID:                 uuid.New(),
-			Name:               "Platinum Monthly",
-			Tier:               "PLATINUM",
-			Interval:           "month",
-			Description:        "Unlimited catalog services, dedicated concierge support, and maximum visibility.",
+			Name: "Platinum Monthly",
+			Tier: "PLATINUM",
+			Interval: "month",
+			Description: "Unlimited catalog services, dedicated concierge support, and maximum visibility.",
 			Price:              49.99,
-			Currency:           "USD",
+			Currency: "USD",
 			Features:           entity.JSONSlice{"Elite Verified Badge", "Top-Tier Homepage Spotlight", "Up to 5 Catalog Services", "Dedicated Concierge Support", "Advanced Analytics"},
-			AppleProductID:     "platinum_monthly",
-			GoogleProductID:    "platinum_monthly",
+			AppleProductID: "platinum_monthly",
+			GoogleProductID: "platinum_monthly",
 			MaxCatalogServices: 5,
 			IsActive:           true,
 			DisplayOrder:       3,
 		},
 		{
 			ID:                 uuid.New(),
-			Name:               "Silver Yearly",
-			Tier:               "SILVER",
-			Interval:           "year",
-			Description:        "Annual basic provider plan with two months free.",
+			Name: "Silver Yearly",
+			Tier: "SILVER",
+			Interval: "year",
+			Description: "Annual basic provider plan with two months free.",
 			Price:              199.99,
-			Currency:           "USD",
+			Currency: "USD",
 			Features:           entity.JSONSlice{"Standard Profile Placement", "Direct Client Messaging", "Up to 1 Catalog Service", "Save 16% Annually"},
-			AppleProductID:     "silver_yearly",
-			GoogleProductID:    "silver_yearly",
+			AppleProductID: "silver_yearly",
+			GoogleProductID: "silver_yearly",
 			MaxCatalogServices: 1,
 			IsActive:           true,
 			DisplayOrder:       4,
 		},
 		{
 			ID:                 uuid.New(),
-			Name:               "Gold Yearly",
-			Tier:               "GOLD",
-			Interval:           "year",
-			Description:        "Annual Gold membership with priority local search and featured badge.",
+			Name: "Gold Yearly",
+			Tier: "GOLD",
+			Interval: "year",
+			Description: "Annual Gold membership with priority local search and featured badge.",
 			Price:              389.99,
-			Currency:           "USD",
+			Currency: "USD",
 			Features:           entity.JSONSlice{"Featured Provider Badge", "Priority Local Search Placement", "Up to 3 Catalog Services", "Instant Booking Acceptance", "Save 16% Annually"},
-			AppleProductID:     "gold_yearly",
-			GoogleProductID:    "gold_yearly",
+			AppleProductID: "gold_yearly",
+			GoogleProductID: "gold_yearly",
 			MaxCatalogServices: 3,
 			IsActive:           true,
 			DisplayOrder:       5,
 		},
 		{
 			ID:                 uuid.New(),
-			Name:               "Platinum Yearly",
-			Tier:               "PLATINUM",
-			Interval:           "year",
-			Description:        "Annual Platinum access with top spotlight and dedicated support.",
+			Name: "Platinum Yearly",
+			Tier: "PLATINUM",
+			Interval: "year",
+			Description: "Annual Platinum access with top spotlight and dedicated support.",
 			Price:              499.99,
-			Currency:           "USD",
+			Currency: "USD",
 			Features:           entity.JSONSlice{"Elite Verified Badge", "Top-Tier Homepage Spotlight", "Up to 5 Catalog Services", "Dedicated Concierge Support", "Save 16% Annually"},
-			AppleProductID:     "platinum_yearly",
-			GoogleProductID:    "platinum_yearly",
+			AppleProductID: "platinum_yearly",
+			GoogleProductID: "platinum_yearly",
 			MaxCatalogServices: 5,
 			IsActive:           true,
 			DisplayOrder:       6,
@@ -548,9 +558,9 @@ func seedDefaultLegalDocuments(db *gorm.DB) {
 	if termsCount == 0 {
 		termsDoc := entity.LegalDocument{
 			ID:        uuid.New(),
-			DocType:   "TERMS",
-			Title:     "Terms of Service",
-			Version:   "1.0",
+			DocType: "TERMS",
+			Title: "Terms of Service",
+			Version: "1.0",
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
@@ -600,9 +610,9 @@ For questions regarding these Terms, please contact our Legal & Compliance Team 
 	if privacyCount == 0 {
 		privacyDoc := entity.LegalDocument{
 			ID:        uuid.New(),
-			DocType:   "PRIVACY",
-			Title:     "Privacy Policy",
-			Version:   "1.0",
+			DocType: "PRIVACY",
+			Title: "Privacy Policy",
+			Version: "1.0",
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),

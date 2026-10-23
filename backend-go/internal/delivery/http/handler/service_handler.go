@@ -236,10 +236,10 @@ func parseTimeField(v interface{}) *time.Time {
 		formats := []string{
 			time.RFC3339,
 			time.RFC3339Nano,
-			"2006-01-02T15:04:05.999999999",
-			"2006-01-02T15:04:05",
-			"2006-01-02 15:04:05",
-			"2006-01-02",
+ "2006-01-02T15:04:05.999999999",
+ "2006-01-02T15:04:05",
+ "2006-01-02 15:04:05",
+ "2006-01-02",
 		}
 		for _, f := range formats {
 			if t, err := time.Parse(f, val); err == nil {
@@ -488,7 +488,7 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 		parsed, parseErr := uuid.Parse(reqIDStr)
 		if parseErr != nil {
 			slog.Warn("UploadRequestImage: missing or invalid request ID in multipart form",
-				"raw_id", reqIDStr, "user_id", userUUID)
+ "raw_id", reqIDStr, "user_id", userUUID)
 			response.BadRequest(c, "Request ID required")
 			return
 		}
@@ -497,7 +497,7 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 		relPath, saveErr := media.ValidateAndSaveUploadedFile(file, "requests", 25*1024*1024)
 		if saveErr != nil {
 			slog.Warn("UploadRequestImage: file validation/save failed",
-				"error", saveErr.Error(), "request_id", reqUUID)
+ "error", saveErr.Error(), "request_id", reqUUID)
 			response.BadRequest(c, saveErr.Error())
 			return
 		}
@@ -513,8 +513,8 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 		}
 		if bindErr := c.ShouldBindJSON(&body); bindErr != nil {
 			slog.Warn("UploadRequestImage: could not parse request body",
-				"error", bindErr.Error(), "user_id", userUUID,
-				"content_type", c.ContentType())
+ "error", bindErr.Error(), "user_id", userUUID,
+ "content_type", c.ContentType())
 			response.BadRequest(c, "Request ID required")
 			return
 		}
@@ -527,7 +527,7 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 			}
 			if parseErr != nil {
 				slog.Warn("UploadRequestImage: missing or invalid request ID in JSON body",
-					"raw_id", body.ID, "user_id", userUUID)
+ "raw_id", body.ID, "user_id", userUUID)
 				response.BadRequest(c, "Request ID required")
 				return
 			}
@@ -536,7 +536,7 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 
 		if body.Image == "" {
 			slog.Warn("UploadRequestImage: no image provided in JSON body",
-				"request_id", reqUUID, "user_id", userUUID)
+ "request_id", reqUUID, "user_id", userUUID)
 			response.BadRequest(c, "No image provided")
 			return
 		}
@@ -546,7 +546,7 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 	updatedReq, err := h.serviceUC.UploadRequestImage(c.Request.Context(), userUUID, reqUUID, imageURL)
 	if err != nil {
 		slog.Warn("UploadRequestImage: usecase error",
-			"error", err.Error(), "request_id", reqUUID, "user_id", userUUID)
+ "error", err.Error(), "request_id", reqUUID, "user_id", userUUID)
 		response.BadRequest(c, err.Error())
 		return
 	}
@@ -580,22 +580,22 @@ func (h *ServiceHandler) wrapProposals(proposals []entity.Proposal) gin.H {
 		}
 
 		proposalData := gin.H{
-			"id":              p.ID.String(),
-			"request":         p.Request,
-			"request_id":      p.RequestID.String(),
-			"request_details": p.Request,
-			"provider":        p.ProviderID.String(),
-			"scheduled_time":  p.ScheduledTime,
-			"available_time":  p.ScheduledTime,
-			"is_approved":     p.IsApproved,
-			"created_at":      p.CreatedAt,
-			"updated_at":      p.UpdatedAt,
+ "id":              p.ID.String(),
+ "request":         p.Request,
+ "request_id":      p.RequestID.String(),
+ "request_details": p.Request,
+ "provider":        p.ProviderID.String(),
+ "scheduled_time":  p.ScheduledTime,
+ "available_time":  p.ScheduledTime,
+ "is_approved":     p.IsApproved,
+ "created_at":      p.CreatedAt,
+ "updated_at":      p.UpdatedAt,
 		}
 
 		wrapped = append(wrapped, gin.H{
-			"acceptance": proposalData,
-			"provider":   providerProfile,
-			"user":       seekerProfile,
+ "acceptance": proposalData,
+ "provider":   providerProfile,
+ "user":       seekerProfile,
 		})
 	}
 	return gin.H{"requests_acceptance": wrapped}
@@ -804,9 +804,9 @@ func (h *ServiceHandler) AcceptFlashDispatch(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"message":     "Emergency flash dispatch accepted successfully",
-		"dispatch":    dispatch,
-		"appointment": apt,
+ "message": "Emergency flash dispatch accepted successfully",
+ "dispatch":    dispatch,
+ "appointment": apt,
 	})
 }
 
@@ -831,7 +831,7 @@ func (h *ServiceHandler) CancelFlashDispatch(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"message": "Emergency flash dispatch cancelled",
+ "message": "Emergency flash dispatch cancelled",
 	})
 }
 
@@ -869,8 +869,8 @@ func (h *ServiceHandler) GetAISuggestions(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"suggestions": dtos,
-		"total":       len(dtos),
+ "suggestions": dtos,
+ "total":       len(dtos),
 	})
 }
 
@@ -881,7 +881,7 @@ func (h *ServiceHandler) TriggerCatalogReindex(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"message": "AI catalog knowledge reindexed successfully",
+ "message": "AI catalog knowledge reindexed successfully",
 	})
 }
 
@@ -909,21 +909,21 @@ func (h *ServiceHandler) ParseVoiceSpeech(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"id":                 parsedLog.ID,
-		"raw_transcript":     parsedLog.RawTranscript,
-		"refined_transcript": parsedLog.RefinedTranscript,
-		"parsed_title":       parsedLog.ParsedTitle,
-		"parsed_description": parsedLog.ParsedDescription,
-		"service_type":       parsedLog.ServiceType,
-		"catalog_service_id": parsedLog.CatalogServiceID,
-		"suggested_budget":   parsedLog.SuggestedBudget,
-		"budget_type":        parsedLog.BudgetType,
-		"urgency":            parsedLog.Urgency,
-		"sentiment":          parsedLog.Sentiment,
-		"sentiment_score":    parsedLog.SentimentScore,
-		"keywords":           parsedLog.Keywords,
-		"confidence_score":   parsedLog.ConfidenceScore,
-		"catalog_service":    parsedLog.CatalogService,
+ "id":                 parsedLog.ID,
+ "raw_transcript":     parsedLog.RawTranscript,
+ "refined_transcript": parsedLog.RefinedTranscript,
+ "parsed_title":       parsedLog.ParsedTitle,
+ "parsed_description": parsedLog.ParsedDescription,
+ "service_type":       parsedLog.ServiceType,
+ "catalog_service_id": parsedLog.CatalogServiceID,
+ "suggested_budget":   parsedLog.SuggestedBudget,
+ "budget_type":        parsedLog.BudgetType,
+ "urgency":            parsedLog.Urgency,
+ "sentiment":          parsedLog.Sentiment,
+ "sentiment_score":    parsedLog.SentimentScore,
+ "keywords":           parsedLog.Keywords,
+ "confidence_score":   parsedLog.ConfidenceScore,
+ "catalog_service":    parsedLog.CatalogService,
 	})
 }
 

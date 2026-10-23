@@ -193,7 +193,7 @@ func (u *serviceUseCase) MatchProviders(ctx context.Context, input domainUsecase
 	}
 
 	params := repository.ProfileFilterParams{
-		UserType:     "PROVIDER",
+		UserType: "PROVIDER",
 		CategorySlug: input.CategoryID,
 		Limit:        100,
 		Offset:       0,
@@ -362,7 +362,7 @@ func (u *serviceUseCase) enrichServiceRequestInternal(
 		req.UserProfile = &entity.Profile{
 			UserID:    req.UserID,
 			FirstName: firstName,
-			UserType:  "SEEKER",
+			UserType: "SEEKER",
 		}
 	}
 
@@ -492,8 +492,12 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 	var err error
 	var providerProfile *entity.Profile
 	isSubscribed := true
+	isVerified := true
 	if normType == "PROVIDER" {
 		isSubscribed = u.IsProviderSubscribed(ctx, userID)
+		if p, pErr := u.profileRepo.GetByUserID(ctx, userID); pErr == nil && p != nil {
+			isVerified = p.IsIdentityVerified
+		}
 	}
 
 	if targetedOnly {
@@ -616,6 +620,30 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 	}
 
 	u.batchEnrichServiceRequests(ctx, requests)
+
+	// Anonymize seeker personal data for unverified providers in Explore Mode (Slide 4 & 9)
+	if normType == "PROVIDER" && !isVerified {
+		zero := 0.0
+		for i := range requests {
+			requests[i].Latitude = &zero
+			requests[i].Longitude = &zero
+			requests[i].UserEmail = ""
+			if requests[i].User != nil {
+				maskedUser := *requests[i].User
+				maskedUser.Email = ""
+				requests[i].User = &maskedUser
+			}
+			if requests[i].UserProfile != nil {
+				maskedProfile := *requests[i].UserProfile
+				maskedProfile.FirstName = "Client"
+				maskedProfile.LastName = ""
+				maskedProfile.Phone = ""
+				maskedProfile.Address = ""
+				maskedProfile.ProfilePicture = ""
+				requests[i].UserProfile = &maskedProfile
+			}
+		}
+	}
 
 	if u.cache != nil && len(requests) > 0 {
 		_ = u.cache.Set(ctx, cacheKey, requests, 5*time.Minute)
@@ -744,7 +772,7 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 				UserID:           *req.TargetProviderID,
 				SenderID:         &customerID,
 				NotificationType: "DIRECT_REQUEST",
-				Title:            "New Direct Request",
+				Title: "New Direct Request",
 				Message:          fmt.Sprintf("You have received a direct service request for %s", req.Title),
 				Data:             entity.JSONMap{"request_id": req.ID.String()},
 				CreatedAt:        time.Now(),
@@ -753,9 +781,9 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 		}
 
 		u.sendPush(*req.TargetProviderID, "New Direct Request", fmt.Sprintf("You have received a direct service request for %s", req.Title), map[string]string{
-			"notification_type": "direct_request",
-			"request_id":        req.ID.String(),
-			"sender_id":         customerID.String(),
+ "notification_type": "direct_request",
+ "request_id":        req.ID.String(),
+ "sender_id":         customerID.String(),
 		})
 
 		// Asynchronously send direct request email
@@ -812,7 +840,7 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 			}
 
 			filterParams := repository.ProfileFilterParams{
-				UserType:  "PROVIDER",
+				UserType: "PROVIDER",
 				Latitude:  req.Latitude,
 				Longitude: req.Longitude,
 			}
@@ -844,7 +872,7 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 							UserID:           p.UserID,
 							SenderID:         &customerID,
 							NotificationType: "BROADCAST_REQUEST",
-							Title:            "New Service Request Nearby",
+							Title: "New Service Request Nearby",
 							Message:          fmt.Sprintf("A new request for '%s' was posted %.1f mi away from your location.", req.Title, dist),
 							Data:             entity.JSONMap{"request_id": req.ID.String()},
 							CreatedAt:        time.Now(),
@@ -853,9 +881,9 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 					}
 
 					u.sendPush(p.UserID, "New Service Request Nearby", fmt.Sprintf("A new request for '%s' was posted %.1f mi away from your location.", req.Title, dist), map[string]string{
-						"notification_type": "broadcast_request",
-						"request_id":        req.ID.String(),
-						"sender_id":         customerID.String(),
+ "notification_type": "broadcast_request",
+ "request_id":        req.ID.String(),
+ "sender_id":         customerID.String(),
 					})
 
 					// Broadcast Email Notification
@@ -928,12 +956,12 @@ func (u *serviceUseCase) UpdateRequest(ctx context.Context, userID, id uuid.UUID
 		formats := []string{
 			time.RFC3339,
 			time.RFC3339Nano,
-			"2006-01-02T15:04:05.000Z",
-			"2006-01-02T15:04:05Z",
-			"2006-01-02T15:04:05",
-			"2006-01-02 15:04:05",
-			"2006-01-02 15:04",
-			"2006-01-02",
+ "2006-01-02T15:04:05.000Z",
+ "2006-01-02T15:04:05Z",
+ "2006-01-02T15:04:05",
+ "2006-01-02 15:04:05",
+ "2006-01-02 15:04",
+ "2006-01-02",
 		}
 		for _, layout := range formats {
 			if t, err := time.Parse(layout, strings.TrimSpace(schedStr)); err == nil {
@@ -1019,7 +1047,7 @@ func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID
 							UserID:           providerID,
 							SenderID:         &userID,
 							NotificationType: "APPOINTMENT",
-							Title:            "Appointment Cancelled",
+							Title: "Appointment Cancelled",
 							Message:          fmt.Sprintf("The service request '%s' and its scheduled appointment were cancelled by the client.", req.Title),
 							Data:             entity.JSONMap{"request_id": req.ID.String(), "appointment_id": apt.ID.String()},
 							CreatedAt:        time.Now(),
@@ -1028,10 +1056,10 @@ func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID
 					}
 
 					u.sendPush(providerID, "Appointment Cancelled", fmt.Sprintf("The service request '%s' and its scheduled appointment were cancelled by the client.", req.Title), map[string]string{
-						"notification_type": "appointment",
-						"request_id":        req.ID.String(),
-						"appointment_id":    apt.ID.String(),
-						"sender_id":         userID.String(),
+ "notification_type": "appointment",
+ "request_id":        req.ID.String(),
+ "appointment_id":    apt.ID.String(),
+ "sender_id":         userID.String(),
 					})
 
 					if u.cfg != nil && u.cfg.SMTPHost != "" && u.userRepo != nil {
@@ -1147,7 +1175,7 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 			ProposalID:       &proposal.ID,
 			TotalPrice:       totalPrice,
 			PaymentMode:      req.PreferredPaymentMode,
-			Status:           "SCHEDULED",
+			Status: "SCHEDULED",
 			SecretCode:       fmt.Sprintf("%04d", rand.Intn(10000)),
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
@@ -1179,7 +1207,7 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 			conv = &newConv
 		}
 		if conv != nil {
-			chatMsgTxt := fmt.Sprintf("📅 Appointment Scheduled: %s for '%s'", schedDateStr, req.Title)
+			chatMsgTxt := fmt.Sprintf(" Appointment Scheduled: %s for '%s'", schedDateStr, req.Title)
 			calMsg := entity.Message{
 				ID:             uuid.New(),
 				ConversationID: conv.ID,
@@ -1204,10 +1232,10 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 					}
 					if len(tokenStrings) > 0 {
 						_, _ = u.fcmClient.SendMulticast(context.Background(), tokenStrings, "New Appointment Message", chatMsgTxt, map[string]string{
-							"notification_type": "message",
-							"conversation_id":   conv.ID.String(),
-							"message_id":        calMsg.ID.String(),
-							"sender_id":         req.UserID.String(),
+ "notification_type": "message",
+ "conversation_id":   conv.ID.String(),
+ "message_id":        calMsg.ID.String(),
+ "sender_id":         req.UserID.String(),
 						})
 					}
 				}()
@@ -1222,7 +1250,7 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 			UserID:           proposal.ProviderID,
 			SenderID:         &userID,
 			NotificationType: "APPOINTMENT",
-			Title:            "Appointment Confirmed",
+			Title: "Appointment Confirmed",
 			Message:          fmt.Sprintf("Your proposal for '%s' was accepted! The agreed appointment date is %s.", req.Title, schedDateStr),
 			Data:             entity.JSONMap{"proposal_id": proposal.ID.String(), "request_id": req.ID.String(), "appointment_id": aptIDStr, "scheduled_time": appDate.Format(time.RFC3339)},
 			CreatedAt:        time.Now(),
@@ -1234,7 +1262,7 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 			UserID:           req.UserID,
 			SenderID:         &proposal.ProviderID,
 			NotificationType: "APPOINTMENT",
-			Title:            "Appointment Confirmed",
+			Title: "Appointment Confirmed",
 			Message:          fmt.Sprintf("Your appointment for '%s' is confirmed. The agreed appointment date is %s.", req.Title, schedDateStr),
 			Data:             entity.JSONMap{"proposal_id": proposal.ID.String(), "request_id": req.ID.String(), "appointment_id": aptIDStr, "scheduled_time": appDate.Format(time.RFC3339)},
 			CreatedAt:        time.Now(),
@@ -1243,19 +1271,19 @@ func (u *serviceUseCase) ApproveProposal(ctx context.Context, userID, requestID,
 	}
 
 	u.sendPush(proposal.ProviderID, "Appointment Confirmed", fmt.Sprintf("Your proposal for '%s' was accepted! The agreed appointment date is %s.", req.Title, schedDateStr), map[string]string{
-		"notification_type": "appointment",
-		"request_id":        req.ID.String(),
-		"proposal_id":       proposal.ID.String(),
-		"appointment_id":    aptIDStr,
-		"sender_id":         userID.String(),
+ "notification_type": "appointment",
+ "request_id":        req.ID.String(),
+ "proposal_id":       proposal.ID.String(),
+ "appointment_id":    aptIDStr,
+ "sender_id":         userID.String(),
 	})
 
 	u.sendPush(req.UserID, "Appointment Confirmed", fmt.Sprintf("Your appointment for '%s' is confirmed for %s.", req.Title, schedDateStr), map[string]string{
-		"notification_type": "appointment",
-		"request_id":        req.ID.String(),
-		"proposal_id":       proposal.ID.String(),
-		"appointment_id":    aptIDStr,
-		"sender_id":         proposal.ProviderID.String(),
+ "notification_type": "appointment",
+ "request_id":        req.ID.String(),
+ "proposal_id":       proposal.ID.String(),
+ "appointment_id":    aptIDStr,
+ "sender_id":         proposal.ProviderID.String(),
 	})
 
 	// Asynchronously send approval email & appointment confirmation
@@ -1355,7 +1383,7 @@ func (u *serviceUseCase) CancelApproval(ctx context.Context, userID, requestID u
 			UserID:           *approvedProviderID,
 			SenderID:         &userID,
 			NotificationType: "PROPOSAL",
-			Title:            "Approval Cancelled",
+			Title: "Approval Cancelled",
 			Message:          fmt.Sprintf("The seeker has cancelled the approval for your proposal on '%s'.", req.Title),
 			Data:             entity.JSONMap{"request_id": req.ID.String()},
 			CreatedAt:        time.Now(),
@@ -1365,9 +1393,9 @@ func (u *serviceUseCase) CancelApproval(ctx context.Context, userID, requestID u
 
 	if approvedProviderID != nil {
 		u.sendPush(*approvedProviderID, "Approval Cancelled", fmt.Sprintf("The seeker has cancelled the approval for your proposal on '%s'.", req.Title), map[string]string{
-			"notification_type": "proposal",
-			"request_id":        req.ID.String(),
-			"sender_id":         userID.String(),
+ "notification_type": "proposal",
+ "request_id":        req.ID.String(),
+ "sender_id":         userID.String(),
 		})
 	}
 
@@ -1410,11 +1438,9 @@ func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid
 		return nil, errors.New("Available date and time is required to accept this request")
 	}
 
-	if u.cfg != nil && u.cfg.Env == "production" {
-		if profile, err := u.profileRepo.GetByUserID(ctx, providerUserID); err == nil && profile != nil {
-			if !profile.IsIdentityVerified {
-				return nil, errors.New("Identity verification required. Your Checkr background check must be cleared before you can accept requests.")
-			}
+	if profile, err := u.profileRepo.GetByUserID(ctx, providerUserID); err == nil && profile != nil {
+		if !profile.IsIdentityVerified {
+			return nil, errors.New("Identity verification required. Your Checkr background check must be cleared before you can accept requests.")
 		}
 	}
 
@@ -1441,7 +1467,7 @@ func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid
 				UserID:           req.UserID,
 				SenderID:         &providerUserID,
 				NotificationType: "PROPOSAL",
-				Title:            "New Proposal",
+				Title: "New Proposal",
 				Message:          fmt.Sprintf("A provider submitted a proposal on '%s'%s.", req.Title, schedText),
 				Data:             entity.JSONMap{"proposal_id": prop.ID.String(), "request_id": req.ID.String()},
 				CreatedAt:        time.Now(),
@@ -1450,10 +1476,10 @@ func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid
 		}
 
 		u.sendPush(req.UserID, "New Proposal", fmt.Sprintf("A provider submitted a proposal on '%s'%s.", req.Title, schedText), map[string]string{
-			"notification_type": "proposal",
-			"request_id":        req.ID.String(),
-			"proposal_id":       prop.ID.String(),
-			"sender_id":         providerUserID.String(),
+ "notification_type": "proposal",
+ "request_id":        req.ID.String(),
+ "proposal_id":       prop.ID.String(),
+ "sender_id":         providerUserID.String(),
 		})
 
 		if u.cfg != nil && u.cfg.SMTPHost != "" && u.userRepo != nil {
@@ -1574,7 +1600,7 @@ func (u *serviceUseCase) CreateFlashDispatch(ctx context.Context, seekerID uuid.
 			}
 		}
 
-		title := fmt.Sprintf("🚨 EMERGENCY FLASH DISPATCH: %s", strings.ToUpper(strings.ReplaceAll(dispatch.TradeConcept, "_", " ")))
+		title := fmt.Sprintf(" EMERGENCY FLASH DISPATCH: %s", strings.ToUpper(strings.ReplaceAll(dispatch.TradeConcept, "_", " ")))
 		body := fmt.Sprintf("%s has an urgent emergency nearby: '%s'. Tap to accept immediately!", seekerName, dispatch.Title)
 
 		for _, p := range candidates {
@@ -1588,21 +1614,21 @@ func (u *serviceUseCase) CreateFlashDispatch(ctx context.Context, seekerID uuid.
 				Title:            title,
 				Message:          body,
 				Data: entity.JSONMap{
-					"dispatch_id":   dispatch.ID.String(),
-					"trade_concept": dispatch.TradeConcept,
-					"latitude":      dispatch.Latitude,
-					"longitude":     dispatch.Longitude,
-					"max_budget":    dispatch.MaxBudget,
-					"expires_at":    dispatch.ExpiresAt.Format(time.RFC3339),
+ "dispatch_id":   dispatch.ID.String(),
+ "trade_concept": dispatch.TradeConcept,
+ "latitude":      dispatch.Latitude,
+ "longitude":     dispatch.Longitude,
+ "max_budget":    dispatch.MaxBudget,
+ "expires_at":    dispatch.ExpiresAt.Format(time.RFC3339),
 				},
 				CreatedAt: time.Now().UTC(),
 			})
 
 			u.sendPush(p.UserID, title, body, map[string]string{
-				"notification_type": "emergency_flash_dispatch",
-				"dispatch_id":       dispatch.ID.String(),
-				"trade_concept":     dispatch.TradeConcept,
-				"click_action":      "FLUTTER_NOTIFICATION_CLICK",
+ "notification_type": "emergency_flash_dispatch",
+ "dispatch_id":       dispatch.ID.String(),
+ "trade_concept":     dispatch.TradeConcept,
+ "click_action": "FLUTTER_NOTIFICATION_CLICK",
 			})
 		}
 	}()
@@ -1682,11 +1708,11 @@ func (u *serviceUseCase) AcceptFlashDispatch(ctx context.Context, providerID, di
 		ID:              uuid.New(),
 		SeekerID:        d.SeekerID,
 		ProviderID:      providerID,
-		Title:           fmt.Sprintf("⚡ Emergency: %s", d.Title),
+		Title:           fmt.Sprintf(" Emergency: %s", d.Title),
 		Description:     d.Description,
 		AppointmentDate: &aptTime,
-		Status:          "CONFIRMED",
-		PaymentMode:     "ON_SITE",
+		Status: "CONFIRMED",
+		PaymentMode: "ON_SITE",
 		TotalPrice:      d.MaxBudget,
 		CreatedAt:       now,
 		UpdatedAt:       now,
@@ -1696,7 +1722,7 @@ func (u *serviceUseCase) AcceptFlashDispatch(ctx context.Context, providerID, di
 	// Realtime notification to Seeker
 	go func() {
 		providerName := providerProf.FirstName + " " + providerProf.LastName
-		title := "⚡ Emergency Provider Dispatched!"
+		title := " Emergency Provider Dispatched!"
 		body := fmt.Sprintf("%s has accepted your emergency request and is responding right now.", providerName)
 
 		_ = u.notifRepo.Create(context.Background(), &entity.Notification{
@@ -1706,20 +1732,20 @@ func (u *serviceUseCase) AcceptFlashDispatch(ctx context.Context, providerID, di
 			Title:            title,
 			Message:          body,
 			Data: entity.JSONMap{
-				"dispatch_id":    d.ID.String(),
-				"appointment_id": apt.ID.String(),
-				"provider_id":    providerID.String(),
-				"provider_name":  providerName,
+ "dispatch_id":    d.ID.String(),
+ "appointment_id": apt.ID.String(),
+ "provider_id":    providerID.String(),
+ "provider_name":  providerName,
 			},
 			CreatedAt: time.Now().UTC(),
 		})
 
 		u.sendPush(d.SeekerID, title, body, map[string]string{
-			"notification_type": "flash_dispatch_accepted",
-			"dispatch_id":       d.ID.String(),
-			"appointment_id":    apt.ID.String(),
-			"provider_id":       providerID.String(),
-			"click_action":      "FLUTTER_NOTIFICATION_CLICK",
+ "notification_type": "flash_dispatch_accepted",
+ "dispatch_id":       d.ID.String(),
+ "appointment_id":    apt.ID.String(),
+ "provider_id":       providerID.String(),
+ "click_action": "FLUTTER_NOTIFICATION_CLICK",
 		})
 	}()
 
@@ -1810,9 +1836,9 @@ func (u *serviceUseCase) ParseAndRefineVoiceSpeech(ctx context.Context, userID *
 
 	// 2. Clean Speech & Remove Filler Phrases
 	fillers := []string{
-		"um", "uh", "er", "like", "you know", "basically", "actually",
-		"i need someone to", "i need a", "i want someone to", "i am looking for someone to",
-		"can someone please", "can you help me with", "please help me", "hey there", "hello",
+ "um", "uh", "er", "like", "you know", "basically", "actually",
+ "i need someone to", "i need a", "i want someone to", "i am looking for someone to",
+ "can someone please", "can you help me with", "please help me", "hey there", "hello",
 	}
 	cleaned := lower
 	for _, f := range fillers {

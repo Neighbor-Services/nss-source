@@ -95,7 +95,7 @@ func TestAdminLogin_RejectsStandardUserWith403(t *testing.T) {
 					IsSuperuser: false,
 					IsActive:    true,
 				},
-				AccessToken:  "valid-access-token",
+				AccessToken: "valid-access-token",
 				RefreshToken: "valid-refresh-token",
 			}, nil
 		},
@@ -103,8 +103,8 @@ func TestAdminLogin_RejectsStandardUserWith403(t *testing.T) {
 	r := setupAuthRouter(stubUC)
 
 	body, _ := json.Marshal(map[string]interface{}{
-		"email":    "user@neighborservice.com",
-		"password": "validpass123",
+ "email": "user@neighborservice.com",
+ "password": "validpass123",
 	})
 
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/admin/login", bytes.NewBuffer(body))
@@ -129,7 +129,7 @@ func TestAdminLogin_AllowsStaffAndSuperuser(t *testing.T) {
 					IsSuperuser: false,
 					IsActive:    true,
 				},
-				AccessToken:  "admin-access-token",
+				AccessToken: "admin-access-token",
 				RefreshToken: "admin-refresh-token",
 			}, nil
 		},
@@ -137,8 +137,8 @@ func TestAdminLogin_AllowsStaffAndSuperuser(t *testing.T) {
 	r := setupAuthRouter(stubUC)
 
 	body, _ := json.Marshal(map[string]interface{}{
-		"email":    "admin@neighborservice.com",
-		"password": "secretpass",
+ "email": "admin@neighborservice.com",
+ "password": "secretpass",
 	})
 
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/admin/login", bytes.NewBuffer(body))
@@ -164,8 +164,8 @@ func TestAdminLogin_BruteForceLockoutAfterFiveFailures(t *testing.T) {
 	// 5 failed attempts
 	for i := 1; i <= 5; i++ {
 		body, _ := json.Marshal(map[string]interface{}{
-			"email":    targetEmail,
-			"password": "wrongpass",
+ "email":    targetEmail,
+ "password": "wrongpass",
 		})
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/admin/login", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
@@ -185,8 +185,8 @@ func TestAdminLogin_BruteForceLockoutAfterFiveFailures(t *testing.T) {
 
 	// 6th attempt should be blocked immediately by brute force prevention without calling Login
 	body, _ := json.Marshal(map[string]interface{}{
-		"email":    targetEmail,
-		"password": "wrongpass",
+ "email":    targetEmail,
+ "password": "wrongpass",
 	})
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/admin/login", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")

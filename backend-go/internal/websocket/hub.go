@@ -121,7 +121,7 @@ func (h *Hub) listenRedis() {
 		return
 	}
 	defer pubsub.Close()
-	log.Printf("⚡ [WebSocket Hub] Redis Pub/Sub cluster listener active (Instance: %s)", h.instanceID)
+	log.Printf(" [WebSocket Hub] Redis Pub/Sub cluster listener active (Instance: %s)", h.instanceID)
 
 	ch := pubsub.Channel()
 	for msg := range ch {
@@ -190,24 +190,24 @@ func (h *Hub) Run() {
 					status = "online"
 				}
 				client.SendJSON(map[string]interface{}{
-					"type":    "presence",
-					"user_id": otherUserID,
-					"status":  status,
+ "type": "presence",
+ "user_id": otherUserID,
+ "status":  status,
 				})
 
 				// Notify the other user (and room) that this client is online
 				h.SendToRoom(client.RoomID, map[string]interface{}{
-					"type":    "presence",
-					"user_id": client.UserID,
-					"status":  "online",
+ "type": "presence",
+ "user_id": client.UserID,
+ "status": "online",
 				})
 			}
 
 			// Broadcast presence to global presence stream
 			h.SendToRoom("presence", map[string]interface{}{
-				"type":    "presence",
-				"user_id": client.UserID,
-				"status":  "online",
+ "type": "presence",
+ "user_id": client.UserID,
+ "status": "online",
 			})
 
 		case client := <-h.unregister:
@@ -237,15 +237,15 @@ func (h *Hub) Run() {
 				// Broadcast offline status to the room and global presence
 				if client.RoomID != "" {
 					h.SendToRoom(client.RoomID, map[string]interface{}{
-						"type":    "presence",
-						"user_id": client.UserID,
-						"status":  "offline",
+ "type": "presence",
+ "user_id": client.UserID,
+ "status": "offline",
 					})
 				}
 				h.SendToRoom("presence", map[string]interface{}{
-					"type":    "presence",
-					"user_id": client.UserID,
-					"status":  "offline",
+ "type": "presence",
+ "user_id": client.UserID,
+ "status": "offline",
 				})
 			}
 
@@ -350,7 +350,7 @@ func (h *Hub) SendToUser(userID string, payload interface{}) {
 	if h.cacheClient != nil {
 		event := RedisWSEvent{
 			InstanceID: h.instanceID,
-			Type:       "user",
+			Type: "user",
 			Target:     userID,
 			Payload:    bytes,
 		}
@@ -378,7 +378,7 @@ func (h *Hub) SendToRoom(roomID string, payload interface{}) {
 	if h.cacheClient != nil {
 		event := RedisWSEvent{
 			InstanceID: h.instanceID,
-			Type:       "room",
+			Type: "room",
 			Target:     roomID,
 			Payload:    bytes,
 		}
@@ -416,9 +416,9 @@ func (c *Client) ReadPump() {
 					status = "online"
 				}
 				c.SendJSON(map[string]interface{}{
-					"type":    "presence",
-					"user_id": targetUID,
-					"status":  status,
+ "type": "presence",
+ "user_id": targetUID,
+ "status":  status,
 				})
 				continue
 			}

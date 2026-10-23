@@ -63,10 +63,10 @@ func Middleware() gin.HandlerFunc {
 				)
 
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-					"success": false,
-					"message": "An unexpected server error occurred. Please try again later.",
-					"detail":  "An unexpected server error occurred. Please try again later.",
-					"error":   "An unexpected server error occurred. Please try again later.",
+ "success": false,
+ "message": "An unexpected server error occurred. Please try again later.",
+ "detail": "An unexpected server error occurred. Please try again later.",
+ "error": "An unexpected server error occurred. Please try again later.",
 				})
 			}
 		}()

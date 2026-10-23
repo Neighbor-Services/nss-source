@@ -10,8 +10,8 @@ import (
 func TestAutoMigrate_AllEntities(t *testing.T) {
 	cfg := &config.Config{
 		DBDriver: "sqlite",
-		DBDSN:    ":memory:",
-		Env:      "development",
+		DBDSN: ":memory:",
+		Env: "development",
 	}
 
 	db, err := database.Connect(cfg)

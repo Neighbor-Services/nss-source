@@ -77,11 +77,11 @@ func (u *notificationUseCase) SendPushNotification(ctx context.Context, userID u
 
 	// 2. Broadcast over WebSocket immediately to any active sessions (web, Flutter, admin)
 	websocket.GlobalHub.SendToUser(userID.String(), map[string]interface{}{
-		"type":       "notification",
-		"title":      title,
-		"body":       body,
-		"data":       data,
-		"created_at": time.Now().UTC(),
+ "type": "notification",
+ "title":      title,
+ "body":       body,
+ "data":       data,
+ "created_at": time.Now().UTC(),
 	})
 
 	if u.fcmClient == nil {
@@ -163,7 +163,7 @@ func (u *notificationUseCase) UpdateNotificationPreferences(ctx context.Context,
 		prof = &entity.Profile{
 			ID:                        uuid.New(),
 			UserID:                    userID,
-			UserType:                  "SEEKER",
+			UserType: "SEEKER",
 			EmailNotificationsEnabled: true,
 			PushNotificationsEnabled:  true,
 		}

@@ -113,10 +113,10 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   users,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   users,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -203,10 +203,10 @@ func (h *AdminHandler) ListVerifications(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   verifs,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   verifs,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -254,10 +254,10 @@ func (h *AdminHandler) ListBackgroundChecks(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   bcs,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   bcs,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -336,10 +336,10 @@ func (h *AdminHandler) ListReports(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   reports,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   reports,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -379,10 +379,10 @@ func (h *AdminHandler) ListDisputes(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   disputes,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   disputes,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -440,10 +440,10 @@ func (h *AdminHandler) ListPayoutRequests(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   payouts,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   payouts,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -495,10 +495,10 @@ func (h *AdminHandler) ListWallets(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   wallets,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   wallets,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -521,10 +521,10 @@ func (h *AdminHandler) ListSubscriptions(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   subs,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   subs,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -938,10 +938,10 @@ func (h *AdminHandler) ListAuditLogs(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   logs,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   logs,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -1375,10 +1375,10 @@ func (h *AdminHandler) ListFraudRiskAlerts(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   alerts,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   alerts,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -1606,9 +1606,9 @@ func (h *AdminHandler) GetNotificationFeed(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"notifications": feed,
-		"count":         len(feed),
-		"unread_count":  len(feed),
+ "notifications": feed,
+ "count":         len(feed),
+ "unread_count":  len(feed),
 	})
 }
 
@@ -1709,9 +1709,9 @@ func (h *AdminHandler) ListAppointments(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": list,
-		"count":   total,
-		"page":    page,
+ "results": list,
+ "count":   total,
+ "page":    page,
 	})
 }
 
@@ -1802,9 +1802,9 @@ func (h *AdminHandler) ListReviews(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": list,
-		"count":   total,
-		"page":    page,
+ "results": list,
+ "count":   total,
+ "page":    page,
 	})
 }
 
@@ -2093,10 +2093,10 @@ func (h *AdminHandler) ListContactMessages(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   msgs,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   msgs,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -2156,10 +2156,10 @@ func (h *AdminHandler) ListResolutionReports(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results":   reports,
-		"count":     total,
-		"page":      page,
-		"page_size": pageSize,
+ "results":   reports,
+ "count":     total,
+ "page":      page,
+ "page_size": pageSize,
 	})
 }
 
@@ -2480,9 +2480,9 @@ func (h *AdminHandler) GetWorkersStatus(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"total_workers": len(snapshots),
-		"all_healthy":   allHealthy,
-		"workers":       snapshots,
+ "total_workers": len(snapshots),
+ "all_healthy":   allHealthy,
+ "workers":       snapshots,
 	})
 }
 
@@ -2519,12 +2519,12 @@ func (h *AdminHandler) GetStripeLiveBalance(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"currency":          currency,
-		"available_balance": available,
-		"pending_balance":   pending,
-		"in_flight_escrow":  pending,
-		"is_live_stripe":    isLiveStripe,
-		"last_synced":       time.Now().UTC().Format(time.RFC3339),
+ "currency":          currency,
+ "available_balance": available,
+ "pending_balance":   pending,
+ "in_flight_escrow":  pending,
+ "is_live_stripe":    isLiveStripe,
+ "last_synced":       time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
@@ -2556,10 +2556,10 @@ func (h *AdminHandler) SendDirectUserMessage(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":    "dispatched",
-		"target_id": targetID,
-		"channel":   req.Channel,
-		"sent_at":   time.Now().UTC().Format(time.RFC3339),
+ "status": "dispatched",
+ "target_id": targetID,
+ "channel":   req.Channel,
+ "sent_at":   time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
@@ -2568,8 +2568,8 @@ func (h *AdminHandler) SendDirectUserMessage(c *gin.Context) {
 func (h *AdminHandler) GetMaintenanceMode(c *gin.Context) {
 	active := atomic.LoadInt32(&maintenanceModeActive) == 1
 	response.JSON(c, http.StatusOK, gin.H{
-		"maintenance_mode": active,
-		"checked_at":       time.Now().UTC().Format(time.RFC3339),
+ "maintenance_mode": active,
+ "checked_at":       time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
@@ -2600,10 +2600,10 @@ func (h *AdminHandler) SetMaintenanceMode(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"maintenance_mode": req.Enabled,
-		"status":           status,
-		"reason":           req.Reason,
-		"updated_at":       time.Now().UTC().Format(time.RFC3339),
+ "maintenance_mode": req.Enabled,
+ "status":           status,
+ "reason":           req.Reason,
+ "updated_at":       time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
@@ -2612,8 +2612,8 @@ func (h *AdminHandler) SetMaintenanceMode(c *gin.Context) {
 func (h *AdminHandler) ListWebhookEvents(c *gin.Context) {
 	events := webhookbuffer.GlobalBuffer.GetAll()
 	response.JSON(c, http.StatusOK, gin.H{
-		"events": events,
-		"count":  len(events),
+ "events": events,
+ "count":  len(events),
 	})
 }
 
@@ -2651,8 +2651,8 @@ func (h *AdminHandler) OverrideDispatchIncident(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":  "SUCCESS",
-		"message": fmt.Sprintf("Incident override %s applied successfully", req.Action),
+ "status": "SUCCESS",
+ "message": fmt.Sprintf("Incident override %s applied successfully", req.Action),
 	})
 }
 
@@ -2694,8 +2694,8 @@ func (h *AdminHandler) ImportCatalogBatch(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"imported_count": count,
-		"message":        fmt.Sprintf("Successfully processed %d catalog items", count),
+ "imported_count": count,
+ "message":        fmt.Sprintf("Successfully processed %d catalog items", count),
 	})
 }
 
@@ -2707,8 +2707,8 @@ func (h *AdminHandler) ExportCatalogBatch(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"items": items,
-		"count": len(items),
+ "items": items,
+ "count": len(items),
 	})
 }
 
@@ -2720,8 +2720,8 @@ func (h *AdminHandler) GetAISynonyms(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"synonyms": synonyms,
-		"count":    len(synonyms),
+ "synonyms": synonyms,
+ "count":    len(synonyms),
 	})
 }
 
@@ -2778,8 +2778,8 @@ func (h *AdminHandler) GetLeakageAlerts(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": alerts,
-		"count":   len(alerts),
+ "results": alerts,
+ "count":   len(alerts),
 	})
 }
 
@@ -2791,8 +2791,8 @@ func (h *AdminHandler) GetExpiringCredentials(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": credentials,
-		"count":   len(credentials),
+ "results": credentials,
+ "count":   len(credentials),
 	})
 }
 
@@ -2855,8 +2855,8 @@ func (h *AdminHandler) TestAlertWebhook(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":  "SUCCESS",
-		"message": fmt.Sprintf("Test alert delivered to %s successfully", req.Platform),
+ "status": "SUCCESS",
+ "message": fmt.Sprintf("Test alert delivered to %s successfully", req.Platform),
 	})
 }
 
@@ -2871,8 +2871,8 @@ func (h *AdminHandler) ListApprovalRequests(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": list,
-		"count":   len(list),
+ "results": list,
+ "count":   len(list),
 	})
 }
 
@@ -2974,8 +2974,8 @@ func (h *AdminHandler) ListSLADispatchAlerts(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": alerts,
-		"count":   len(alerts),
+ "results": alerts,
+ "count":   len(alerts),
 	})
 }
 
@@ -3004,8 +3004,8 @@ func (h *AdminHandler) ListProviderQualityHealth(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": healthList,
-		"count":   len(healthList),
+ "results": healthList,
+ "count":   len(healthList),
 	})
 }
 
@@ -3019,8 +3019,8 @@ func (h *AdminHandler) ListSurgePricingRules(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"results": rules,
-		"count":   len(rules),
+ "results": rules,
+ "count":   len(rules),
 	})
 }
 
@@ -3080,10 +3080,10 @@ func (h *AdminHandler) ListLedgerEntries(c *gin.Context) {
 		return
 	}
 	response.JSON(c, http.StatusOK, gin.H{
-		"entries": entries,
-		"total":   total,
-		"limit":   limit,
-		"offset":  offset,
+ "entries": entries,
+ "total":   total,
+ "limit":   limit,
+ "offset":  offset,
 	})
 }
 

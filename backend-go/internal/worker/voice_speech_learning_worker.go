@@ -35,7 +35,7 @@ func NewVoiceSpeechLearningWorker(db *gorm.DB, cfg *config.Config) *VoiceSpeechL
 }
 
 func (w *VoiceSpeechLearningWorker) Start() {
-	slog.Info("🎙️ Starting AI Voice Speech & Sentiment Learning Background Worker...")
+	slog.Info(" Starting AI Voice Speech & Sentiment Learning Background Worker...")
 
 	go func() {
 		// Run every 15 minutes
@@ -48,7 +48,7 @@ func (w *VoiceSpeechLearningWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				slog.Info("🎙️ Stopping AI Voice Speech Learning Worker...")
+				slog.Info(" Stopping AI Voice Speech Learning Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("VoiceSpeechLearningWorker.Tick", w.analyzeVoiceSpeechAndLearn)
@@ -127,11 +127,11 @@ func (w *VoiceSpeechLearningWorker) analyzeVoiceSpeechAndLearn() {
 	}
 
 	slog.Info("[VoiceSpeechLearningWorker] Speech Sentiment Analysis",
-		"total_logs", len(logs),
-		"urgent", urgentCount,
-		"positive", positiveCount,
-		"frustrated", frustratedCount,
-		"neutral", neutralCount,
+ "total_logs", len(logs),
+ "urgent", urgentCount,
+ "positive", positiveCount,
+ "frustrated", frustratedCount,
+ "neutral", neutralCount,
 	)
 
 	// 3. Extract New Learned Knowledge Indices
@@ -168,13 +168,13 @@ func (w *VoiceSpeechLearningWorker) analyzeVoiceSpeechAndLearn() {
 					ID:                 uuid.New(),
 					TradeConcept:       tradeConcept,
 					Keyword:            tradeConcept,
-					CategoryName:       "Voice Learned Service",
+					CategoryName: "Voice Learned Service",
 					SearchQueryPattern: cleanPhrase,
 					SentimentIntent:    intent,
 					PraiseSignals:      pq.StringArray{"verified voice request", "high user intent"},
 					ConfidenceScore:    1.2,
 					SearchCount:        1,
-					Source:             "VOICE_SPEECH_MINER",
+					Source: "VOICE_SPEECH_MINER",
 					CreatedAt:          time.Now(),
 					UpdatedAt:          time.Now(),
 				}
@@ -185,9 +185,9 @@ func (w *VoiceSpeechLearningWorker) analyzeVoiceSpeechAndLearn() {
 				// Increment usage count and boost confidence
 				_ = w.db.WithContext(ctx).Model(&existing).
 					Updates(map[string]interface{}{
-						"search_count":     gorm.Expr("search_count + 1"),
-						"confidence_score": gorm.Expr("confidence_score + 0.05"),
-						"updated_at":       time.Now(),
+ "search_count":     gorm.Expr("search_count + 1"),
+ "confidence_score": gorm.Expr("confidence_score + 0.05"),
+ "updated_at":       time.Now(),
 					}).Error
 			}
 		}

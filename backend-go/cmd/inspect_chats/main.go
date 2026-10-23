@@ -56,8 +56,8 @@ func main() {
 			ID:             uuid.New(),
 			ConversationID: existing.ID,
 			SenderID:       u1.ID,
-			Content:        "Hello from Afari to Kwame!",
-			Message:        "Hello from Afari to Kwame!",
+			Content: "Hello from Afari to Kwame!",
+			Message: "Hello from Afari to Kwame!",
 			CreatedAt:      time.Now(),
 			IsDelivered:    true,
 		}
@@ -71,13 +71,13 @@ func main() {
 		list1, err := convRepo.ListByUser(context.Background(), u1.ID)
 		fmt.Printf("User 1 (%s) conversations: %d (err=%v)\n", u1.Email, len(list1), err)
 		for _, c := range list1 {
-			fmt.Printf("  Conv %s: participants=%d, messages=%d\n", c.ID, len(c.Participants), len(c.Messages))
+			fmt.Printf(" Conv %s: participants=%d, messages=%d\n", c.ID, len(c.Participants), len(c.Messages))
 			for _, p := range c.Participants {
 				pName := ""
 				if p.Profile != nil {
 					pName = p.Profile.FirstName + " " + p.Profile.LastName
 				}
-				fmt.Printf("    Participant: %s (%s)\n", p.Email, pName)
+				fmt.Printf(" Participant: %s (%s)\n", p.Email, pName)
 			}
 		}
 

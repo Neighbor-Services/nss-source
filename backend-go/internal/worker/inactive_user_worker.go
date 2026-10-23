@@ -41,7 +41,7 @@ func NewInactiveUserWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client
 }
 
 func (w *InactiveUserWorker) Start() {
-	log.Println("💤 Starting Inactive User Re-engagement Background Worker...")
+	log.Println(" Starting Inactive User Re-engagement Background Worker...")
 
 	go func() {
 		// Run once a day at startup then every 24h
@@ -53,7 +53,7 @@ func (w *InactiveUserWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("💤 Stopping Inactive User Worker...")
+				log.Println(" Stopping Inactive User Worker...")
 				return
 			case <-ticker.C:
 				w.processInactiveUsers()
@@ -82,15 +82,15 @@ func (w *InactiveUserWorker) processInactiveUsers() {
 			cutoff:       now.Add(-14 * 24 * time.Hour),
 			campaignType: "INACTIVE_14D",
 			cooldown:     20 * 24 * time.Hour,
-			title:        "We miss you! 👋",
-			message:      "It's been a while. New jobs are waiting nearby — come check them out!",
+			title: "We miss you! ",
+			message: "It's been a while. New jobs are waiting nearby — come check them out!",
 		},
 		{
 			cutoff:       now.Add(-30 * 24 * time.Hour),
 			campaignType: "INACTIVE_30D",
 			cooldown:     35 * 24 * time.Hour,
-			title:        "Still there? 🤔",
-			message:      "Providers in your area are booking fast. Don't miss out on great opportunities!",
+			title: "Still there? ",
+			message: "Providers in your area are booking fast. Don't miss out on great opportunities!",
 		},
 	}
 
@@ -119,8 +119,8 @@ func (w *InactiveUserWorker) processInactiveUsers() {
 
 			// Push notification
 			w.sendPush(u.ID, seg.title, seg.message, map[string]string{
-				"notification_type": "reengagement",
-				"campaign":          seg.campaignType,
+ "notification_type": "reengagement",
+ "campaign":          seg.campaignType,
 			})
 
 			// Email re-engagement

@@ -150,15 +150,15 @@ func (u *adminUseCase) CreateUser(ctx context.Context, adminID uuid.UUID, input 
 		ID:        uuid.New(),
 		UserID:    user.ID,
 		Balance:   0,
-		Currency:  "USD",
+		Currency: "USD",
 		CreatedAt: now,
 		UpdatedAt: now,
 	})
 
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_USER", "User", user.ID.String(), map[string]interface{}{
-		"email":     user.Email,
-		"is_staff":  user.IsStaff,
-		"user_type": userType,
+ "email":     user.Email,
+ "is_staff":  user.IsStaff,
+ "user_type": userType,
 	})
 
 	return u.adminRepo.GetUserByID(ctx, user.ID)
@@ -243,10 +243,10 @@ func (u *adminUseCase) UpdateUser(ctx context.Context, adminID, userID uuid.UUID
 				newBC := &entity.BackgroundCheck{
 					ID:           uuid.New(),
 					ProviderID:   user.ID,
-					Status:       "clear",
+					Status: "clear",
 					Adjudication: "CLEARED",
-					Package:      "tasker_standard",
-					Notes:        "[Admin Clearance]: Manually cleared via admin portal",
+					Package: "tasker_standard",
+					Notes: "[Admin Clearance]: Manually cleared via admin portal",
 					LastSyncedAt: &now,
 					CreatedAt:    now,
 					UpdatedAt:    now,
@@ -297,8 +297,8 @@ case "SUSPENDED":
 			ID:               uuid.New(),
 			UserID:           user.ID,
 			NotificationType: "ACCOUNT_SUSPENDED",
-			Title:            "Account Suspended",
-			Message:          "Your account has been suspended by administration. Reason: " + suspensionReason,
+			Title: "Account Suspended",
+			Message: "Your account has been suspended by administration. Reason: " + suspensionReason,
 			IsRead:           false,
 			CreatedAt:        time.Now(),
 		})
@@ -326,8 +326,8 @@ case "SUSPENDED":
 			ID:               uuid.New(),
 			UserID:           user.ID,
 			NotificationType: "SYSTEM_ALERT",
-			Title:            "Account Reinstated",
-			Message:          "Your Neighbor Services account has been reviewed and reinstated. You may now resume using all services.",
+			Title: "Account Reinstated",
+			Message: "Your Neighbor Services account has been reviewed and reinstated. You may now resume using all services.",
 			IsRead:           false,
 			CreatedAt:        time.Now(),
 		})
@@ -474,7 +474,7 @@ func (u *adminUseCase) ApproveVerification(ctx context.Context, adminID, verific
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_APPROVE_VERIFICATION", "ProviderVerification", verificationID.String(), map[string]interface{}{
-		"provider_id": v.ProviderID.String(),
+ "provider_id": v.ProviderID.String(),
 	})
 	return nil
 }
@@ -499,7 +499,7 @@ func (u *adminUseCase) RejectVerification(ctx context.Context, adminID, verifica
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_REJECT_VERIFICATION", "ProviderVerification", verificationID.String(), map[string]interface{}{
-		"provider_id": v.ProviderID.String(),
+ "provider_id": v.ProviderID.String(),
 	})
 	return nil
 }
@@ -567,7 +567,7 @@ func (u *adminUseCase) OverrideBackgroundCheck(ctx context.Context, adminID, che
 					ProviderID:   providerID,
 					Status:       statusVal,
 					Adjudication: normStatus,
-					Package:      "tasker_standard",
+					Package: "tasker_standard",
 					Notes:        notes,
 					LastSyncedAt: &now,
 					CreatedAt:    now,
@@ -593,8 +593,8 @@ func (u *adminUseCase) OverrideBackgroundCheck(ctx context.Context, adminID, che
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_OVERRIDE_BACKGROUND_CHECK", "BackgroundCheck", checkID.String(), map[string]interface{}{
-		"status": normStatus,
-		"notes":  notes,
+ "status": normStatus,
+ "notes":  notes,
 	})
 	return nil
 }
@@ -615,7 +615,7 @@ func (u *adminUseCase) ResolveReport(ctx context.Context, adminID, reportID uuid
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_RESOLVE_REPORT", "Report", reportID.String(), map[string]interface{}{
-		"resolution": resolution,
+ "resolution": resolution,
 	})
 	return nil
 }
@@ -641,8 +641,8 @@ func (u *adminUseCase) ResolveDispute(ctx context.Context, adminID, disputeID uu
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_RESOLVE_DISPUTE", "Dispute", disputeID.String(), map[string]interface{}{
-		"status": "RESOLVED",
-		"notes":  notes,
+ "status": "RESOLVED",
+ "notes":  notes,
 	})
 	return nil
 }
@@ -664,8 +664,8 @@ func (u *adminUseCase) RejectDispute(ctx context.Context, adminID, disputeID uui
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_REJECT_DISPUTE", "Dispute", disputeID.String(), map[string]interface{}{
-		"status": "REJECTED",
-		"notes":  notes,
+ "status": "REJECTED",
+ "notes":  notes,
 	})
 	return nil
 }
@@ -693,7 +693,7 @@ func (u *adminUseCase) ApprovePayout(ctx context.Context, adminID, payoutID uuid
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_APPROVE_PAYOUT", "PayoutRequest", payoutID.String(), map[string]interface{}{
-		"amount": pr.Amount,
+ "amount": pr.Amount,
 	})
 
 	if u.cfg != nil && u.cfg.SMTPHost != "" && u.walletRepo != nil && u.userRepo != nil {
@@ -761,8 +761,8 @@ func (u *adminUseCase) RejectPayout(ctx context.Context, adminID, payoutID uuid.
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_REJECT_PAYOUT", "PayoutRequest", payoutID.String(), map[string]interface{}{
-		"amount": pr.Amount,
-		"notes":  notes,
+ "amount": pr.Amount,
+ "notes":  notes,
 	})
 	return nil
 }
@@ -797,7 +797,7 @@ func (u *adminUseCase) ToggleSubscription(ctx context.Context, adminID, subID uu
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_TOGGLE_SUBSCRIPTION", "Subscription", subID.String(), map[string]interface{}{
-		"is_active": isActive,
+ "is_active": isActive,
 	})
 	return nil
 }
@@ -897,11 +897,11 @@ case "year":
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_ASSIGN_SUBSCRIPTION", "Subscription", sub.ID.String(), map[string]interface{}{
-		"user_id":   input.UserID.String(),
-		"tier":      tier,
-		"interval":  interval,
-		"is_active": input.IsActive,
-		"notes":     input.Notes,
+ "user_id":   input.UserID.String(),
+ "tier":      tier,
+ "interval":  interval,
+ "is_active": input.IsActive,
+ "notes":     input.Notes,
 	})
 
 	return sub, nil
@@ -924,9 +924,9 @@ func (u *adminUseCase) CreateSubscriptionPlan(ctx context.Context, adminID uuid.
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_SUBSCRIPTION_PLAN", "SubscriptionPlan", plan.ID.String(), map[string]interface{}{
-		"name":  plan.Name,
-		"tier":  plan.Tier,
-		"price": plan.Price,
+ "name":  plan.Name,
+ "tier":  plan.Tier,
+ "price": plan.Price,
 	})
 	return plan, nil
 }
@@ -937,9 +937,9 @@ func (u *adminUseCase) UpdateSubscriptionPlan(ctx context.Context, adminID uuid.
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_SUBSCRIPTION_PLAN", "SubscriptionPlan", plan.ID.String(), map[string]interface{}{
-		"name":  plan.Name,
-		"tier":  plan.Tier,
-		"price": plan.Price,
+ "name":  plan.Name,
+ "tier":  plan.Tier,
+ "price": plan.Price,
 	})
 	return plan, nil
 }
@@ -969,7 +969,7 @@ func (u *adminUseCase) CreateCategory(ctx context.Context, adminID uuid.UUID, ca
 	}
 	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_CATEGORY", "Category", cat.ID.String(), map[string]interface{}{
-		"name": cat.Name,
+ "name": cat.Name,
 	})
 	return cat, nil
 }
@@ -987,7 +987,7 @@ func (u *adminUseCase) UpdateCategory(ctx context.Context, adminID, catID uuid.U
 	}
 	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_CATEGORY", "Category", catID.String(), map[string]interface{}{
-		"name": name,
+ "name": name,
 	})
 	return &cat, nil
 }
@@ -1006,7 +1006,7 @@ func (u *adminUseCase) BulkDeleteCategories(ctx context.Context, adminID uuid.UU
 	if err == nil {
 		u.invalidateCatalogCache(ctx)
 		u.logAudit(ctx, &adminID, "ADMIN_BULK_DELETE_CATEGORIES", "Category", fmt.Sprintf("count:%d", len(ids)), map[string]interface{}{
-			"count": len(ids),
+ "count": len(ids),
 		})
 	}
 	return err
@@ -1020,7 +1020,7 @@ func (u *adminUseCase) CreateCatalogService(ctx context.Context, adminID uuid.UU
 	}
 	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_CATALOG_SERVICE", "CatalogService", cs.ID.String(), map[string]interface{}{
-		"name": cs.Name,
+ "name": cs.Name,
 	})
 	return cs, nil
 }
@@ -1044,7 +1044,7 @@ func (u *adminUseCase) UpdateCatalogService(ctx context.Context, adminID, csID u
 	}
 	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_CATALOG_SERVICE", "CatalogService", csID.String(), map[string]interface{}{
-		"name": name,
+ "name": name,
 	})
 	return &cs, nil
 }
@@ -1063,7 +1063,7 @@ func (u *adminUseCase) BulkDeleteCatalogServices(ctx context.Context, adminID uu
 	if err == nil {
 		u.invalidateCatalogCache(ctx)
 		u.logAudit(ctx, &adminID, "ADMIN_BULK_DELETE_CATALOG_SERVICES", "CatalogService", fmt.Sprintf("count:%d", len(ids)), map[string]interface{}{
-			"count": len(ids),
+ "count": len(ids),
 		})
 	}
 	return err
@@ -1097,11 +1097,11 @@ func (u *adminUseCase) UpdateSettings(ctx context.Context, adminID uuid.UUID, pa
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_SETTINGS", "ModerationSetting", s.ID.String(), map[string]interface{}{
-		"fee":                     fee,
-		"payment_mode":            paymentMode,
-		"broadcast_radius_km":     s.BroadcastRadiusKm,
-		"match_radius_km":         s.MatchRadiusKm,
-		"disable_distance_filter": s.DisableDistanceFilter,
+ "fee":                     fee,
+ "payment_mode":            paymentMode,
+ "broadcast_radius_km":     s.BroadcastRadiusKm,
+ "match_radius_km":         s.MatchRadiusKm,
+ "disable_distance_filter": s.DisableDistanceFilter,
 	})
 	return s, nil
 }
@@ -1149,15 +1149,15 @@ func (u *adminUseCase) AdjustWalletBalance(ctx context.Context, adminID, walletI
 		Amount:          amount,
 		TransactionType: txType,
 		Description:     fmt.Sprintf("[Admin Adjustment]: %s", reason),
-		Status:          "COMPLETED",
+		Status: "COMPLETED",
 		ReferenceID:     fmt.Sprintf("admin-adj-%s", adminID.String()[:8]),
 		CreatedAt:       time.Now(),
 	}
 	_ = u.adminRepo.CreateWalletTransaction(ctx, &tx)
 
 	u.logAudit(ctx, &adminID, "ADMIN_ADJUST_WALLET", "Wallet", walletID.String(), map[string]interface{}{
-		"amount": amount,
-		"reason": reason,
+ "amount": amount,
+ "reason": reason,
 	})
 
 	return wallet, nil
@@ -1178,8 +1178,8 @@ func (u *adminUseCase) BatchVerifications(ctx context.Context, adminID uuid.UUID
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_BATCH_VERIFICATIONS", "ProviderVerification", fmt.Sprintf("count:%d", len(ids)), map[string]interface{}{
-		"action": action,
-		"count":  len(ids),
+ "action": action,
+ "count":  len(ids),
 	})
 	return nil
 }
@@ -1199,9 +1199,9 @@ func (u *adminUseCase) BroadcastNotification(ctx context.Context, adminID uuid.U
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_BROADCAST_NOTIFICATION", "Notification", targetUserType, map[string]interface{}{
-		"title":       title,
-		"target_type": targetUserType,
-		"recipients":  len(users),
+ "title":       title,
+ "target_type": targetUserType,
+ "recipients":  len(users),
 	})
 
 	return len(users), nil
@@ -1217,7 +1217,7 @@ func (u *adminUseCase) SetFeatureFlag(ctx context.Context, adminID uuid.UUID, ke
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_SET_FEATURE_FLAG", "FeatureFlag", key, map[string]interface{}{
-		"is_enabled": isEnabled,
+ "is_enabled": isEnabled,
 	})
 	return flag, nil
 }
@@ -1462,7 +1462,7 @@ func (u *adminUseCase) ImpersonateUser(ctx context.Context, adminID, targetUserI
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_IMPERSONATE_USER", "User", targetUserID.String(), map[string]interface{}{
-		"target_email": targetUser.Email,
+ "target_email": targetUser.Email,
 	})
 
 	return &entity.ImpersonationResult{
@@ -1488,8 +1488,8 @@ func (u *adminUseCase) CreateRole(ctx context.Context, adminID uuid.UUID, role *
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_ROLE", "AdminRole", role.ID.String(), map[string]interface{}{
-		"name": role.Name,
-		"slug": role.Slug,
+ "name": role.Name,
+ "slug": role.Slug,
 	})
 	return role, nil
 }
@@ -1511,9 +1511,9 @@ func (u *adminUseCase) UpdateRole(ctx context.Context, adminID, roleID uuid.UUID
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_ROLE", "AdminRole", roleID.String(), map[string]interface{}{
-		"name":        existing.Name,
-		"slug":        existing.Slug,
-		"permissions": existing.Permissions,
+ "name":        existing.Name,
+ "slug":        existing.Slug,
+ "permissions": existing.Permissions,
 	})
 	return existing, nil
 }
@@ -1529,8 +1529,8 @@ func (u *adminUseCase) DeleteRole(ctx context.Context, adminID, roleID uuid.UUID
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_DELETE_ROLE", "AdminRole", roleID.String(), map[string]interface{}{
-		"name": existing.Name,
-		"slug": existing.Slug,
+ "name": existing.Name,
+ "slug": existing.Slug,
 	})
 	return nil
 }
@@ -1555,8 +1555,8 @@ func (u *adminUseCase) AssignUserRole(ctx context.Context, adminID, targetUserID
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_ASSIGN_ROLE", "User", targetUserID.String(), map[string]interface{}{
-		"role_name": role.Name,
-		"role_slug": role.Slug,
+ "role_name": role.Name,
+ "role_slug": role.Slug,
 	})
 	return nil
 }
@@ -1573,15 +1573,15 @@ func (u *adminUseCase) EvaluateUserRisk(ctx context.Context, adminID, targetUser
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_EVALUATE_USER_RISK", "User", targetUserID.String(), map[string]interface{}{
-		"risk_score": alert.RiskScore,
-		"risk_level": alert.RiskLevel,
+ "risk_score": alert.RiskScore,
+ "risk_level": alert.RiskLevel,
 	})
 	return alert, nil
 }
 
 func (u *adminUseCase) ResolveRiskAlert(ctx context.Context, adminID, alertID uuid.UUID, action string) error {
 	u.logAudit(ctx, &adminID, "ADMIN_RESOLVE_RISK_ALERT", "FraudRiskAlert", alertID.String(), map[string]interface{}{
-		"action": action,
+ "action": action,
 	})
 	return nil
 }
@@ -1648,7 +1648,7 @@ func (u *adminUseCase) TestSendEmailTemplate(ctx context.Context, adminID uuid.U
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_TEST_SEND_TEMPLATE", "NotificationTemplate", key, map[string]interface{}{
-		"recipient": targetEmail,
+ "recipient": targetEmail,
 	})
 	return nil
 }
@@ -1667,7 +1667,7 @@ func (u *adminUseCase) TriggerDatabaseBackup(ctx context.Context, adminID uuid.U
 		ID:          uuid.New(),
 		Filename:    filename,
 		FileSize:    1024 * 1024 * 5, // ~5MB simulated snapshot
-		Status:      "COMPLETED",
+		Status: "COMPLETED",
 		StoragePath: storagePath,
 		Checksum:    checksum,
 		CreatedAt:   now,
@@ -1679,7 +1679,7 @@ func (u *adminUseCase) TriggerDatabaseBackup(ctx context.Context, adminID uuid.U
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_TRIGGER_BACKUP", "BackupSnapshot", snap.ID.String(), map[string]interface{}{
-		"filename": filename,
+ "filename": filename,
 	})
 
 	return &snap, nil
@@ -1749,9 +1749,9 @@ func (u *adminUseCase) CreateStaffNote(ctx context.Context, adminID, userID uuid
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_STAFF_NOTE", "StaffNote", note.ID.String(), map[string]interface{}{
-		"target_user_id": userID.String(),
-		"category":       category,
-		"pinned":         isPinned,
+ "target_user_id": userID.String(),
+ "category":       category,
+ "pinned":         isPinned,
 	})
 
 	return note, nil
@@ -1777,7 +1777,7 @@ func (u *adminUseCase) UpdateAppointmentStatus(ctx context.Context, adminID, id 
 		return err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_APPOINTMENT_STATUS", "Appointment", id.String(), map[string]interface{}{
-		"new_status": status,
+ "new_status": status,
 	})
 	return nil
 }
@@ -1834,9 +1834,9 @@ func (u *adminUseCase) CreateReview(ctx context.Context, adminID uuid.UUID, revi
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_REVIEW", "Review", review.ID.String(), map[string]interface{}{
-		"provider_id": review.ProviderID.String(),
-		"reviewer_id": review.ReviewerID.String(),
-		"rating":      review.Rating,
+ "provider_id": review.ProviderID.String(),
+ "reviewer_id": review.ReviewerID.String(),
+ "rating":      review.Rating,
 	})
 	return review, nil
 }
@@ -1846,7 +1846,7 @@ func (u *adminUseCase) ToggleReviewVisibility(ctx context.Context, adminID, id u
 		return err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_TOGGLE_REVIEW_VISIBILITY", "Review", id.String(), map[string]interface{}{
-		"is_hidden": isHidden,
+ "is_hidden": isHidden,
 	})
 	return nil
 }
@@ -1870,9 +1870,9 @@ func (u *adminUseCase) CreatePromoCode(ctx context.Context, adminID uuid.UUID, p
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_PROMO_CODE", "PromoCode", promo.ID.String(), map[string]interface{}{
-		"code":           promo.Code,
-		"discount_type":  promo.DiscountType,
-		"discount_value": promo.DiscountValue,
+ "code":           promo.Code,
+ "discount_type":  promo.DiscountType,
+ "discount_value": promo.DiscountValue,
 	})
 	return promo, nil
 }
@@ -1882,8 +1882,8 @@ func (u *adminUseCase) UpdatePromoCode(ctx context.Context, adminID uuid.UUID, p
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_PROMO_CODE", "PromoCode", promo.ID.String(), map[string]interface{}{
-		"code":      promo.Code,
-		"is_active": promo.IsActive,
+ "code":      promo.Code,
+ "is_active": promo.IsActive,
 	})
 	return promo, nil
 }
@@ -1966,9 +1966,9 @@ func (u *adminUseCase) CreateLegalDocument(ctx context.Context, adminID uuid.UUI
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_CREATE_LEGAL_DOCUMENT", "LegalDocument", doc.ID.String(), map[string]interface{}{
-		"doc_type": doc.DocType,
-		"version":  doc.Version,
-		"title":    doc.Title,
+ "doc_type": doc.DocType,
+ "version":  doc.Version,
+ "title":    doc.Title,
 	})
 	return doc, nil
 }
@@ -1978,9 +1978,9 @@ func (u *adminUseCase) UpdateLegalDocument(ctx context.Context, adminID uuid.UUI
 		return nil, err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_UPDATE_LEGAL_DOCUMENT", "LegalDocument", doc.ID.String(), map[string]interface{}{
-		"doc_type":  doc.DocType,
-		"version":   doc.Version,
-		"is_active": doc.IsActive,
+ "doc_type":  doc.DocType,
+ "version":   doc.Version,
+ "is_active": doc.IsActive,
 	})
 	return doc, nil
 }
@@ -2004,7 +2004,7 @@ func (u *adminUseCase) ToggleContactMessageResolved(ctx context.Context, adminID
 		return err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_TOGGLE_CONTACT_MESSAGE_RESOLVED", "ContactMessage", id.String(), map[string]interface{}{
-		"is_resolved": isResolved,
+ "is_resolved": isResolved,
 	})
 	return nil
 }
@@ -2028,7 +2028,7 @@ func (u *adminUseCase) ToggleResolutionReportReviewed(ctx context.Context, admin
 		return err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_TOGGLE_RESOLUTION_REPORT_REVIEWED", "ResolutionReport", id.String(), map[string]interface{}{
-		"is_reviewed": isReviewed,
+ "is_reviewed": isReviewed,
 	})
 	return nil
 }
@@ -2163,10 +2163,10 @@ func (u *adminUseCase) OverrideDispatchIncident(ctx context.Context, adminID, in
 		return err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_OVERRIDE_DISPATCH_INCIDENT", "FlashDispatch", incidentID.String(), map[string]interface{}{
-		"action":             action,
-		"reason":             reason,
-		"target_provider_id": targetProviderID,
-		"extend_radius_km":   extendRadiusKm,
+ "action":             action,
+ "reason":             reason,
+ "target_provider_id": targetProviderID,
+ "extend_radius_km":   extendRadiusKm,
 	})
 	return nil
 }
@@ -2188,7 +2188,7 @@ func (u *adminUseCase) ImportCatalogBatch(ctx context.Context, adminID uuid.UUID
 	}
 	u.invalidateCatalogCache(ctx)
 	u.logAudit(ctx, &adminID, "ADMIN_IMPORT_CATALOG_BATCH", "CatalogService", fmt.Sprintf("count:%d", count), map[string]interface{}{
-		"imported_count": count,
+ "imported_count": count,
 	})
 	return count, nil
 }
@@ -2212,7 +2212,7 @@ func (u *adminUseCase) AddAISynonym(ctx context.Context, adminID uuid.UUID, key 
 	}
 	aimatcher.GlobalKnowledge.AddConceptSynonyms(key, synonyms)
 	u.logAudit(ctx, &adminID, "ADMIN_ADD_AI_SYNONYM", "DynamicOntology", key, map[string]interface{}{
-		"synonyms": synonyms,
+ "synonyms": synonyms,
 	})
 	return nil
 }
@@ -2244,11 +2244,11 @@ func (u *adminUseCase) MediationResolveDispute(ctx context.Context, adminID, dis
 		return err
 	}
 	u.logAudit(ctx, &adminID, "ADMIN_MEDIATION_RESOLVE_DISPUTE", "Dispute", disputeID.String(), map[string]interface{}{
-		"resolution_type": input.ResolutionType,
-		"refund_amount":   input.RefundAmount,
-		"provider_payout": input.ProviderPayout,
-		"credit_voucher":  input.CreditVoucher,
-		"notes":           input.Notes,
+ "resolution_type": input.ResolutionType,
+ "refund_amount":   input.RefundAmount,
+ "provider_payout": input.ProviderPayout,
+ "credit_voucher":  input.CreditVoucher,
+ "notes":           input.Notes,
 	})
 	return nil
 }
@@ -2271,19 +2271,19 @@ func (u *adminUseCase) TestAlertWebhook(ctx context.Context, adminID uuid.UUID, 
 
 	if strings.ToLower(platform) == "discord" {
 		payload = map[string]interface{}{
-			"content": "🚨 **Neighbor Services Alert System**: Test Webhook Connection Successful!",
-			"embeds": []map[string]interface{}{
+ "content": " **Neighbor Services Alert System**: Test Webhook Connection Successful!",
+ "embeds": []map[string]interface{}{
 				{
-					"title":       "System Telemetry Ping",
-					"description": fmt.Sprintf("Triggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
-					"color":       3066993, // Green
+ "title": "System Telemetry Ping",
+ "description": fmt.Sprintf("Triggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
+ "color":       3066993, // Green
 				},
 			},
 		}
 	} else {
 		// Slack compatible payload default
 		payload = map[string]interface{}{
-			"text": fmt.Sprintf("🚨 *Neighbor Services Alert System*: Test Webhook Connection Successful!\nTriggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
+ "text": fmt.Sprintf(" *Neighbor Services Alert System*: Test Webhook Connection Successful!\nTriggered by Admin ID %s at %s", adminID.String()[:8], time.Now().Format(time.RFC1123)),
 		}
 	}
 
@@ -2309,7 +2309,7 @@ func (u *adminUseCase) TestAlertWebhook(ctx context.Context, adminID uuid.UUID, 
 	}
 
 	u.logAudit(ctx, &adminID, "ADMIN_TEST_ALERT_WEBHOOK", "WebhookIntegration", webhookURL, map[string]interface{}{
-		"platform": platform,
+ "platform": platform,
 	})
 
 	return nil
@@ -2327,8 +2327,8 @@ func (u *adminUseCase) CreateApprovalRequest(ctx context.Context, adminID uuid.U
 		return err
 	}
 	u.logAudit(ctx, &adminID, "MAKER_CHECKER_REQUEST_CREATED", req.ActionType, req.TargetID, map[string]interface{}{
-		"target_resource": req.TargetResource,
-		"amount":          req.Amount,
+ "target_resource": req.TargetResource,
+ "amount":          req.Amount,
 	})
 	return nil
 }
@@ -2338,8 +2338,8 @@ func (u *adminUseCase) ResolveApprovalRequest(ctx context.Context, adminID, id u
 		return err
 	}
 	u.logAudit(ctx, &adminID, "MAKER_CHECKER_REQUEST_RESOLVED", "ApprovalRequest", id.String(), map[string]interface{}{
-		"status": status,
-		"reason": reason,
+ "status": status,
+ "reason": reason,
 	})
 	return nil
 }
@@ -2392,8 +2392,8 @@ func (u *adminUseCase) SaveSurgePricingRule(ctx context.Context, adminID uuid.UU
 		return err
 	}
 	u.logAudit(ctx, &adminID, "SURGE_RULE_SAVED", "SurgePricingRule", rule.RegionZip, map[string]interface{}{
-		"multiplier": rule.Multiplier,
-		"reason":     rule.Reason,
+ "multiplier": rule.Multiplier,
+ "reason":     rule.Reason,
 	})
 	return nil
 }

@@ -24,7 +24,7 @@ func TestGoStoreHandler_WebhookSignatureVerification(t *testing.T) {
 	defer os.Unsetenv("GOSTORE_WEBHOOK_SECRET")
 
 	cfg := &config.Config{
-		GoStoreURL:    "https://file.proleadsolutions.co",
+		GoStoreURL: "https://file.proleadsolutions.co",
 		GoStoreBucket: "neighborservice",
 		GoStoreAPIKey: secret,
 	}
@@ -32,9 +32,9 @@ func TestGoStoreHandler_WebhookSignatureVerification(t *testing.T) {
 
 	payload := GoStoreWebhookPayload{
 		EventID: "evt_123456",
-		Event:   "file.uploaded",
-		Bucket:  "neighborservice",
-		Path:    "profiles/avatar.png",
+		Event: "file.uploaded",
+		Bucket: "neighborservice",
+		Path: "profiles/avatar.png",
 		Size:    1024,
 	}
 	payloadBytes, _ := json.Marshal(payload)

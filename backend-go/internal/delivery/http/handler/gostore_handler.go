@@ -63,7 +63,7 @@ func (h *GoStoreHandler) HandleWebhook(c *gin.Context) {
 		mac.Write(bodyBytes)
 		expectedMAC := hex.EncodeToString(mac.Sum(nil))
 		if !hmac.Equal([]byte(signature), []byte(expectedMAC)) {
-			log.Printf("⚠️ GoStore Webhook signature mismatch: got %s, expected %s", signature, expectedMAC)
+			log.Printf(" GoStore Webhook signature mismatch: got %s, expected %s", signature, expectedMAC)
 			response.Unauthorized(c, "Invalid webhook signature")
 			return
 		}
@@ -75,14 +75,14 @@ func (h *GoStoreHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
-	log.Printf("✅ [GoStore Webhook] Event: %s | Bucket: %s | Object: %s | Size: %d bytes",
+	log.Printf(" [GoStore Webhook] Event: %s | Bucket: %s | Object: %s | Size: %d bytes",
 		payload.Event, payload.Bucket, payload.Path, payload.Size)
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":   "received",
-		"event_id": payload.EventID,
-		"event":    payload.Event,
-		"received": time.Now().UTC().Format(time.RFC3339),
+ "status": "received",
+ "event_id": payload.EventID,
+ "event":    payload.Event,
+ "received": time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
@@ -175,10 +175,10 @@ func (h *GoStoreHandler) ListMedia(c *gin.Context) {
 	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, targetURL, nil)
 	if err != nil {
 		response.JSON(c, http.StatusOK, gin.H{
-			"data":           gin.H{"items": []interface{}{}},
-			"source":         "gostore-cas",
-			"bucket":         bucket,
-			"default_bucket": defaultBucket,
+ "data":           gin.H{"items": []interface{}{}},
+ "source": "gostore-cas",
+ "bucket":         bucket,
+ "default_bucket": defaultBucket,
 		})
 		return
 	}
@@ -196,11 +196,11 @@ func (h *GoStoreHandler) ListMedia(c *gin.Context) {
 		}
 		// Gracefully return empty partition items when storage appliance is empty or syncing
 		response.JSON(c, http.StatusOK, gin.H{
-			"data":           gin.H{"items": []interface{}{}},
-			"source":         "gostore-cas",
-			"bucket":         bucket,
-			"default_bucket": defaultBucket,
-			"status":         "ready",
+ "data":           gin.H{"items": []interface{}{}},
+ "source": "gostore-cas",
+ "bucket":         bucket,
+ "default_bucket": defaultBucket,
+ "status": "ready",
 		})
 		return
 	}
@@ -209,18 +209,18 @@ func (h *GoStoreHandler) ListMedia(c *gin.Context) {
 	var data interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		response.JSON(c, http.StatusOK, gin.H{
-			"data":           gin.H{"items": []interface{}{}},
-			"source":         "gostore-cas",
-			"bucket":         bucket,
-			"default_bucket": defaultBucket,
+ "data":           gin.H{"items": []interface{}{}},
+ "source": "gostore-cas",
+ "bucket":         bucket,
+ "default_bucket": defaultBucket,
 		})
 		return
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"data":           data,
-		"source":         "gostore",
-		"bucket":         bucket,
-		"default_bucket": defaultBucket,
+ "data":           data,
+ "source": "gostore",
+ "bucket":         bucket,
+ "default_bucket": defaultBucket,
 	})
 }

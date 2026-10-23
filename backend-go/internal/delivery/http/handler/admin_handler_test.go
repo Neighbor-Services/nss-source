@@ -754,7 +754,7 @@ func TestAdminHandler_UserOperations(t *testing.T) {
 	// Update
 	activeFalse := false
 	body, _ := json.Marshal(map[string]interface{}{
-		"is_active": false,
+ "is_active": false,
 	})
 	req, _ = http.NewRequest(http.MethodPatch, "/api/v1/admin/users/"+userID.String(), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -800,9 +800,9 @@ func TestAdminHandler_CategoriesAndServices(t *testing.T) {
 
 	// Create Catalog Service
 	srvBody, _ := json.Marshal(map[string]interface{}{
-		"category_id": uuid.New().String(),
-		"name":        "Pipe Repair",
-		"base_price":  50.0,
+ "category_id": uuid.New().String(),
+ "name": "Pipe Repair",
+ "base_price":  50.0,
 	})
 	req, _ = http.NewRequest(http.MethodPost, "/api/v1/admin/catalog-services", bytes.NewBuffer(srvBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -825,8 +825,8 @@ func TestAdminHandler_AdvancedEndpoints(t *testing.T) {
 	// 2. Adjust Wallet
 	walletID := uuid.New()
 	adjBody, _ := json.Marshal(map[string]interface{}{
-		"amount": 50.0,
-		"reason": "Promotion",
+ "amount": 50.0,
+ "reason": "Promotion",
 	})
 	req, _ = http.NewRequest(http.MethodPost, "/api/v1/admin/wallets/"+walletID.String()+"/adjust", bytes.NewBuffer(adjBody))
 	req.Header.Set("Content-Type", "application/json")
@@ -836,9 +836,9 @@ func TestAdminHandler_AdvancedEndpoints(t *testing.T) {
 
 	// 3. Batch Verifications
 	batchBody, _ := json.Marshal(map[string]interface{}{
-		"ids":    []string{uuid.New().String(), uuid.New().String()},
-		"action": "APPROVE",
-		"notes":  "Batch ok",
+ "ids":    []string{uuid.New().String(), uuid.New().String()},
+ "action": "APPROVE",
+ "notes": "Batch ok",
 	})
 	req, _ = http.NewRequest(http.MethodPost, "/api/v1/admin/verifications/batch", bytes.NewBuffer(batchBody))
 	req.Header.Set("Content-Type", "application/json")

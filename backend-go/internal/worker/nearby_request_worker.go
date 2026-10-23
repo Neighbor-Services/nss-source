@@ -47,7 +47,7 @@ func NewNearbyRequestWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Clien
 }
 
 func (w *NearbyRequestWorker) Start() {
-	log.Println("🔍 Starting Nearby Request Matching & Redis Pre-caching Background Worker...")
+	log.Println(" Starting Nearby Request Matching & Redis Pre-caching Background Worker...")
 
 	go func() {
 		// Run every 5 minutes
@@ -60,7 +60,7 @@ func (w *NearbyRequestWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("🔍 Stopping Nearby Request Background Worker...")
+				log.Println(" Stopping Nearby Request Background Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("NearbyRequestWorker.Tick", w.processNearbyRequestsForUsers)
@@ -98,7 +98,7 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 		Preload("CatalogService").
 		Preload("CatalogService.Category").
 		Where("status = ? AND created_at >= ? AND latitude IS NOT NULL AND longitude IS NOT NULL AND (latitude != 0 OR longitude != 0)",
-			"OPEN", twoWeeksAgo).
+ "OPEN", twoWeeksAgo).
 		Order("created_at DESC").
 		Find(&openRequests).Error
 	if err != nil {
@@ -207,7 +207,7 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 				UserID:           userID,
 				SenderID:         &matchedReq.UserID,
 				NotificationType: "NEARBY_REQUEST",
-				Title:            "New Job Opportunity Nearby",
+				Title: "New Job Opportunity Nearby",
 				Message:          fmt.Sprintf("A client nearby needs '%s' (~%.1f mi away).", matchedReq.Title, distVal),
 				Data:             entity.JSONMap{"request_id": matchedReq.ID.String(), "distance": fmt.Sprintf("%.1f", distVal)},
 				CreatedAt:        time.Now(),
@@ -217,12 +217,12 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 			// FCM Push Notification
 			w.sendPush(
 				userID,
-				"New Job Nearby",
+ "New Job Nearby",
 				fmt.Sprintf("A client requested '%s' (~%.1f mi away). Tap to view!", matchedReq.Title, distVal),
 				map[string]string{
-					"notification_type": "nearby_request",
-					"request_id":        matchedReq.ID.String(),
-					"distance":          fmt.Sprintf("%.1f", distVal),
+ "notification_type": "nearby_request",
+ "request_id":        matchedReq.ID.String(),
+ "distance":          fmt.Sprintf("%.1f", distVal),
 				},
 			)
 

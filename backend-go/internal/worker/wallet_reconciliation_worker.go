@@ -43,7 +43,7 @@ func NewWalletReconciliationWorker(db *gorm.DB, cfg *config.Config, cache cache.
 }
 
 func (w *WalletReconciliationWorker) Start() {
-	log.Println("🏦 Starting Wallet Reconciliation Background Worker...")
+	log.Println(" Starting Wallet Reconciliation Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(24 * time.Hour)
@@ -54,7 +54,7 @@ func (w *WalletReconciliationWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("🏦 Stopping Wallet Reconciliation Worker...")
+				log.Println(" Stopping Wallet Reconciliation Worker...")
 				return
 			case <-ticker.C:
 				w.reconcile()
@@ -105,7 +105,7 @@ func (w *WalletReconciliationWorker) reconcile() {
 		}
 
 		discrepancies++
-		log.Printf("[WalletReconciliation] ⚠️  Discrepancy for wallet %s (user %s): balance=%.2f, tx_sum=%.2f, diff=%.2f",
+		log.Printf("[WalletReconciliation]   Discrepancy for wallet %s (user %s): balance=%.2f, tx_sum=%.2f, diff=%.2f",
 			wallet.ID, wallet.UserID, wallet.Balance, txSum, diff)
 
 		// Check if we've already flagged this wallet today
@@ -133,13 +133,13 @@ func (w *WalletReconciliationWorker) reconcile() {
 			RiskLevel: riskLevel,
 			Flags:     entity.JSONSlice{"WALLET_BALANCE_MISMATCH"},
 			Details: entity.JSONMap{
-				"wallet_id":    wallet.ID.String(),
-				"book_balance": fmt.Sprintf("%.2f", wallet.Balance),
-				"tx_sum":       fmt.Sprintf("%.2f", txSum),
-				"difference":   fmt.Sprintf("%.2f", diff),
-				"detected_at":  time.Now().Format(time.RFC3339),
+ "wallet_id":    wallet.ID.String(),
+ "book_balance": fmt.Sprintf("%.2f", wallet.Balance),
+ "tx_sum":       fmt.Sprintf("%.2f", txSum),
+ "difference":   fmt.Sprintf("%.2f", diff),
+ "detected_at":  time.Now().Format(time.RFC3339),
 			},
-			Status:    "OPEN",
+			Status: "OPEN",
 			CreatedAt: time.Now(),
 		})
 
@@ -147,7 +147,7 @@ func (w *WalletReconciliationWorker) reconcile() {
 		_ = email.SendWalletDiscrepancyAlertEmail(
 			w.emailCfg,
 			w.cfg.AdminEmail,
-			"Admin",
+ "Admin",
 			wallet.UserID.String(),
 			wallet.ID.String(),
 			wallet.Balance,
@@ -159,6 +159,6 @@ func (w *WalletReconciliationWorker) reconcile() {
 	if discrepancies > 0 {
 		log.Printf("[WalletReconciliation] Cycle complete — %d discrepancy/discrepancies flagged", discrepancies)
 	} else {
-		log.Printf("[WalletReconciliation] Cycle complete — all %d wallet(s) balanced ✅", len(wallets))
+		log.Printf("[WalletReconciliation] Cycle complete — all %d wallet(s) balanced ", len(wallets))
 	}
 }

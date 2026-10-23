@@ -280,12 +280,12 @@ func (r *serviceRequestRepository) Update(ctx context.Context, req *entity.Servi
 		Model(&entity.ServiceRequest{}).
 		Where("id = ?", req.ID).
 		Select(
-			"user_id", "target_provider_id", "catalog_service_id",
-			"title", "description", "price", "status",
-			"preferred_payment_mode", "service_type",
-			"with_image", "image",
-			"longitude", "latitude", "scheduled_time",
-			"updated_at", "deleted_at",
+ "user_id", "target_provider_id", "catalog_service_id",
+ "title", "description", "price", "status",
+ "preferred_payment_mode", "service_type",
+ "with_image", "image",
+ "longitude", "latitude", "scheduled_time",
+ "updated_at", "deleted_at",
 		).
 		Updates(req).Error
 }
@@ -368,8 +368,8 @@ func (r *proposalRepository) ListByProvider(ctx context.Context, providerID uuid
 
 func (r *proposalRepository) Update(ctx context.Context, proposal *entity.Proposal) error {
 	return r.db.WithContext(ctx).Model(&entity.Proposal{}).Where("id = ?", proposal.ID).Updates(map[string]interface{}{
-		"is_approved": proposal.IsApproved,
-		"updated_at":  time.Now(),
+ "is_approved": proposal.IsApproved,
+ "updated_at":  time.Now(),
 	}).Error
 }
 
@@ -428,15 +428,15 @@ func (r *aiKnowledgeRepository) UpsertKnowledge(ctx context.Context, item *entit
 	if err == nil {
 		item.ID = existing.ID
 		return r.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
-			"category_name":        item.CategoryName,
-			"service_name":         item.ServiceName,
-			"service_id":           item.ServiceID,
-			"search_query_pattern": item.SearchQueryPattern,
-			"sentiment_intent":     item.SentimentIntent,
-			"praise_signals":       item.PraiseSignals,
-			"complaint_signals":    item.ComplaintSignals,
-			"confidence_score":     item.ConfidenceScore,
-			"updated_at":           time.Now(),
+ "category_name":        item.CategoryName,
+ "service_name":         item.ServiceName,
+ "service_id":           item.ServiceID,
+ "search_query_pattern": item.SearchQueryPattern,
+ "sentiment_intent":     item.SentimentIntent,
+ "praise_signals":       item.PraiseSignals,
+ "complaint_signals":    item.ComplaintSignals,
+ "confidence_score":     item.ConfidenceScore,
+ "updated_at":           time.Now(),
 		}).Error
 	}
 	return r.db.WithContext(ctx).Create(item).Error
@@ -519,9 +519,9 @@ func (r *aiKnowledgeRepository) MarkVoiceSpeechLogApplied(ctx context.Context, i
 		Model(&entity.VoiceSpeechLog{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
-			"is_applied_to_request": true,
-			"linked_request_id":     requestID,
-			"updated_at":            time.Now(),
+ "is_applied_to_request": true,
+ "linked_request_id":     requestID,
+ "updated_at":            time.Now(),
 		}).Error
 }
 

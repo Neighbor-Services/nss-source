@@ -175,8 +175,8 @@ func (h *NotificationHandler) GetNotificationPreferences(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"email_notifications_enabled": emailEnabled,
-		"push_notifications_enabled":  pushEnabled,
+ "email_notifications_enabled": emailEnabled,
+ "push_notifications_enabled":  pushEnabled,
 	})
 }
 
@@ -201,9 +201,9 @@ func (h *NotificationHandler) UpdateNotificationPreferences(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"message":                     "Notification preferences updated successfully",
-		"email_notifications_enabled": emailEnabled,
-		"push_notifications_enabled":  pushEnabled,
+ "message": "Notification preferences updated successfully",
+ "email_notifications_enabled": emailEnabled,
+ "push_notifications_enabled":  pushEnabled,
 	})
 }
 

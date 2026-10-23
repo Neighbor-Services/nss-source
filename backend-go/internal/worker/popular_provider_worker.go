@@ -34,7 +34,7 @@ func NewPopularProviderWorker(db *gorm.DB, cfg *config.Config, cache cache.Cache
 }
 
 func (w *PopularProviderWorker) Start() {
-	log.Println("⭐ Starting Popular Provider Geospatial Pre-caching Background Worker...")
+	log.Println(" Starting Popular Provider Geospatial Pre-caching Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)
@@ -45,7 +45,7 @@ func (w *PopularProviderWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("⭐ Stopping Popular Provider Background Worker...")
+				log.Println(" Stopping Popular Provider Background Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("PopularProviderWorker.Tick", w.processPopularProviders)

@@ -10,32 +10,82 @@ import (
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/pkg/response"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type PublicHandler struct {
-	publicUC domainUsecase.PublicUseCase
+	publicUC  domainUsecase.PublicUseCase
+	db        *gorm.DB
+	startTime time.Time
 }
 
-func NewPublicHandler(publicUC domainUsecase.PublicUseCase) *PublicHandler {
-	return &PublicHandler{publicUC: publicUC}
+func NewPublicHandler(publicUC domainUsecase.PublicUseCase, db ...*gorm.DB) *PublicHandler {
+	var gormDB *gorm.DB
+	if len(db) > 0 {
+		gormDB = db[0]
+	}
+	return &PublicHandler{
+		publicUC:  publicUC,
+		db:        gormDB,
+		startTime: time.Now(),
+	}
 }
 
 func (h *PublicHandler) HealthCheck(c *gin.Context) {
-	response.JSON(c, http.StatusOK, gin.H{
-		"status":  "healthy",
-		"service": "neighbor-services-go",
-		"version": "1.0.0",
-		"time":    time.Now().UTC().Format(time.RFC3339),
+	dbStatus := "connected"
+	status := "healthy"
+	statusCode := http.StatusOK
+
+	if h.db != nil {
+		sqlDB, err := h.db.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "disconnected"
+			status = "unhealthy"
+			statusCode = http.StatusServiceUnavailable
+		}
+	}
+
+	uptime := int64(0)
+	if !h.startTime.IsZero() {
+		uptime = int64(time.Since(h.startTime).Seconds())
+	}
+
+	response.JSON(c, statusCode, gin.H{
+ "status":         status,
+ "database":       dbStatus,
+ "service": "neighbor-services-go",
+ "version": "1.0.0",
+ "uptime_seconds": uptime,
+ "time":           time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
 func (h *PublicHandler) ReadyCheck(c *gin.Context) {
-	response.JSON(c, http.StatusOK, gin.H{
-		"status":    "ready",
-		"service":   "neighbor-services-go",
-		"version":   "1.0.0",
-		"database":  "connected",
-		"timestamp": time.Now().UTC().Unix(),
+	dbStatus := "connected"
+	status := "ready"
+	statusCode := http.StatusOK
+
+	if h.db != nil {
+		sqlDB, err := h.db.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "disconnected"
+			status = "not_ready"
+			statusCode = http.StatusServiceUnavailable
+		}
+	}
+
+	uptime := int64(0)
+	if !h.startTime.IsZero() {
+		uptime = int64(time.Since(h.startTime).Seconds())
+	}
+
+	response.JSON(c, statusCode, gin.H{
+ "status":         status,
+ "service": "neighbor-services-go",
+ "version": "1.0.0",
+ "database":       dbStatus,
+ "uptime_seconds": uptime,
+ "timestamp":      time.Now().UTC().Unix(),
 	})
 }
 
@@ -93,8 +143,8 @@ func (h *PublicHandler) SubmitContactMessage(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Your message has been sent successfully. We will get back to you shortly.",
+ "status": "success",
+ "message": "Your message has been sent successfully. We will get back to you shortly.",
 	})
 }
 
@@ -128,8 +178,8 @@ func (h *PublicHandler) SubmitResolutionReport(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Resolution report submitted successfully.",
+ "status": "success",
+ "message": "Resolution report submitted successfully.",
 	})
 }
 
@@ -138,12 +188,12 @@ func (h *PublicHandler) RenderStaticPage(pageName string) gin.HandlerFunc {
 		// Look in root directory or templates directory
 		paths := []string{
 			pageName + ".html",
-			"../" + pageName + ".html",
-			"templates/" + pageName + ".html",
-			"templates/public_site/" + pageName + ".html",
-			"/app/templates/" + pageName + ".html",
-			"backend/public_site/templates/public_site/" + pageName + ".html",
-			"../backend/public_site/templates/public_site/" + pageName + ".html",
+ "../" + pageName + ".html",
+ "templates/" + pageName + ".html",
+ "templates/public_site/" + pageName + ".html",
+ "/app/templates/" + pageName + ".html",
+ "backend/public_site/templates/public_site/" + pageName + ".html",
+ "../backend/public_site/templates/public_site/" + pageName + ".html",
 		}
 
 		for _, p := range paths {
@@ -155,8 +205,8 @@ func (h *PublicHandler) RenderStaticPage(pageName string) gin.HandlerFunc {
 
 		// Fallback JSON if static file not found
 		response.JSON(c, http.StatusOK, gin.H{
-			"page":    pageName,
-			"service": "Neighbor Services",
+ "page":    pageName,
+ "service": "Neighbor Services",
 		})
 	}
 }
@@ -165,13 +215,13 @@ func (h *PublicHandler) AssetLinks(c *gin.Context) {
 	c.Header("Content-Type", "application/json")
 	c.String(http.StatusOK, `[
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.neighborservicesolutionsllc.nsapp",
-      "sha256_cert_fingerprints": [
-        "A6:ED:80:4D:3E:A4:63:7D:EB:81:09:FA:72:E1:BC:EA:65:56:64:D5:7D:3F:A5:85:1D:55:D6:7D:F1:06:1E:07",
-        "DF:A8:0E:3E:9D:BA:CC:31:C2:0F:34:9F:C3:06:E8:A6:79:22:AF:D1:CA:8C:56:0E:3D:7E:0F:7E:08:FD:19:2F"
+ "relation": ["delegate_permission/common.handle_all_urls"],
+ "target": {
+ "namespace": "android_app",
+ "package_name": "com.neighborservicesolutionsllc.nsapp",
+ "sha256_cert_fingerprints": [
+ "A6:ED:80:4D:3E:A4:63:7D:EB:81:09:FA:72:E1:BC:EA:65:56:64:D5:7D:3F:A5:85:1D:55:D6:7D:F1:06:1E:07",
+ "DF:A8:0E:3E:9D:BA:CC:31:C2:0F:34:9F:C3:06:E8:A6:79:22:AF:D1:CA:8C:56:0E:3D:7E:0F:7E:08:FD:19:2F"
       ]
     }
   }
@@ -181,18 +231,18 @@ func (h *PublicHandler) AssetLinks(c *gin.Context) {
 func (h *PublicHandler) AppleAppSiteAssociation(c *gin.Context) {
 	c.Header("Content-Type", "application/json")
 	c.String(http.StatusOK, `{
-  "applinks": {
-    "apps": [],
-    "details": [
+ "applinks": {
+ "apps": [],
+ "details": [
       {
-        "appID": "875W85H2Q9.com.neighborservicesolutionsllc.nsapp",
-        "paths": ["*"]
+ "appID": "875W85H2Q9.com.neighborservicesolutionsllc.nsapp",
+ "paths": ["*"]
       }
     ]
   },
-  "webcredentials": {
-    "apps": [
-      "875W85H2Q9.com.neighborservicesolutionsllc.nsapp"
+ "webcredentials": {
+ "apps": [
+ "875W85H2Q9.com.neighborservicesolutionsllc.nsapp"
     ]
   }
 }`)

@@ -24,7 +24,7 @@ func TestPaymentUseCase_PayoutAndOnboarding(t *testing.T) {
 		userID: {ID: uuid.New(), UserID: userID, SubscriptionTier: "PLATINUM"},
 	}}
 	cfg := &config.Config{
-		StripeSecretKey:      "",
+		StripeSecretKey: "",
 		StripePublishableKey: "pk_test_12345",
 	}
 

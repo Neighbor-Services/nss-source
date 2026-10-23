@@ -151,11 +151,11 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 		query = query.Where("accounts_profile.user_id != ?", *params.ExcludeUserID)
 	}
 
-	// Providers without an active paid subscription must be invisible across AI match, popular listings, and provider searches.
+	// Providers without an active paid subscription AND cleared Checkr verification must be invisible across AI match, popular listings, and provider searches.
 	if params.UserType == "PROVIDER" || params.Popular {
-		query = query.Where("(accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))")
+		query = query.Where("accounts_profile.is_identity_verified = true AND (accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))")
 	} else if params.UserType == "" {
-		query = query.Where("(accounts_profile.user_type != 'PROVIDER' OR accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))")
+		query = query.Where("(accounts_profile.user_type != 'PROVIDER' OR (accounts_profile.is_identity_verified = true AND (accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))))")
 	}
 	if params.Search != "" {
 		s := "%" + params.Search + "%"
@@ -353,12 +353,12 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 	err := query.Find(&profiles).Error
 	if err != nil {
 		slog.Error("profileRepository.List: query failed",
-			"error", err,
-			"user_type", params.UserType,
-			"service_id", params.ServiceID,
-			"service_name", params.ServiceName,
-			"category_slug", params.CategorySlug,
-			"has_location", false,
+ "error", err,
+ "user_type", params.UserType,
+ "service_id", params.ServiceID,
+ "service_name", params.ServiceName,
+ "category_slug", params.CategorySlug,
+ "has_location", false,
 		)
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 
 func (r *profileRepository) ListProviders(ctx context.Context, categorySlug string, limit int, offset int) ([]entity.Profile, error) {
 	return r.List(ctx, repository.ProfileFilterParams{
-		UserType:     "PROVIDER",
+		UserType: "PROVIDER",
 		CategorySlug: categorySlug,
 		Limit:        limit,
 		Offset:       offset,

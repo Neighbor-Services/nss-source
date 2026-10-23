@@ -61,22 +61,22 @@ func (h *ChatHandler) wrapConversations(conversations []entity.Conversation, cur
 		}
 
 		chatData := gin.H{
-			"id":               conv.ID.String(),
-			"chat_room":        conv.ID.String(),
-			"user1":            currentUserID.String(),
-			"user2":            otherID,
-			"unread_count":     0,
-			"created_at":       conv.CreatedAt,
-			"updated_at":       conv.UpdatedAt,
-			"last_message":     lastMsg,
-			"is_blocked":       false,
-			"is_blocked_by_me": false,
+ "id":               conv.ID.String(),
+ "chat_room":        conv.ID.String(),
+ "user1":            currentUserID.String(),
+ "user2":            otherID,
+ "unread_count":     0,
+ "created_at":       conv.CreatedAt,
+ "updated_at":       conv.UpdatedAt,
+ "last_message":     lastMsg,
+ "is_blocked":       false,
+ "is_blocked_by_me": false,
 		}
 
 		wrapped = append(wrapped, gin.H{
-			"chat":  chatData,
-			"me":    meProfile,
-			"other": otherProfile,
+ "chat":  chatData,
+ "me":    meProfile,
+ "other": otherProfile,
 		})
 	}
 	return wrapped
@@ -91,9 +91,9 @@ func (h *ChatHandler) wrapMessages(messages []entity.Message, currentUserID uuid
 		}
 
 		wrapped = append(wrapped, gin.H{
-			"message":  m,
-			"sender":   senderProfile,
-			"receiver": nil,
+ "message":  m,
+ "sender":   senderProfile,
+ "receiver": nil,
 		})
 	}
 	return wrapped
@@ -310,9 +310,9 @@ func (h *ChatHandler) UploadChatMedia(c *gin.Context) {
 
 	mediaURL := "/media/" + strings.TrimPrefix(relPath, "/")
 	response.JSON(c, http.StatusCreated, gin.H{
-		"media_url": mediaURL,
-		"file_name": cleanBase,
-		"file_size": fileHeader.Size,
+ "media_url": mediaURL,
+ "file_name": cleanBase,
+ "file_size": fileHeader.Size,
 	})
 }
 
@@ -529,24 +529,24 @@ func (h *ChatHandler) HandleWsMessage(client *websocket.Client, rawMsg []byte) b
 
 	// 4. Build standard ChatMessage envelope that Flutter expects
 	broadcastPayload := gin.H{
-		"type": "message",
-		"message": gin.H{
-			"id":           savedMsg.ID.String(),
-			"chat_room_id": client.RoomID,
-			"sender":       senderUUID.String(),
-			"receiver":     receiverUUID.String(),
-			"message":      savedMsg.Message,
-			"with_image":   savedMsg.WithImage,
-			"image":        savedMsg.Image,
-			"media_url":    savedMsg.MediaURL,
-			"file_name":    savedMsg.FileName,
-			"is_delivered": true,
-			"read":         false,
-			"created_at":   savedMsg.CreatedAt.Format(time.RFC3339Nano),
-			"updated_at":   savedMsg.CreatedAt.Format(time.RFC3339Nano),
+ "type": "message",
+ "message": gin.H{
+ "id":           savedMsg.ID.String(),
+ "chat_room_id": client.RoomID,
+ "sender":       senderUUID.String(),
+ "receiver":     receiverUUID.String(),
+ "message":      savedMsg.Message,
+ "with_image":   savedMsg.WithImage,
+ "image":        savedMsg.Image,
+ "media_url":    savedMsg.MediaURL,
+ "file_name":    savedMsg.FileName,
+ "is_delivered": true,
+ "read":         false,
+ "created_at":   savedMsg.CreatedAt.Format(time.RFC3339Nano),
+ "updated_at":   savedMsg.CreatedAt.Format(time.RFC3339Nano),
 		},
-		"sender":   senderProfile,
-		"receiver": receiverProfile,
+ "sender":   senderProfile,
+ "receiver": receiverProfile,
 	}
 
 	// 5. Broadcast to room and deliver directly to both users

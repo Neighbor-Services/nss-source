@@ -71,9 +71,9 @@ func (r *publicRepository) GetSiteSetting(ctx context.Context) (*entity.SiteSett
 	if err != nil {
 		defaultSetting := entity.SiteSetting{
 			ID:             uuid.New(),
-			SiteName:       "Neighbor Services",
-			ContactEmail:   "support@neighborservice.com",
-			ContactPhone:   "+1 (555) 000-0000",
+			SiteName: "Neighbor Services",
+			ContactEmail: "support@neighborservice.com",
+			ContactPhone: "+1 (555) 000-0000",
 			ContactAddress: "123 Community City, CC 12345",
 		}
 		_ = r.db.WithContext(ctx).Create(&defaultSetting)

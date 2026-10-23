@@ -299,8 +299,8 @@ func (h *ProfileHandler) GetAboutUser(c *gin.Context) {
 	profile, _ := h.profileUC.GetProfile(c.Request.Context(), userUUID, nil)
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"about": about,
-		"user":  profile,
+ "about": about,
+ "user":  profile,
 	})
 }
 

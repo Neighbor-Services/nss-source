@@ -37,7 +37,7 @@ func NewPerformanceBadgeWorker(db *gorm.DB, cfg *config.Config) *PerformanceBadg
 }
 
 func (w *PerformanceBadgeWorker) Start() {
-	log.Println("🏅 Starting Performance Badge Background Worker...")
+	log.Println(" Starting Performance Badge Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(24 * time.Hour)
@@ -48,7 +48,7 @@ func (w *PerformanceBadgeWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("🏅 Stopping Performance Badge Worker...")
+				log.Println(" Stopping Performance Badge Worker...")
 				return
 			case <-ticker.C:
 				w.processBadges()
@@ -70,40 +70,40 @@ type badgeCriteria struct {
 
 var badgeCriteriaList = []badgeCriteria{
 	{
-		name:        "Top Rated",
-		iconType:    "star",
+		name: "Top Rated",
+		iconType: "star",
 		description: "Maintained a 4.8+ star rating with at least 10 reviews.",
 		check: func(p entity.Profile, jobs int64) bool {
 			return p.AverageRating >= 4.8 && p.TotalReviews >= 10
 		},
 	},
 	{
-		name:        "Trusted Pro",
-		iconType:    "shield",
+		name: "Trusted Pro",
+		iconType: "shield",
 		description: "Completed 20+ jobs successfully.",
 		check: func(p entity.Profile, jobs int64) bool {
 			return jobs >= 20
 		},
 	},
 	{
-		name:        "Rising Star",
-		iconType:    "bolt",
+		name: "Rising Star",
+		iconType: "bolt",
 		description: "Completed 5+ jobs with a 4.5+ rating.",
 		check: func(p entity.Profile, jobs int64) bool {
 			return jobs >= 5 && p.AverageRating >= 4.5
 		},
 	},
 	{
-		name:        "Community Favorite",
-		iconType:    "heart",
+		name: "Community Favorite",
+		iconType: "heart",
 		description: "Received 25+ positive reviews.",
 		check: func(p entity.Profile, jobs int64) bool {
 			return p.TotalReviews >= 25
 		},
 	},
 	{
-		name:        "Elite Provider",
-		iconType:    "crown",
+		name: "Elite Provider",
+		iconType: "crown",
 		description: "Completed 50+ jobs with a 4.9+ rating.",
 		check: func(p entity.Profile, jobs int64) bool {
 			return jobs >= 50 && p.AverageRating >= 4.9
@@ -162,7 +162,7 @@ func (w *PerformanceBadgeWorker) processBadges() {
 				ID:               uuid.New(),
 				UserID:           profile.UserID,
 				NotificationType: "BADGE_AWARDED",
-				Title:            fmt.Sprintf("🏅 Badge Unlocked: %s", criteria.name),
+				Title:            fmt.Sprintf(" Badge Unlocked: %s", criteria.name),
 				Message:          criteria.description,
 				Data:             entity.JSONMap{"badge_name": criteria.name, "icon_type": criteria.iconType},
 				CreatedAt:        time.Now(),

@@ -16,9 +16,9 @@ func TestRingBuffer_PushAndGetAll(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		buf.Push(WebhookEvent{
 			ID:          fmt.Sprintf("evt_%d", i),
-			Source:      "stripe",
-			EventType:   "payment_intent.succeeded",
-			Status:      "OK",
+			Source: "stripe",
+			EventType: "payment_intent.succeeded",
+			Status: "OK",
 			PayloadSnip: fmt.Sprintf("payload_%d", i),
 		})
 	}
@@ -39,9 +39,9 @@ func TestRingBuffer_CapacityOverflow(t *testing.T) {
 	for i := 1; i <= 250; i++ {
 		buf.Push(WebhookEvent{
 			ID:          fmt.Sprintf("evt_%d", i),
-			Source:      "stripe",
-			EventType:   "charge.succeeded",
-			Status:      "OK",
+			Source: "stripe",
+			EventType: "charge.succeeded",
+			Status: "OK",
 			PayloadSnip: "payload",
 		})
 	}
@@ -69,10 +69,10 @@ func TestRingBuffer_PayloadTruncation(t *testing.T) {
 	}
 
 	buf.Push(WebhookEvent{
-		ID:          "long_evt",
-		Source:      "checkr",
-		EventType:   "report.completed",
-		Status:      "OK",
+		ID: "long_evt",
+		Source: "checkr",
+		EventType: "report.completed",
+		Status: "OK",
 		PayloadSnip: string(longPayload),
 		ReceivedAt:  time.Now().UTC(),
 	})

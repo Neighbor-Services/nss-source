@@ -50,9 +50,9 @@ func (h *PaymentHandler) ValidateAppleReceipt(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":       "active",
-		"is_active":    sub.IsActive,
-		"subscription": sub,
+ "status": "active",
+ "is_active":    sub.IsActive,
+ "subscription": sub,
 	})
 }
 
@@ -77,9 +77,9 @@ func (h *PaymentHandler) ValidateGooglePlay(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":       "active",
-		"is_active":    sub.IsActive,
-		"subscription": sub,
+ "status": "active",
+ "is_active":    sub.IsActive,
+ "subscription": sub,
 	})
 }
 
@@ -94,8 +94,8 @@ func (h *PaymentHandler) GetUserSubscription(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"subscription": sub,
-		"is_active":    sub.IsActive,
+ "subscription": sub,
+ "is_active":    sub.IsActive,
 	})
 }
 
@@ -163,7 +163,7 @@ func (h *PaymentHandler) StripeWebhook(c *gin.Context) {
 	webbufID := fmt.Sprintf("wh_%d", webhookbuffer.GlobalBuffer.NextID())
 	webbuf := webhookbuffer.WebhookEvent{
 		ID:          webbufID,
-		Source:      "stripe",
+		Source: "stripe",
 		EventType:   eventType,
 		Status:      status,
 		PayloadSnip: snip,
@@ -516,10 +516,10 @@ func (h *PaymentHandler) TipProvider(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, gin.H{
-		"status":         "success",
-		"message":        "Tip sent successfully",
-		"transaction_id": txID,
-		"amount":         body.Amount,
+ "status": "success",
+ "message": "Tip sent successfully",
+ "transaction_id": txID,
+ "amount":         body.Amount,
 	})
 }
 

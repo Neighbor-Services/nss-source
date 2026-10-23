@@ -69,7 +69,7 @@ func (w *MarketingWorker) sendPush(userID uuid.UUID, title, body string, data ma
 
 
 func (w *MarketingWorker) Start() {
-	log.Println("📬 Starting Automated Lifecycle Email Marketing & Reminder Worker...")
+	log.Println(" Starting Automated Lifecycle Email Marketing & Reminder Worker...")
 
 	go func() {
 		// Run appointment reminders every 15 minutes
@@ -87,7 +87,7 @@ func (w *MarketingWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("📬 Stopping Automated Email Marketing Worker...")
+				log.Println(" Stopping Automated Email Marketing Worker...")
 				return
 			case <-reminderTicker.C:
 				w.processUpcomingAppointmentReminders()
@@ -160,21 +160,21 @@ func (w *MarketingWorker) processUpcomingAppointmentReminders() {
 				providerName,
 				apt.Title,
 				schedTimeStr,
-				"SEEKER",
+ "SEEKER",
 			)
 		}
 		w.db.Create(&entity.Notification{
 			ID:               uuid.New(),
 			UserID:           seeker.ID,
 			NotificationType: "APPOINTMENT",
-			Title:            "Upcoming Appointment Reminder",
+			Title: "Upcoming Appointment Reminder",
 			Message:          fmt.Sprintf("Reminder: You have '%s' scheduled for %s.", apt.Title, schedTimeStr),
 			Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
 			CreatedAt:        time.Now(),
 		})
 		w.sendPush(seeker.ID, "Upcoming Appointment", fmt.Sprintf("Reminder: '%s' is scheduled for %s.", apt.Title, schedTimeStr), map[string]string{
-			"notification_type": "appointment",
-			"appointment_id":    apt.ID.String(),
+ "notification_type": "appointment",
+ "appointment_id":    apt.ID.String(),
 		})
 
 		// Send to Provider
@@ -186,21 +186,21 @@ func (w *MarketingWorker) processUpcomingAppointmentReminders() {
 				seekerName,
 				apt.Title,
 				schedTimeStr,
-				"PROVIDER",
+ "PROVIDER",
 			)
 		}
 		w.db.Create(&entity.Notification{
 			ID:               uuid.New(),
 			UserID:           provider.ID,
 			NotificationType: "APPOINTMENT",
-			Title:            "Upcoming Appointment Reminder",
+			Title: "Upcoming Appointment Reminder",
 			Message:          fmt.Sprintf("Reminder: You have '%s' scheduled for %s.", apt.Title, schedTimeStr),
 			Data:             entity.JSONMap{"appointment_id": apt.ID.String()},
 			CreatedAt:        time.Now(),
 		})
 		w.sendPush(provider.ID, "Upcoming Appointment", fmt.Sprintf("Reminder: '%s' is scheduled for %s.", apt.Title, schedTimeStr), map[string]string{
-			"notification_type": "appointment",
-			"appointment_id":    apt.ID.String(),
+ "notification_type": "appointment",
+ "appointment_id":    apt.ID.String(),
 		})
 
 		// Record log
@@ -223,7 +223,7 @@ func (w *MarketingWorker) processPostJobReviewAndReferrals() {
 
 	var appointments []entity.Appointment
 	err := w.db.Where("status = ? AND updated_at >= ? AND updated_at <= ?",
-		"COMPLETED", minCompletionTime, maxCompletionTime).Find(&appointments).Error
+ "COMPLETED", minCompletionTime, maxCompletionTime).Find(&appointments).Error
 	if err != nil {
 		return
 	}
@@ -263,15 +263,15 @@ func (w *MarketingWorker) processPostJobReviewAndReferrals() {
 			ID:               uuid.New(),
 			UserID:           seeker.ID,
 			NotificationType: "REVIEW_PROMPT",
-			Title:            "How was your service?",
+			Title: "How was your service?",
 			Message:          fmt.Sprintf("Please leave a review for '%s' with your provider!", apt.Title),
 			Data:             entity.JSONMap{"appointment_id": apt.ID.String(), "provider_id": provider.ID.String()},
 			CreatedAt:        time.Now(),
 		})
 		w.sendPush(seeker.ID, "Rate Your Service", fmt.Sprintf("Please leave a review for '%s'!", apt.Title), map[string]string{
-			"notification_type": "review_prompt",
-			"appointment_id":    apt.ID.String(),
-			"provider_id":       provider.ID.String(),
+ "notification_type": "review_prompt",
+ "appointment_id":    apt.ID.String(),
+ "provider_id":       provider.ID.String(),
 		})
 
 		w.db.Create(&entity.EmailCampaignLog{
@@ -374,7 +374,7 @@ func (w *MarketingWorker) processDormantUserWinback() {
 				w.emailCfg,
 				u.Email,
 				u.Email,
-				"50+",
+ "50+",
 			)
 		}
 
@@ -395,7 +395,7 @@ func (w *MarketingWorker) processFavoriteProReengagement() {
 
 	var pastAppointments []entity.Appointment
 	err := w.db.Where("status = ? AND updated_at >= ? AND updated_at <= ?",
-		"COMPLETED", fortyFiveDaysAgo, thirtyDaysAgo).
+ "COMPLETED", fortyFiveDaysAgo, thirtyDaysAgo).
 		Limit(50).
 		Find(&pastAppointments).Error
 	if err != nil {

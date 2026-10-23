@@ -554,7 +554,7 @@ func SendFavoriteProOpenSlotsEmail(cfg *Config, toEmail, seekerName, providerNam
 
 // SendSeasonalCareReminderEmail sends seasonal home maintenance reminders
 func SendSeasonalCareReminderEmail(cfg *Config, toEmail, seekerName, seasonName, tipsSummary string) error {
-	subject := fmt.Sprintf("Seasonal Home Care: %s checklist for your home 🏡", seasonName)
+	subject := fmt.Sprintf("Seasonal Home Care: %s checklist for your home ", seasonName)
 	plainText := fmt.Sprintf("Hello %s,\n\n%s is here! Protect your home with our seasonal maintenance checklist:\n\n%s\n\nFind top-rated local pros on Neighbor Services to take care of these tasks hassle-free.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", seekerName, seasonName, tipsSummary)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -641,7 +641,7 @@ func SendPostJobReviewAndReferralEmail(cfg *Config, toEmail, seekerName, provide
 
 // SendDormantUserWinbackEmail re-engages users inactive for 45+ days
 func SendDormantUserWinbackEmail(cfg *Config, toEmail, userName, recentProsCount string) error {
-	subject := "We miss you! Verified local pros are ready in your neighborhood 🏡"
+	subject := "We miss you! Verified local pros are ready in your neighborhood "
 	plainText := fmt.Sprintf("Hello %s,\n\nWe haven't seen you in a while! %s verified service professionals are active in your neighborhood right now.\n\nFrom home repairs and lawn care to pet sitting and cleaning, get your tasks completed with trusted neighbors.\n\nOpen the app today: https://neighborservice.com\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", userName, recentProsCount)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -683,7 +683,7 @@ func SendDormantUserWinbackEmail(cfg *Config, toEmail, userName, recentProsCount
 
 // SendWeeklyProviderDigestEmail sends Monday morning performance summaries to active providers
 func SendWeeklyProviderDigestEmail(cfg *Config, toEmail, providerName string, weeklyEarnings float64, profileViews int, openJobsCount int) error {
-	subject := fmt.Sprintf("Your Weekly Pro Digest: $%.2f earned & %d open jobs near you 📈", weeklyEarnings, openJobsCount)
+	subject := fmt.Sprintf("Your Weekly Pro Digest: $%.2f earned & %d open jobs near you ", weeklyEarnings, openJobsCount)
 	plainText := fmt.Sprintf("Hello %s,\n\nHere is your Neighbor Services weekly performance summary:\n\n- Weekly Earnings: $%.2f\n- Profile Views: %d\n- Open Local Requests: %d waiting for bids\n\nOpen your app to review open client requests and submit proposals.\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, weeklyEarnings, profileViews, openJobsCount)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -787,7 +787,7 @@ func SendAppointmentUpcomingReminderEmail(cfg *Config, toEmail, recipientName, o
 
 // SendProMilestonePerksEmail congratulates providers upon achieving milestones
 func SendProMilestonePerksEmail(cfg *Config, toEmail, providerName, milestoneText string) error {
-	subject := fmt.Sprintf("Congratulations %s! You reached a new Pro Milestone 🏆", providerName)
+	subject := fmt.Sprintf("Congratulations %s! You reached a new Pro Milestone ", providerName)
 	plainText := fmt.Sprintf("Congratulations %s!\n\nYou just achieved: %s.\n\nYour dedication and quality service make our neighborhood community thrive. Keep up the amazing work!\n\n---\nNeighbor Services Solutions LLC. All rights reserved.", providerName, milestoneText)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -1013,7 +1013,7 @@ func SendNearbyJobAlertEmail(cfg *Config, toEmail, recipientName, requestTitle, 
 <body>
     <div class="container">
         <div class="header">
-            <span class="badge">📍 Nearby Job Alert</span>
+            <span class="badge"> Nearby Job Alert</span>
             <h2>New Job Opportunity Near You!</h2>
         </div>
         <p>Hello <strong>%s</strong>,</p>
@@ -1053,7 +1053,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 .btn{display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;margin-top:16px;}
 .footer{background:#f8fafc;padding:24px 32px;text-align:center;color:#94a3b8;font-size:12px;}
 </style></head><body><div class="container">
-<div class="header"><h1>📋 Request Expired</h1></div>
+<div class="header"><h1> Request Expired</h1></div>
 <div class="body">
 <h2 style="color:#0f172a;margin-top:0;">Hi %s,</h2>
 <p style="color:#475569;">Your service request has been automatically closed after <strong>30 days</strong> with no provider activity.</p>
@@ -1072,13 +1072,13 @@ func SendPayoutProcessingEmail(cfg *Config, toEmail, providerName string, amount
 	var emoji, headline, detail string
 	switch status {
 	case "PROCESSING":
-		emoji, headline = "💸", "Your payout is being processed!"
+		emoji, headline = "", "Your payout is being processed!"
 		detail = fmt.Sprintf("Your withdrawal of <strong>$%.2f</strong> is now in progress. Funds typically arrive within 2–5 business days.", amount)
 	case "FAILED":
-		emoji, headline = "⚠️", "Payout could not be processed"
+		emoji, headline = "", "Payout could not be processed"
 		detail = fmt.Sprintf("We were unable to process your withdrawal of <strong>$%.2f</strong>. Reason: %s", amount, notes)
 	default:
-		emoji, headline = "📤", "Payout status update"
+		emoji, headline = "", "Payout status update"
 		detail = fmt.Sprintf("Your payout of <strong>$%.2f</strong> — status: %s.", amount, status)
 	}
 	subject := fmt.Sprintf("%s Payout %s - Neighbor Services", emoji, status)
@@ -1108,7 +1108,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 // ─── SUBSCRIPTION EXPIRY ──────────────────────────────────────────────────────
 
 func SendSubscriptionExpiryReminderEmail(cfg *Config, toEmail, userName, planName, expiryDate string) error {
-	subject := "Your subscription is expiring soon ⚠️ - Neighbor Services"
+	subject := "Your subscription is expiring soon  - Neighbor Services"
 	plainText := fmt.Sprintf("Hi %s,\n\nYour '%s' plan expires on %s. Renew now to keep your premium benefits.\n\n— Neighbor Services Team", userName, planName, expiryDate)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
@@ -1119,7 +1119,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 .btn{display:inline-block;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;margin-top:16px;}
 .footer{background:#f8fafc;padding:24px 32px;text-align:center;color:#94a3b8;font-size:12px;}
 </style></head><body><div class="container">
-<div class="header"><h1>⚠️ Subscription Expiring Soon</h1></div>
+<div class="header"><h1> Subscription Expiring Soon</h1></div>
 <div class="body">
 <h2 style="color:#0f172a;margin-top:0;">Hi %s,</h2>
 <p style="color:#475569;">Your subscription is about to expire. Don't lose access to your premium features!</p>
@@ -1144,7 +1144,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 .btn{display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;margin-top:16px;}
 .footer{background:#f8fafc;padding:24px 32px;text-align:center;color:#94a3b8;font-size:12px;}
 </style></head><body><div class="container">
-<div class="header"><h1>❌ Subscription Expired</h1></div>
+<div class="header"><h1> Subscription Expired</h1></div>
 <div class="body">
 <h2 style="color:#0f172a;margin-top:0;">Hi %s,</h2>
 <p style="color:#475569;">Your premium subscription has expired and your account has been moved to the free tier.</p>
@@ -1158,7 +1158,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 }
 
 func SendUnsubscribedProviderReminderEmail(cfg *Config, toEmail, userName string, serviceCategory string) error {
-	subject := "🚀 Boost Your Client Bookings & Patronage on Neighbor Services"
+	subject := " Boost Your Client Bookings & Patronage on Neighbor Services"
 	serviceText := ""
 	if serviceCategory != "" {
 		serviceText = fmt.Sprintf("for %s services", serviceCategory)
@@ -1186,7 +1186,7 @@ body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a
 .footer{background:#0f172a;padding:24px 32px;text-align:center;color:#64748b;font-size:12px;border-top:1px solid rgba(255,255,255,0.05);}
 </style></head><body><div class="container">
 <div class="header">
-  <div style="font-size:36px;margin-bottom:8px;">💼 🚀</div>
+  <div style="font-size:36px;margin-bottom:8px;"> </div>
   <h1>Unlock Your Client Pipeline</h1>
   <p>Local customers are waiting for verified professionals like you</p>
 </div>
@@ -1196,21 +1196,21 @@ body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0f172a
   
   <div class="perk-grid">
     <div class="perk-item">
-      <div class="perk-icon">📡</div>
+      <div class="perk-icon"></div>
       <div>
         <p class="perk-title">Live Request Radar</p>
         <p class="perk-desc">Get instant notifications when clients post nearby jobs matching your skills.</p>
       </div>
     </div>
     <div class="perk-item" style="margin-top:14px;">
-      <div class="perk-icon">⚡</div>
+      <div class="perk-icon"></div>
       <div>
         <p class="perk-title">Direct Proposal Submission</p>
         <p class="perk-desc">Bid on client tasks with zero per-lead fees and keep 100%% of your earnings.</p>
       </div>
     </div>
     <div class="perk-item" style="margin-top:14px;">
-      <div class="perk-icon">🛡️</div>
+      <div class="perk-icon"></div>
       <div>
         <p class="perk-title">Verified Pro Ranking & Trust</p>
         <p class="perk-desc">Appear at the top of client search results with verified reputation and badges.</p>
@@ -1246,15 +1246,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 .btn{display:inline-block;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;margin-top:16px;}
 .footer{background:#f8fafc;padding:24px 32px;text-align:center;color:#94a3b8;font-size:12px;}
 </style></head><body><div class="container">
-<div class="header"><h1>⚖️ Dispute Escalated</h1></div>
+<div class="header"><h1> Dispute Escalated</h1></div>
 <div class="body">
 <h2 style="color:#0f172a;margin-top:0;">Hi %s,</h2>
 <p style="color:#475569;">Your dispute has been escalated to our support team after 48 hours of inactivity.</p>
 <div class="card"><p style="margin:0;font-size:13px;color:#7c3aed;font-weight:600;">DISPUTE #%s</p><p style="margin:8px 0 0;font-size:15px;font-weight:600;color:#0f172a;">%s</p></div>
 <div class="card">
-<div class="step">✅ Dispute filed — awaiting resolution</div>
-<div class="step">⏱️ 48h elapsed — auto-escalated to support</div>
-<div class="step">🔍 Under review — response within 24 hours</div>
+<div class="step"> Dispute filed — awaiting resolution</div>
+<div class="step">⏱ 48h elapsed — auto-escalated to support</div>
+<div class="step"> Under review — response within 24 hours</div>
 </div>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">View Dispute Details</a></p>
 </div>
@@ -1269,11 +1269,11 @@ func SendInactiveUserReengagementEmail(cfg *Config, toEmail, userName, campaignT
 	var headline, sub, cta string
 	switch campaignType {
 	case "INACTIVE_14D":
-		headline = "We miss you, " + userName + "! 👋"
+		headline = "We miss you, " + userName + "! "
 		sub = "It's been 2 weeks since your last visit. New providers have joined in your area and exciting jobs are waiting."
 		cta = "See What's New"
 	default:
-		headline = "Still there, " + userName + "? 🤔"
+		headline = "Still there, " + userName + "? "
 		sub = "It's been over a month. Dozens of trusted providers are near you — don't miss out!"
 		cta = "Come Back & Explore"
 	}
@@ -1294,9 +1294,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 <div class="body">
 <p style="color:#475569;font-size:16px;text-align:center;">%s</p>
 <div class="features">
-<div class="feature">🔍 Find nearby verified providers instantly</div>
-<div class="feature">⭐ Top-rated pros with real reviews</div>
-<div class="feature">💬 Chat, book, and pay — all in one place</div>
+<div class="feature"> Find nearby verified providers instantly</div>
+<div class="feature"> Top-rated pros with real reviews</div>
+<div class="feature"> Chat, book, and pay — all in one place</div>
 </div>
 <p style="text-align:center;"><a href="https://neighborservice.com" class="btn">%s</a></p>
 </div>
@@ -1308,7 +1308,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 // ─── PERFORMANCE BADGE ────────────────────────────────────────────────────────
 
 func SendBadgeAwardedEmail(cfg *Config, toEmail, providerName, badgeName, badgeDescription string) error {
-	subject := fmt.Sprintf("🏅 You've earned a new badge: %s - Neighbor Services", badgeName)
+	subject := fmt.Sprintf(" You've earned a new badge: %s - Neighbor Services", badgeName)
 	plainText := fmt.Sprintf("Hi %s,\n\nCongratulations! You've earned the '%s' badge.\n\n%s\n\nKeep up the great work!\n\n— Neighbor Services Team", providerName, badgeName, badgeDescription)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
@@ -1322,7 +1322,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 .btn{display:inline-block;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;margin-top:16px;}
 .footer{background:#f8fafc;padding:24px 32px;text-align:center;color:#94a3b8;font-size:12px;}
 </style></head><body><div class="container">
-<div class="header"><span class="medal">🏅</span><h1>Badge Unlocked!</h1></div>
+<div class="header"><span class="medal"></span><h1>Badge Unlocked!</h1></div>
 <div class="body">
 <h2 style="color:#0f172a;margin-top:0;">Congratulations, %s!</h2>
 <p style="color:#475569;">Your hard work has paid off. You've earned a new achievement!</p>
@@ -1338,7 +1338,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 // ─── WALLET RECONCILIATION ────────────────────────────────────────────────────
 
 func SendWalletDiscrepancyAlertEmail(cfg *Config, toEmail, adminName, userID, walletID string, bookBalance, txSum, diff float64) error {
-	subject := fmt.Sprintf("🚨 Wallet Discrepancy Detected — User %s - Neighbor Services Admin", userID[:8])
+	subject := fmt.Sprintf(" Wallet Discrepancy Detected — User %s - Neighbor Services Admin", userID[:8])
 	plainText := fmt.Sprintf("Admin Alert\n\nWallet discrepancy detected.\n\nUser ID: %s\nWallet ID: %s\nBook Balance: $%.2f\nTransaction Sum: $%.2f\nDifference: $%.2f\n\nPlease review immediately.\n\n— Neighbor Services System", userID, walletID, bookBalance, txSum, diff)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding:0;}
@@ -1353,7 +1353,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;padding
 .btn{display:inline-block;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;margin-top:16px;}
 .footer{background:#f8fafc;padding:24px 32px;text-align:center;color:#94a3b8;font-size:12px;}
 </style></head><body><div class="container">
-<div class="header"><h1>🚨 Wallet Discrepancy Alert</h1></div>
+<div class="header"><h1> Wallet Discrepancy Alert</h1></div>
 <div class="body">
 <h2 style="color:#0f172a;margin-top:0;">Hi %s,</h2>
 <p style="color:#dc2626;font-weight:600;">A wallet balance discrepancy has been detected and requires immediate review.</p>
@@ -1417,7 +1417,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding
 </style></head><body><div class="container">
 <div class="header">
 <h2>Rate Your Recent Experience</h2>
-<div class="stars">⭐⭐⭐⭐⭐</div>
+<div class="stars"></div>
 </div>
 <div class="body">
 <p>Hi <strong>%s</strong>,</p>
@@ -1432,7 +1432,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding
 }
 
 func SendProviderRankingEmail(cfg *Config, toEmail, providerName, rankTier string, score int) error {
-	subject := fmt.Sprintf("🌟 Provider Performance Update: You're at %s Tier! - Neighbor Services", rankTier)
+	subject := fmt.Sprintf(" Provider Performance Update: You're at %s Tier! - Neighbor Services", rankTier)
 	plainText := fmt.Sprintf("Hi %s,\n\nYour neighbor score is %d, placing you in the %s provider tier. Keep up the amazing work to maintain high search visibility and client trust!\n\n— Neighbor Services Team", providerName, score, rankTier)
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding:0;}
@@ -1444,7 +1444,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding
 .btn{display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;}
 .footer{background:#f8fafc;padding:18px;text-align:center;color:#94a3b8;font-size:12px;border-top:1px solid #f1f5f9;}
 </style></head><body><div class="container">
-<div class="header"><h2>🌟 Provider Ranking Update</h2></div>
+<div class="header"><h2> Provider Ranking Update</h2></div>
 <div class="body">
 <p>Hi <strong>%s</strong>,</p>
 <p>Our weekly performance calculation just completed. Here is your current standing:</p>
@@ -1646,5 +1646,22 @@ func SendAccountReinstatedEmail(cfg *Config, toEmail, recipientName string) erro
 
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
+
+// ─── WORKER ALERT EMAILS ──────────────────────────────────────────────────────
+
+func SendWorkerAlertEmail(cfg *Config, toEmail, workerName, title, details string) error {
+	subject := fmt.Sprintf(" Critical Worker Alert: %s — %s", workerName, title)
+	plainText := fmt.Sprintf("Critical Worker Alert\n\nWorker: %s\nTitle: %s\nDetails: %s\nTime: %s\n\n— Neighbor Services System",
+		workerName, title, details, time.Now().UTC().Format(time.RFC3339))
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html><html><body style="font-family:'Segoe UI',Arial,sans-serif;background:#f8fafc;padding:24px;margin:0;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;border:1px solid #fee2e2;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+<h2 style="color:#dc2626;margin-top:0;"> Critical Worker Alert: %s</h2>
+<p style="font-size:16px;font-weight:600;color:#0f172a;margin-bottom:12px;">%s</p>
+<pre style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:16px;font-size:13px;line-height:1.5;color:#334155;white-space:pre-wrap;word-break:break-word;">%s</pre>
+<p style="color:#64748b;font-size:12px;margin-top:20px;border-top:1px solid #f1f5f9;padding-top:12px;">Timestamp: %s &bull; Neighbor Services Backend Alert System</p>
+</div></body></html>`, workerName, title, details, time.Now().UTC().Format(time.RFC3339))
+	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
+}
+
 
 

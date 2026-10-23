@@ -18,33 +18,33 @@ func TestCleanUUID(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:  "plain uuid",
+			name: "plain uuid",
 			input: rawStr,
 			want:  rawUUID,
 		},
 		{
-			name:  "fav_ prefix",
+			name: "fav_ prefix",
 			input: "fav_" + rawStr,
 			want:  rawUUID,
 		},
 		{
-			name:  "usr_ prefix with trailing slash",
+			name: "usr_ prefix with trailing slash",
 			input: "usr_" + rawStr + "/",
 			want:  rawUUID,
 		},
 		{
-			name:  "pro_ prefix with spaces",
-			input: "  pro_" + rawStr + "  ",
+			name: "pro_ prefix with spaces",
+			input: " pro_" + rawStr + " ",
 			want:  rawUUID,
 		},
 		{
-			name:  "apt_ prefix",
+			name: "apt_ prefix",
 			input: "apt_" + rawStr,
 			want:  rawUUID,
 		},
 		{
-			name:    "invalid input",
-			input:   "not-a-valid-uuid",
+			name: "invalid input",
+			input: "not-a-valid-uuid",
 			wantErr: true,
 		},
 	}

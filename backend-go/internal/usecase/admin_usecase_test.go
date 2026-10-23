@@ -54,9 +54,9 @@ func newMockAdminRepo() *mockAdminRepo {
 		roles:         make(map[uuid.UUID]*entity.AdminRole),
 		alerts:        make(map[uuid.UUID]*entity.FraudRiskAlert),
 		templates: map[string]*entity.NotificationTemplate{
-			"welcome_email": {
-				Key:      "welcome_email",
-				Subject:  "Welcome {{name}}",
+ "welcome_email": {
+				Key: "welcome_email",
+				Subject: "Welcome {{name}}",
 				BodyHTML: "<p>Hello {{name}}</p>",
 			},
 		},
@@ -369,7 +369,7 @@ func (m *mockAdminRepo) EvaluateUserRisk(ctx context.Context, userID uuid.UUID) 
 		UserID:    userID,
 		RiskScore: 35,
 		RiskLevel: "MEDIUM",
-		Status:    "OPEN",
+		Status: "OPEN",
 	}
 	m.alerts[alert.ID] = alert
 	return alert, nil
@@ -657,14 +657,14 @@ func TestAdminUseCase_DashboardAndUserOperations(t *testing.T) {
 	adminRepo := newMockAdminRepo()
 	user := &entity.User{
 		ID:         targetUserID,
-		Email:      "provider@example.com",
+		Email: "provider@example.com",
 		IsActive:   true,
 		IsStaff:    false,
 		IsVerified: true,
 		Profile: &entity.Profile{
 			ID:               uuid.New(),
 			UserID:           targetUserID,
-			UserType:         "SEEKER",
+			UserType: "SEEKER",
 			SubscriptionTier: "NONE",
 		},
 	}
@@ -714,7 +714,7 @@ func TestAdminUseCase_DisputesAndPayouts(t *testing.T) {
 		ID:       payoutID,
 		WalletID: walletID,
 		Amount:   150.00,
-		Status:   "PENDING",
+		Status: "PENDING",
 	}
 	adminRepo.payouts[payoutID] = payout
 
@@ -751,7 +751,7 @@ func TestAdminUseCase_DisputesAndPayouts(t *testing.T) {
 		ID:       payout2ID,
 		WalletID: walletID,
 		Amount:   50.00,
-		Status:   "PENDING",
+		Status: "PENDING",
 	}
 	err = adminUC.RejectPayout(ctx, adminID, payout2ID, "Invalid bank details")
 	assert.NoError(t, err)
@@ -769,14 +769,14 @@ func TestAdminUseCase_VerificationAndBackgroundChecks(t *testing.T) {
 	verification := &entity.ProviderVerification{
 		ID:         vID,
 		ProviderID: providerID,
-		Status:     "PENDING",
+		Status: "PENDING",
 	}
 	adminRepo.verifications[vID] = verification
 
 	bc := &entity.BackgroundCheck{
 		ID:         bcID,
 		ProviderID: providerID,
-		Status:     "PENDING",
+		Status: "PENDING",
 	}
 	adminRepo.checks[bcID] = bc
 
@@ -891,7 +891,7 @@ func TestAdminUseCase_EnterpriseFeatures(t *testing.T) {
 	adminRepo := newMockAdminRepo()
 	user := &entity.User{
 		ID:         targetUserID,
-		Email:      "target@example.com",
+		Email: "target@example.com",
 		IsActive:   true,
 		IsStaff:    false,
 		IsVerified: true,
@@ -899,7 +899,7 @@ func TestAdminUseCase_EnterpriseFeatures(t *testing.T) {
 	adminRepo.users[targetUserID] = user
 	adminRepo.users[adminID] = &entity.User{
 		ID:         adminID,
-		Email:      "admin@example.com",
+		Email: "admin@example.com",
 		IsActive:   true,
 		IsStaff:    true,
 		IsVerified: true,
@@ -927,8 +927,8 @@ func TestAdminUseCase_EnterpriseFeatures(t *testing.T) {
 
 	// 3. RBAC Roles
 	role, err := adminUC.CreateRole(ctx, adminID, &entity.AdminRole{
-		Name:        "Risk Manager",
-		Slug:        "risk-manager",
+		Name: "Risk Manager",
+		Slug: "risk-manager",
 		Permissions: entity.JSONSlice{"admin:fraud:manage", "admin:payout:approve"},
 	})
 	assert.NoError(t, err)

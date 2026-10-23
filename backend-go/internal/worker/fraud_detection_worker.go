@@ -34,7 +34,7 @@ func NewFraudDetectionWorker(db *gorm.DB, cfg *config.Config, cache cache.Cache)
 }
 
 func (w *FraudDetectionWorker) Start() {
-	log.Println("🕵️  Starting Fraud Detection Background Worker...")
+	log.Println(" Starting Fraud Detection Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
@@ -45,7 +45,7 @@ func (w *FraudDetectionWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("🕵️  Stopping Fraud Detection Worker...")
+				log.Println(" Stopping Fraud Detection Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("FraudDetectionWorker.Tick", w.scan)
@@ -95,9 +95,9 @@ func (w *FraudDetectionWorker) scan() {
 		w.createAlertIfNew(wallet.UserID, "HIGH", 65,
 			entity.JSONSlice{"LARGE_TRANSACTION"},
 			entity.JSONMap{
-				"rule":      "large_single_transaction",
-				"amount":    fmt.Sprintf("%.2f", tx.Amount),
-				"wallet_id": tx.WalletID.String(),
+ "rule": "large_single_transaction",
+ "amount":    fmt.Sprintf("%.2f", tx.Amount),
+ "wallet_id": tx.WalletID.String(),
 			},
 		)
 	}
@@ -124,10 +124,10 @@ func (w *FraudDetectionWorker) scan() {
 		w.createAlertIfNew(wallet.UserID, "HIGH", 70,
 			entity.JSONSlice{"HIGH_TX_VELOCITY"},
 			entity.JSONMap{
-				"rule":         "high_transaction_velocity",
-				"tx_count":     fmt.Sprintf("%d", row.TxCount),
-				"window_mins":  "10",
-				"wallet_id":    row.WalletID.String(),
+ "rule": "high_transaction_velocity",
+ "tx_count":     fmt.Sprintf("%d", row.TxCount),
+ "window_mins": "10",
+ "wallet_id":    row.WalletID.String(),
 			},
 		)
 	}
@@ -154,9 +154,9 @@ func (w *FraudDetectionWorker) scan() {
 		w.createAlertIfNew(wallet.UserID, "MEDIUM", 50,
 			entity.JSONSlice{"MULTIPLE_PAYOUT_REQUESTS"},
 			entity.JSONMap{
-				"rule":        "multiple_payouts_24h",
-				"payout_count": fmt.Sprintf("%d", row.Count),
-				"wallet_id":   row.WalletID.String(),
+ "rule": "multiple_payouts_24h",
+ "payout_count": fmt.Sprintf("%d", row.Count),
+ "wallet_id":   row.WalletID.String(),
 			},
 		)
 	}
@@ -194,12 +194,12 @@ func (w *FraudDetectionWorker) createAlertIfNew(
 		RiskLevel: riskLevel,
 		Flags:     flags,
 		Details:   details,
-		Status:    "OPEN",
+		Status: "OPEN",
 		CreatedAt: time.Now(),
 	}).Error; err != nil {
 		log.Printf("[FraudDetection] Failed to create alert for user %s: %v", userID, err)
 		return
 	}
 
-	log.Printf("[FraudDetection] 🚨 Alert created — user %s | level=%s | flags=%v", userID, riskLevel, flags)
+	log.Printf("[FraudDetection]  Alert created — user %s | level=%s | flags=%v", userID, riskLevel, flags)
 }

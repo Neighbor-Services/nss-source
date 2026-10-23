@@ -84,11 +84,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
 			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
 			c.JSON(http.StatusForbidden, gin.H{
-				"code":              "ACCOUNT_SUSPENDED",
-				"error":             "Account suspended",
-				"message":           "Your account has been suspended by an administrator.",
-				"suspension_reason": reason,
-				"support_email":     "support@neighborservice.com",
+ "code": "ACCOUNT_SUSPENDED",
+ "error": "Account suspended",
+ "message": "Your account has been suspended by an administrator.",
+ "suspension_reason": reason,
+ "support_email": "support@neighborservice.com",
 			})
 			return
 		}
@@ -110,9 +110,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			blocker.RecordFailure(clientIP, req.Email)
 			logger.Warn(fmt.Sprintf("[SECURITY] Standard user %s attempted unauthorized admin portal login from IP %s", req.Email, clientIP))
 			c.JSON(http.StatusForbidden, gin.H{
-				"code":    "ADMIN_ACCESS_REQUIRED",
-				"error":   "Forbidden",
-				"message": "Access denied: You do not have permission to access the administrator portal.",
+ "code": "ADMIN_ACCESS_REQUIRED",
+ "error": "Forbidden",
+ "message": "Access denied: You do not have permission to access the administrator portal.",
 			})
 			return
 		}
@@ -150,11 +150,11 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
 			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
 			c.JSON(http.StatusForbidden, gin.H{
-				"code":              "ACCOUNT_SUSPENDED",
-				"error":             "Account suspended",
-				"message":           "Your administrator account has been suspended.",
-				"suspension_reason": reason,
-				"support_email":     "support@neighborservice.com",
+ "code": "ACCOUNT_SUSPENDED",
+ "error": "Account suspended",
+ "message": "Your administrator account has been suspended.",
+ "suspension_reason": reason,
+ "support_email": "support@neighborservice.com",
 			})
 			return
 		}
@@ -179,7 +179,7 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 			traceID, _ := c.Get("trace_id")
 			tID, _ := traceID.(string)
 			client.Log(&logger.LogPayload{
-				Level:   "WARN",
+				Level: "WARN",
 				Message: fmt.Sprintf("[SECURITY ALERT] Unauthorized admin login attempt by %s from IP %s", req.Email, clientIP),
 				TraceID: tID,
 				HTTP: &logger.HTTPMetadata{
@@ -190,18 +190,18 @@ func (h *AuthHandler) AdminLogin(c *gin.Context) {
 					UserAgent:  c.Request.UserAgent(),
 				},
 				Context: map[string]interface{}{
-					"security_alert": "unauthorized_admin_portal_access",
-					"client_ip":      clientIP,
-					"user_email":     logger.MaskPII(req.Email),
-					"user_id":        result.User.ID.String(),
+ "security_alert": "unauthorized_admin_portal_access",
+ "client_ip":      clientIP,
+ "user_email":     logger.MaskPII(req.Email),
+ "user_id":        result.User.ID.String(),
 				},
 			})
 		}
 
 		c.JSON(http.StatusForbidden, gin.H{
-			"code":    "ADMIN_ACCESS_REQUIRED",
-			"error":   "Forbidden",
-			"message": "Access denied: You do not have permission to access the administrator portal.",
+ "code": "ADMIN_ACCESS_REQUIRED",
+ "error": "Forbidden",
+ "message": "Access denied: You do not have permission to access the administrator portal.",
 		})
 		return
 	}
@@ -236,11 +236,11 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
 			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
 			c.JSON(http.StatusForbidden, gin.H{
-				"code":              "ACCOUNT_SUSPENDED",
-				"error":             "Account suspended",
-				"message":           "Your account has been suspended by an administrator.",
-				"suspension_reason": reason,
-				"support_email":     "support@neighborservice.com",
+ "code": "ACCOUNT_SUSPENDED",
+ "error": "Account suspended",
+ "message": "Your account has been suspended by an administrator.",
+ "suspension_reason": reason,
+ "support_email": "support@neighborservice.com",
 			})
 			return
 		}
@@ -377,11 +377,11 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
 			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
 			c.JSON(http.StatusForbidden, gin.H{
-				"code":              "ACCOUNT_SUSPENDED",
-				"error":             "Account suspended",
-				"message":           "Your account has been suspended by an administrator.",
-				"suspension_reason": reason,
-				"support_email":     "support@neighborservice.com",
+ "code": "ACCOUNT_SUSPENDED",
+ "error": "Account suspended",
+ "message": "Your account has been suspended by an administrator.",
+ "suspension_reason": reason,
+ "support_email": "support@neighborservice.com",
 			})
 			return
 		}
@@ -427,11 +427,11 @@ func (h *AuthHandler) AppleLogin(c *gin.Context) {
 		if strings.HasPrefix(err.Error(), "ACCOUNT_SUSPENDED") {
 			reason := strings.TrimPrefix(err.Error(), "ACCOUNT_SUSPENDED: ")
 			c.JSON(http.StatusForbidden, gin.H{
-				"code":              "ACCOUNT_SUSPENDED",
-				"error":             "Account suspended",
-				"message":           "Your account has been suspended by an administrator.",
-				"suspension_reason": reason,
-				"support_email":     "support@neighborservice.com",
+ "code": "ACCOUNT_SUSPENDED",
+ "error": "Account suspended",
+ "message": "Your account has been suspended by an administrator.",
+ "suspension_reason": reason,
+ "support_email": "support@neighborservice.com",
 			})
 			return
 		}

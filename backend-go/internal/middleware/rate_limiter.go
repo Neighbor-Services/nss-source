@@ -92,8 +92,8 @@ func RateLimit(maxRequests int, perWindow time.Duration) gin.HandlerFunc {
 		if !allowed {
 			c.Header("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
 			response.JSON(c, http.StatusTooManyRequests, gin.H{
-				"error":   "Too Many Requests",
-				"message": "Rate limit exceeded. Please try again later.",
+ "error": "Too Many Requests",
+ "message": "Rate limit exceeded. Please try again later.",
 			})
 			c.Abort()
 			return
@@ -111,3 +111,40 @@ func AuthRateLimit() gin.HandlerFunc {
 func TwoFactorRateLimit() gin.HandlerFunc {
 	return RateLimit(5, 1*time.Minute)
 }
+
+// RateLimitByUser returns a Gin middleware that rate limits requests based on authenticated User ID,
+// falling back to client IP for unauthenticated users.
+func RateLimitByUser(maxRequests int, perWindow time.Duration) gin.HandlerFunc {
+	limiter := NewRateLimiter(maxRequests, perWindow)
+	return func(c *gin.Context) {
+		key := ""
+		if uid, exists := c.Get("userID"); exists && fmt.Sprintf("%v", uid) != "" && fmt.Sprintf("%v", uid) != "<nil>" {
+			key = fmt.Sprintf("user:%v", uid)
+		} else {
+			key = fmt.Sprintf("ip:%s", c.ClientIP())
+		}
+
+		allowed, retryAfter := limiter.Allow(key)
+		if !allowed {
+			c.Header("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
+			response.JSON(c, http.StatusTooManyRequests, gin.H{
+ "error": "Too Many Requests",
+ "message": "Rate limit exceeded. Please try again later.",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// PaymentRateLimit limits payment actions (e.g. transfers, funding, payout requests) per user.
+func PaymentRateLimit() gin.HandlerFunc {
+	return RateLimitByUser(20, 1*time.Minute)
+}
+
+// SensitiveActionRateLimit limits mutating requests (appointments, job requests) per user.
+func SensitiveActionRateLimit() gin.HandlerFunc {
+	return RateLimitByUser(30, 1*time.Minute)
+}
+

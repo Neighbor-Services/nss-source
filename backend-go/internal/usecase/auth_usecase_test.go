@@ -159,12 +159,12 @@ func TestAuthUseCase_RegisterAndLogin(t *testing.T) {
 	// 1. Register User
 	ctx := context.Background()
 	regResult, err := authUC.Register(ctx, domainUsecase.RegisterInput{
-		Email:     "provider@example.com",
-		Password:  "SecurePassword123!",
-		UserType:  "PROVIDER",
+		Email: "provider@example.com",
+		Password: "SecurePassword123!",
+		UserType: "PROVIDER",
 		FirstName: "John",
-		LastName:  "Doe",
-		Phone:     "+1234567890",
+		LastName: "Doe",
+		Phone: "+1234567890",
 	})
 
 	if err != nil {
@@ -201,7 +201,7 @@ func TestAuthUseCase_RegisterAndLogin(t *testing.T) {
 
 	// 5. Register with ONLY email and password (no user_type, no names, no phone)
 	minimalReg, err := authUC.Register(ctx, domainUsecase.RegisterInput{
-		Email:    "minimal@example.com",
+		Email: "minimal@example.com",
 		Password: "SecurePassword123!",
 	})
 	if err != nil {

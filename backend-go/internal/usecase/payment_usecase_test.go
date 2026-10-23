@@ -98,7 +98,7 @@ func TestPaymentUseCase_PaymentSheetAndCustomer(t *testing.T) {
 		userID: {ID: uuid.New(), UserID: userID, SubscriptionTier: "NONE"},
 	}}
 	cfg := &config.Config{
-		StripeSecretKey:      "",
+		StripeSecretKey: "",
 		StripePublishableKey: "pk_test_12345",
 	}
 
@@ -129,7 +129,7 @@ func TestPaymentUseCase_PaymentSheetAndCustomer(t *testing.T) {
 	// 3. Validate Apple JWS / StoreKit token
 	sub, err := payUC.ValidateAppleReceipt(ctx, userID, domainUsecase.AppleValidationInput{
 		ReceiptData: "eyJhbGciOiJSUzI1NiJ9.test.payload",
-		ProductID:   "silver_monthly",
+		ProductID: "silver_monthly",
 	})
 	if err != nil {
 		t.Fatalf("Failed to validate Apple receipt: %v", err)

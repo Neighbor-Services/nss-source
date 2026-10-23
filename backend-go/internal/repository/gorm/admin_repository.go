@@ -586,7 +586,7 @@ func (r *adminRepository) CreateCatalogService(ctx context.Context, cs *entity.C
 
 func (r *adminRepository) UpdateCatalogService(ctx context.Context, cs *entity.CatalogService) error {
 	updates := map[string]interface{}{
-		"updated_at": time.Now(),
+ "updated_at": time.Now(),
 	}
 	if cs.Name != "" {
 		updates["name"] = cs.Name
@@ -699,8 +699,8 @@ func (r *adminRepository) CreateWalletTransaction(ctx context.Context, tx *entit
 
 func (r *adminRepository) BatchUpdateVerifications(ctx context.Context, ids []uuid.UUID, status, notes string) error {
 	updates := map[string]interface{}{
-		"status":     status,
-		"updated_at": time.Now(),
+ "status":     status,
+ "updated_at": time.Now(),
 	}
 	if notes != "" {
 		updates["reviewer_notes"] = notes
@@ -805,7 +805,7 @@ func (r *adminRepository) GetFinancialReport(ctx context.Context, startDate, end
 
 func (r *adminRepository) GetSystemHealth(ctx context.Context) (*entity.SystemHealthStatus, error) {
 	status := entity.SystemHealthStatus{
-		Status:         "HEALTHY",
+		Status: "HEALTHY",
 		DatabaseStatus: "CONNECTED",
 		Timestamp:      time.Now(),
 	}
@@ -1056,7 +1056,7 @@ func (r *adminRepository) EvaluateUserRisk(ctx context.Context, userID uuid.UUID
 		RiskLevel: level,
 		Flags:     flags,
 		Details:   details,
-		Status:    "OPEN",
+		Status: "OPEN",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -1144,7 +1144,7 @@ func (r *adminRepository) BatchApprovePayouts(ctx context.Context, ids []uuid.UU
 			_ = r.CreateAuditLog(ctx, &entity.AuditLog{
 				ID:           uuid.New(),
 				UserID:       &adminID,
-				Action:       "BATCH_PAYOUT_APPROVED",
+				Action: "BATCH_PAYOUT_APPROVED",
 				ResourceType: "PAYOUT_REQUEST",
 				ResourceID:   p.ID.String(),
 				Details:      entity.JSONMap{"amount": p.Amount, "batch": true},
@@ -1157,7 +1157,7 @@ func (r *adminRepository) BatchApprovePayouts(ctx context.Context, ids []uuid.UU
 		ProcessedCount: processedCount,
 		TotalAmount:    totalAmount,
 		FailedCount:    int64(len(ids)) - processedCount,
-		Message:        "Batch payout approval completed successfully",
+		Message: "Batch payout approval completed successfully",
 	}, nil
 }
 
@@ -1183,7 +1183,7 @@ func (r *adminRepository) BatchRejectPayouts(ctx context.Context, ids []uuid.UUI
 			_ = r.CreateAuditLog(ctx, &entity.AuditLog{
 				ID:           uuid.New(),
 				UserID:       &adminID,
-				Action:       "BATCH_PAYOUT_REJECTED",
+				Action: "BATCH_PAYOUT_REJECTED",
 				ResourceType: "PAYOUT_REQUEST",
 				ResourceID:   p.ID.String(),
 				Details:      entity.JSONMap{"reason": reason, "batch": true},
@@ -1195,7 +1195,7 @@ func (r *adminRepository) BatchRejectPayouts(ctx context.Context, ids []uuid.UUI
 	return &entity.BatchPayoutResponse{
 		ProcessedCount: processedCount,
 		FailedCount:    int64(len(ids)) - processedCount,
-		Message:        "Batch payout rejection completed",
+		Message: "Batch payout rejection completed",
 	}, nil
 }
 
@@ -1230,13 +1230,13 @@ func (r *adminRepository) GetAdminNotificationFeed(ctx context.Context) ([]entit
 	_ = r.db.WithContext(ctx).Where("status = ?", "OPEN").Order("created_at DESC").Limit(5).Find(&openDisputes)
 	for _, d := range openDisputes {
 		notifications = append(notifications, entity.AdminNotification{
-			ID:         "disp-" + d.ID.String(),
-			Type:       "DISPUTE",
-			Severity:   "HIGH",
-			Title:      "Dispute Escalation",
+			ID: "disp-" + d.ID.String(),
+			Type: "DISPUTE",
+			Severity: "HIGH",
+			Title: "Dispute Escalation",
 			Message:    fmt.Sprintf("Dispute #%s: %s", d.ID.String()[:8], d.Reason),
 			ResourceID: d.ID.String(),
-			Route:      "/admin/disputes",
+			Route: "/admin/disputes",
 			IsRead:     false,
 			CreatedAt:  d.CreatedAt,
 		})
@@ -1247,13 +1247,13 @@ func (r *adminRepository) GetAdminNotificationFeed(ctx context.Context) ([]entit
 	_ = r.db.WithContext(ctx).Where("status = ?", "OPEN").Order("risk_score DESC, created_at DESC").Limit(5).Find(&fraudAlerts)
 	for _, f := range fraudAlerts {
 		notifications = append(notifications, entity.AdminNotification{
-			ID:         "fraud-" + f.ID.String(),
-			Type:       "FRAUD_VELOCITY",
-			Severity:   "HIGH",
+			ID: "fraud-" + f.ID.String(),
+			Type: "FRAUD_VELOCITY",
+			Severity: "HIGH",
 			Title:      fmt.Sprintf("Risk Alert: Score %d/100 (%s)", f.RiskScore, f.RiskLevel),
-			Message:    "High anomalous activity detected requiring staff review.",
+			Message: "High anomalous activity detected requiring staff review.",
 			ResourceID: f.UserID.String(),
-			Route:      "/admin/fraud",
+			Route: "/admin/fraud",
 			IsRead:     false,
 			CreatedAt:  f.CreatedAt,
 		})
@@ -1264,13 +1264,13 @@ func (r *adminRepository) GetAdminNotificationFeed(ctx context.Context) ([]entit
 	_ = r.db.WithContext(ctx).Where("status IN ('FLAGGED', 'CONSIDER', 'SUSPENDED') OR adjudication IN ('ENGAGE', 'CONSIDER')").Order("created_at DESC").Limit(5).Find(&flaggedChecks)
 	for _, b := range flaggedChecks {
 		notifications = append(notifications, entity.AdminNotification{
-			ID:         "bg-" + b.ID.String(),
-			Type:       "CHECKR_FLAG",
-			Severity:   "MEDIUM",
-			Title:      "Checkr Screening Requires Review",
-			Message:    "Candidate screening returned 'CONSIDER' or manual review flag.",
+			ID: "bg-" + b.ID.String(),
+			Type: "CHECKR_FLAG",
+			Severity: "MEDIUM",
+			Title: "Checkr Screening Requires Review",
+			Message: "Candidate screening returned 'CONSIDER' or manual review flag.",
 			ResourceID: b.ID.String(),
-			Route:      "/admin/background-checks",
+			Route: "/admin/background-checks",
 			IsRead:     false,
 			CreatedAt:  b.CreatedAt,
 		})
@@ -1281,13 +1281,13 @@ func (r *adminRepository) GetAdminNotificationFeed(ctx context.Context) ([]entit
 	_ = r.db.WithContext(ctx).Where("status = ? AND amount >= ?", "PENDING", 200.0).Order("created_at DESC").Limit(5).Find(&largePayouts)
 	for _, p := range largePayouts {
 		notifications = append(notifications, entity.AdminNotification{
-			ID:         "payout-" + p.ID.String(),
-			Type:       "PAYOUT_HOLD",
-			Severity:   "MEDIUM",
-			Title:      "High-Value Payout Request",
+			ID: "payout-" + p.ID.String(),
+			Type: "PAYOUT_HOLD",
+			Severity: "MEDIUM",
+			Title: "High-Value Payout Request",
 			Message:    fmt.Sprintf("Disbursement request of $%.2f awaiting operator approval.", p.Amount),
 			ResourceID: p.ID.String(),
-			Route:      "/admin/payouts",
+			Route: "/admin/payouts",
 			IsRead:     false,
 			CreatedAt:  p.CreatedAt,
 		})
@@ -1296,12 +1296,12 @@ func (r *adminRepository) GetAdminNotificationFeed(ctx context.Context) ([]entit
 	// Sort by created_at descending
 	if len(notifications) == 0 {
 		notifications = append(notifications, entity.AdminNotification{
-			ID:        "sys-ok",
-			Type:      "SYSTEM_ALERT",
-			Severity:  "INFO",
-			Title:     "Platform Systems Nominal",
-			Message:   "Zero critical disputes or unhandled fraud triggers at this time.",
-			Route:     "/admin/dashboard",
+			ID: "sys-ok",
+			Type: "SYSTEM_ALERT",
+			Severity: "INFO",
+			Title: "Platform Systems Nominal",
+			Message: "Zero critical disputes or unhandled fraud triggers at this time.",
+			Route: "/admin/dashboard",
 			IsRead:    true,
 			CreatedAt: time.Now(),
 		})
@@ -1504,7 +1504,7 @@ func (r *adminRepository) ExecuteDisputeRefund(ctx context.Context, disputeID uu
 	_ = r.CreateAuditLog(ctx, &entity.AuditLog{
 		ID:           uuid.New(),
 		UserID:       &adminID,
-		Action:       "DISPUTE_REFUND_EXECUTED",
+		Action: "DISPUTE_REFUND_EXECUTED",
 		ResourceType: "DISPUTE",
 		ResourceID:   dispute.ID.String(),
 		Details:      entity.JSONMap{"refund_amount": amount, "reason": reason},
@@ -1888,13 +1888,13 @@ func (r *adminRepository) OverrideDispatchIncident(ctx context.Context, incident
 	_ = r.CreateAuditLog(ctx, &entity.AuditLog{
 		ID:           uuid.New(),
 		UserID:       &adminID,
-		Action:       "DISPATCH_INCIDENT_OVERRIDE",
+		Action: "DISPATCH_INCIDENT_OVERRIDE",
 		ResourceType: "FLASH_DISPATCH",
 		ResourceID:   incidentID.String(),
 		Details: entity.JSONMap{
-			"action":             action,
-			"reason":             reason,
-			"target_provider_id": targetProviderID,
+ "action":             action,
+ "reason":             reason,
+ "target_provider_id": targetProviderID,
 		},
 		CreatedAt: now,
 	})
@@ -2195,10 +2195,10 @@ func (r *adminRepository) GetGeospatialHeatmap(ctx context.Context) (*entity.Ope
 
 func (r *adminRepository) GetLeakageAlerts(ctx context.Context) ([]entity.LeakageAlert, error) {
 	leakKeywords := []string{
-		"cashapp", "cash app", "$cashtag", "venmo", "zelle", "paypal",
-		"pay me directly", "pay offline", "off app", "outside the app",
-		"whatsapp", "telegram", "text me at", "call me directly",
-		"zelle me", "apple pay directly",
+ "cashapp", "cash app", "$cashtag", "venmo", "zelle", "paypal",
+ "pay me directly", "pay offline", "off app", "outside the app",
+ "whatsapp", "telegram", "text me at", "call me directly",
+ "zelle me", "apple pay directly",
 	}
 
 	var messages []entity.Message
@@ -2272,7 +2272,7 @@ func (r *adminRepository) GetLeakageAlerts(ctx context.Context) ([]entity.Leakag
 				MatchedKeyword: matchedKeyword,
 				RiskScore:      riskScore,
 				DetectedAt:     msg.CreatedAt,
-				Status:         "PENDING",
+				Status: "PENDING",
 			})
 		}
 	}
@@ -2360,7 +2360,7 @@ func (r *adminRepository) MediationResolveDispute(ctx context.Context, disputeID
 				Amount:          input.RefundAmount,
 				TransactionType: "CREDIT",
 				Description:     fmt.Sprintf("Dispute Mediation Refund (#%s)", disputeID.String()[:8]),
-				Status:          "COMPLETED",
+				Status: "COMPLETED",
 				ReferenceID:     disputeID.String(),
 				CreatedAt:       time.Now(),
 			}
@@ -2380,7 +2380,7 @@ func (r *adminRepository) MediationResolveDispute(ctx context.Context, disputeID
 				Amount:          input.ProviderPayout,
 				TransactionType: "CREDIT",
 				Description:     fmt.Sprintf("Dispute Mediation Partial Payout (#%s)", disputeID.String()[:8]),
-				Status:          "COMPLETED",
+				Status: "COMPLETED",
 				ReferenceID:     disputeID.String(),
 				CreatedAt:       time.Now(),
 			}
@@ -2470,9 +2470,9 @@ func (r *adminRepository) GetSubscriptionCohortStats(ctx context.Context) (*enti
 	arrVal := mrrVal * 12
 
 	conversions := map[string]float64{
-		"free_to_silver": 14.2,
-		"silver_to_gold": 22.8,
-		"gold_to_plat":   11.5,
+ "free_to_silver": 14.2,
+ "silver_to_gold": 22.8,
+ "gold_to_plat":   11.5,
 	}
 
 	return &entity.SubscriptionCohortStats{
@@ -2516,11 +2516,11 @@ func (r *adminRepository) ResolveApprovalRequest(ctx context.Context, id uuid.UU
 	_ = r.db.WithContext(ctx).First(&approver, "id = ?", approverID)
 
 	updates := map[string]interface{}{
-		"status":           strings.ToUpper(status),
-		"approver_id":      approverID,
-		"approver_email":   approver.Email,
-		"rejection_reason": reason,
-		"resolved_at":      &now,
+ "status":           strings.ToUpper(status),
+ "approver_id":      approverID,
+ "approver_email":   approver.Email,
+ "rejection_reason": reason,
+ "resolved_at":      &now,
 	}
 	return r.db.WithContext(ctx).Model(&entity.ApprovalRequest{}).Where("id = ?", id).Updates(updates).Error
 }
@@ -2575,9 +2575,9 @@ func (r *adminRepository) CompileChargebackEvidence(ctx context.Context, dispute
 
 	// Format summary
 	pkg.EvidenceSummary = fmt.Sprintf(
-		"NeighborService Verified Fulfillment Dossier: Appointment %s was scheduled for %s ($%.2f). "+
-			"Provider %s checked in at the job location and completed work with in-app 4-digit verification. "+
-			"Dispute claim: '%s'. Resolution notes: '%s'.",
+ "NeighborService Verified Fulfillment Dossier: Appointment %s was scheduled for %s ($%.2f). "+
+ "Provider %s checked in at the job location and completed work with in-app 4-digit verification. "+
+ "Dispute claim: '%s'. Resolution notes: '%s'.",
 		pkg.AppointmentID.String(), pkg.SeekerName, pkg.TotalAmount, pkg.ProviderName, dispute.Reason, dispute.Description,
 	)
 
@@ -2610,7 +2610,7 @@ func (r *adminRepository) GenerateImpersonationToken(ctx context.Context, adminI
 	_ = r.CreateAuditLog(ctx, &entity.AuditLog{
 		ID:           uuid.New(),
 		UserID:       &adminID,
-		Action:       "ADMIN_IMPERSONATION_STARTED",
+		Action: "ADMIN_IMPERSONATION_STARTED",
 		ResourceType: "USER",
 		ResourceID:   targetUserID.String(),
 		Details:      entity.JSONMap{"reason": reason, "target_email": target.Email, "target_role": targetRole},
@@ -2677,14 +2677,14 @@ func (r *adminRepository) ListSLADispatchAlerts(ctx context.Context) ([]entity.S
 			AppointmentID:       app.ID,
 			ServiceName:         serviceName,
 			SeekerName:          seekerName,
-			AddressCity:         "Metropolitan Area",
+			AddressCity: "Metropolitan Area",
 			WaitMinutes:         wait,
 			CurrentRadiusKm:     radius,
 			EscalationStage:     stage,
 			IsSurgeBoosted:      isBoosted,
 			SurgeMultiplier:     multiplier,
 			AvailableProsInArea: 4,
-			Status:              "AT_RISK",
+			Status: "AT_RISK",
 		})
 	}
 

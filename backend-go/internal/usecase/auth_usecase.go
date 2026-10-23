@@ -132,7 +132,7 @@ func (u *authUseCase) Register(ctx context.Context, input domainUsecase.Register
 		ID:        uuid.New(),
 		UserID:    user.ID,
 		Balance:   0.0,
-		Currency:  "USD",
+		Currency: "USD",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -452,7 +452,7 @@ func (u *authUseCase) SocialLogin(ctx context.Context, provider, token, email, n
 		newUser := entity.User{
 			ID:         uuid.New(),
 			Email:      email,
-			Password:   "",
+			Password: "",
 			IsActive:   true,
 			IsVerified: true,
 			CreatedAt:  time.Now(),
@@ -476,7 +476,7 @@ func (u *authUseCase) SocialLogin(ctx context.Context, provider, token, email, n
 			UserID:    user.ID,
 			FirstName: firstName,
 			LastName:  lastName,
-			UserType:  "SEEKER",
+			UserType: "SEEKER",
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}

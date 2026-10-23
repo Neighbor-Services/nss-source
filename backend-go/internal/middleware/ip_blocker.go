@@ -229,9 +229,9 @@ func Anti404Scanner(blocker *IPBlocker) gin.HandlerFunc {
 			hours := int(remaining.Hours()) % 24
 			c.Header("Retry-After", fmt.Sprintf("%.0f", remaining.Seconds()))
 			response.JSON(c, http.StatusForbidden, gin.H{
-				"code":    "IP_BLOCKED_SCANNER",
-				"error":   "Forbidden",
-				"message": fmt.Sprintf("Access denied: Your IP (%s) is temporarily blocked for 7 days due to excessive invalid endpoint requests. Ban expires in %dd %dh.", clientIP, days, hours),
+ "code": "IP_BLOCKED_SCANNER",
+ "error": "Forbidden",
+ "message": fmt.Sprintf("Access denied: Your IP (%s) is temporarily blocked for 7 days due to excessive invalid endpoint requests. Ban expires in %dd %dh.", clientIP, days, hours),
 			})
 			c.Abort()
 			return
@@ -250,7 +250,7 @@ func Anti404Scanner(blocker *IPBlocker) gin.HandlerFunc {
 					traceID, _ := c.Get("trace_id")
 					tID, _ := traceID.(string)
 					client.Log(&logger.LogPayload{
-						Level:   "WARN",
+						Level: "WARN",
 						Message: fmt.Sprintf("[SECURITY BAN] IP %s automatically blocked for 7 days after 10x 404 errors (scanned: %s)", clientIP, path),
 						TraceID: tID,
 						HTTP: &logger.HTTPMetadata{
@@ -261,10 +261,10 @@ func Anti404Scanner(blocker *IPBlocker) gin.HandlerFunc {
 							UserAgent:  c.Request.UserAgent(),
 						},
 						Context: map[string]interface{}{
-							"security_alert": "scanner_ip_ban",
-							"client_ip":      clientIP,
-							"ban_duration":   "7_days",
-							"reason":         "Continuous 404 scanning detected",
+ "security_alert": "scanner_ip_ban",
+ "client_ip":      clientIP,
+ "ban_duration": "7_days",
+ "reason": "Continuous 404 scanning detected",
 						},
 					})
 				}

@@ -147,8 +147,8 @@ func TestServiceUseCase_ProposalApprovalFlow(t *testing.T) {
 	req := &entity.ServiceRequest{
 		ID:        reqID,
 		UserID:    seekerID,
-		Title:     "Fix Plumbing",
-		Status:    "OPEN",
+		Title: "Fix Plumbing",
+		Status: "OPEN",
 		CreatedAt: time.Now(),
 	}
 
@@ -229,8 +229,8 @@ func TestServiceUseCase_ImageUploadAndProposalDeletion(t *testing.T) {
 	req := &entity.ServiceRequest{
 		ID:        reqID,
 		UserID:    seekerID,
-		Title:     "House Cleaning",
-		Status:    "OPEN",
+		Title: "House Cleaning",
+		Status: "OPEN",
 		CreatedAt: time.Now(),
 	}
 
@@ -298,9 +298,9 @@ func TestServiceUseCase_DeleteRequest(t *testing.T) {
 		reqID: {
 			ID:          reqID,
 			UserID:      seekerID,
-			Title:       "Test Service Request",
+			Title: "Test Service Request",
 			Description: "Need plumbing assistance",
-			Status:      "OPEN",
+			Status: "OPEN",
 		},
 	}}
 

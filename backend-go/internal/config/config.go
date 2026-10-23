@@ -54,6 +54,12 @@ type Config struct {
 	ProleadLoggerURL         string
 	ProleadAPIKey            string
 	ProleadEnabled           bool
+	DBMaxOpenConns           int
+	DBMaxIdleConns           int
+	CommissionRatePlatinum   float64
+	CommissionRateGold       float64
+	CommissionRateSilver     float64
+	CommissionRateDefault    float64
 }
 
 func Load() *Config {
@@ -139,7 +145,31 @@ func Load() *Config {
 		ProleadLoggerURL:         getEnv("PROLEAD_LOGGER_URL", "http://localhost:8080"),
 		ProleadAPIKey:            getEnv("PROLEAD_API_KEY", ""),
 		ProleadEnabled:           (getEnv("PROLEAD_ENABLED", "true") == "true" || getEnv("PROLEAD_ENABLED", "1") == "1") && getEnv("PROLEAD_API_KEY", "") != "",
+		DBMaxOpenConns:           loadIntEnv("DB_MAX_OPEN_CONNS", 10),
+		DBMaxIdleConns:           loadIntEnv("DB_MAX_IDLE_CONNS", 5),
+		CommissionRatePlatinum:   loadFloatEnv("COMMISSION_RATE_PLATINUM", 0.05),
+		CommissionRateGold:       loadFloatEnv("COMMISSION_RATE_GOLD", 0.10),
+		CommissionRateSilver:     loadFloatEnv("COMMISSION_RATE_SILVER", 0.15),
+		CommissionRateDefault:    loadFloatEnv("COMMISSION_RATE_DEFAULT", 0.20),
 	}
+}
+
+func loadIntEnv(key string, defaultVal int) int {
+	if valStr, ok := os.LookupEnv(key); ok && valStr != "" {
+		if v, err := strconv.Atoi(valStr); err == nil && v > 0 {
+			return v
+		}
+	}
+	return defaultVal
+}
+
+func loadFloatEnv(key string, defaultVal float64) float64 {
+	if valStr, ok := os.LookupEnv(key); ok && valStr != "" {
+		if v, err := strconv.ParseFloat(valStr, 64); err == nil && v >= 0 {
+			return v
+		}
+	}
+	return defaultVal
 }
 
 

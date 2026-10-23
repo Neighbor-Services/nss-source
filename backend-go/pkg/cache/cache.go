@@ -48,9 +48,9 @@ func NewRedisCache(addr, password string, db int, url string) Cache {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		log.Printf("⚠️ [Redis] Unable to connect to Redis at %s: %v (Cache operations will be no-ops)", addr, err)
+		log.Printf(" [Redis] Unable to connect to Redis at %s: %v (Cache operations will be no-ops)", addr, err)
 	} else {
-		log.Printf("⚡ [Redis] Connected successfully to Redis at %s (DB %d)", addr, db)
+		log.Printf(" [Redis] Connected successfully to Redis at %s (DB %d)", addr, db)
 	}
 
 	return &redisCache{client: client}

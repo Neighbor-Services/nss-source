@@ -16,11 +16,12 @@ import (
 )
 
 type chatUseCase struct {
-	convRepo      repository.ConversationRepository
-	msgRepo       repository.MessageRepository
-	blockRepo     repository.ChatBlockRepository
-	tokenRepo     repository.DeviceTokenRepository
-	fcmClient     fcm.Client
+	convRepo    repository.ConversationRepository
+	msgRepo     repository.MessageRepository
+	blockRepo   repository.ChatBlockRepository
+	tokenRepo   repository.DeviceTokenRepository
+	fcmClient   fcm.Client
+	profileRepo repository.ProfileRepository
 }
 
 func NewChatUseCase(
@@ -29,13 +30,19 @@ func NewChatUseCase(
 	blockRepo repository.ChatBlockRepository,
 	tokenRepo repository.DeviceTokenRepository,
 	fcmClient fcm.Client,
+	profileRepo ...repository.ProfileRepository,
 ) domainUC.ChatUseCase {
+	var pr repository.ProfileRepository
+	if len(profileRepo) > 0 {
+		pr = profileRepo[0]
+	}
 	return &chatUseCase{
-		convRepo:  convRepo,
-		msgRepo:   msgRepo,
-		blockRepo: blockRepo,
-		tokenRepo: tokenRepo,
-		fcmClient: fcmClient,
+		convRepo:    convRepo,
+		msgRepo:     msgRepo,
+		blockRepo:   blockRepo,
+		tokenRepo:   tokenRepo,
+		fcmClient:   fcmClient,
+		profileRepo: pr,
 	}
 }
 
@@ -54,6 +61,14 @@ func (u *chatUseCase) GetByParticipants(ctx context.Context, user1ID, user2ID uu
 func (u *chatUseCase) CreateConversation(ctx context.Context, senderID, recipientID uuid.UUID) (*entity.Conversation, error) {
 	if senderID == recipientID {
 		return nil, errors.New("cannot create conversation with oneself")
+	}
+
+	if u.profileRepo != nil {
+		if senderProfile, err := u.profileRepo.GetByUserID(ctx, senderID); err == nil && senderProfile != nil {
+			if strings.ToUpper(strings.TrimSpace(senderProfile.UserType)) == "PROVIDER" && !senderProfile.IsIdentityVerified {
+				return nil, errors.New("identity verification required: your Checkr background check must be cleared before initiating messages with clients")
+			}
+		}
 	}
 
 	conv, err := u.convRepo.GetByParticipants(ctx, senderID, recipientID)
@@ -81,6 +96,14 @@ func (u *chatUseCase) GetMessages(ctx context.Context, convID, userID uuid.UUID,
 }
 
 func (u *chatUseCase) SendMessage(ctx context.Context, convID, senderID uuid.UUID, text, mediaURL, messageType string) (*entity.Message, error) {
+	if u.profileRepo != nil {
+		if senderProfile, err := u.profileRepo.GetByUserID(ctx, senderID); err == nil && senderProfile != nil {
+			if strings.ToUpper(strings.TrimSpace(senderProfile.UserType)) == "PROVIDER" && !senderProfile.IsIdentityVerified {
+				return nil, errors.New("identity verification required: your Checkr background check must be cleared before sending messages")
+			}
+		}
+	}
+
 	if text == "" && mediaURL == "" {
 		return nil, errors.New("message content or media is required")
 	}
@@ -190,10 +213,10 @@ func (u *chatUseCase) SaveFullMessage(ctx context.Context, msg *entity.Message) 
 				}
 
 				data := map[string]string{
-					"notification_type": "message",
-					"sender_id":         msg.SenderID.String(),
-					"conversation_id":   msg.ConversationID.String(),
-					"message_id":        msg.ID.String(),
+ "notification_type": "message",
+ "sender_id":         msg.SenderID.String(),
+ "conversation_id":   msg.ConversationID.String(),
+ "message_id":        msg.ID.String(),
 				}
 
 				invalidTokens, _ := u.fcmClient.SendMulticast(context.Background(), tokenStrings, senderName, body, data)

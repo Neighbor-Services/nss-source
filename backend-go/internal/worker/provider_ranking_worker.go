@@ -44,7 +44,7 @@ func NewProviderRankingWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Cli
 }
 
 func (w *ProviderRankingWorker) Start() {
-	slog.Info("🏆 Starting Provider Ranking & Dynamic Scoring Background Worker...")
+	slog.Info(" Starting Provider Ranking & Dynamic Scoring Background Worker...")
 
 	go func() {
 		// Run every 6 hours
@@ -56,7 +56,7 @@ func (w *ProviderRankingWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				slog.Info("🏆 Stopping Provider Ranking Worker...")
+				slog.Info(" Stopping Provider Ranking Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("ProviderRankingWorker.Tick", w.recalculateRankings)
@@ -146,9 +146,9 @@ func (w *ProviderRankingWorker) recalculateRankings() {
 				})
 
 				w.sendPush(profile.UserID, title, body, map[string]string{
-					"notification_type": "ranking_tier_promoted",
-					"score":             fmt.Sprintf("%d", finalScore),
-					"tier":              tier,
+ "notification_type": "ranking_tier_promoted",
+ "score":             fmt.Sprintf("%d", finalScore),
+ "tier":              tier,
 				})
 
 				if profile.EmailNotificationsEnabled {

@@ -30,7 +30,7 @@ func NewProviderSentimentWorker(db *gorm.DB, cfg *config.Config) *ProviderSentim
 }
 
 func (w *ProviderSentimentWorker) Start() {
-	slog.Info("🤖 Starting AI Matcher & Provider Review Sentiment Background Worker...")
+	slog.Info(" Starting AI Matcher & Provider Review Sentiment Background Worker...")
 
 	go func() {
 		// Run every 15 minutes to keep sentiment analysis and fast search cache fresh
@@ -43,7 +43,7 @@ func (w *ProviderSentimentWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				slog.Info("🤖 Stopping Provider Sentiment Worker...")
+				slog.Info(" Stopping Provider Sentiment Worker...")
 				return
 			case <-ticker.C:
 				recovery.SafeRun("ProviderSentimentWorker.Tick", w.indexAndAnalyzeSentiment)
@@ -122,7 +122,7 @@ func (w *ProviderSentimentWorker) indexAndAnalyzeSentiment() {
 		}
 	}
 
-	slog.Info("⚡ AI Matcher & Provider Review Sentiment Index successfully updated",
+	slog.Info(" AI Matcher & Provider Review Sentiment Index successfully updated",
 		slog.Int("providers_indexed", len(providers)),
 		slog.Int("total_reviews_analyzed", len(reviews)),
 		slog.Int("performance_scores_updated", updatedCount),

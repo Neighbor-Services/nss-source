@@ -45,7 +45,7 @@ func NewStaleRequestWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.Client
 }
 
 func (w *StaleRequestWorker) Start() {
-	log.Println("🗑️  Starting Stale Request Auto-Close Background Worker...")
+	log.Println(" Starting Stale Request Auto-Close Background Worker...")
 
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
@@ -57,7 +57,7 @@ func (w *StaleRequestWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("🗑️  Stopping Stale Request Worker...")
+				log.Println(" Stopping Stale Request Worker...")
 				return
 			case <-ticker.C:
 				w.processStaleRequests()
@@ -137,7 +137,7 @@ func (w *StaleRequestWorker) processStaleRequests() {
 			ID:               uuid.New(),
 			UserID:           req.UserID,
 			NotificationType: "REQUEST_EXPIRED",
-			Title:            "Service Request Expired",
+			Title: "Service Request Expired",
 			Message:          msg,
 			Data:             entity.JSONMap{"request_id": req.ID.String()},
 			CreatedAt:        time.Now(),
@@ -156,11 +156,11 @@ func (w *StaleRequestWorker) processStaleRequests() {
 			msg := fmt.Sprintf("Your request '%s' has been automatically closed after 30 days with no activity.", req.Title)
 			w.sendPush(
 				req.UserID,
-				"Service Request Expired",
+ "Service Request Expired",
 				msg,
 				map[string]string{
-					"notification_type": "request_expired",
-					"request_id":        req.ID.String(),
+ "notification_type": "request_expired",
+ "request_id":        req.ID.String(),
 				},
 			)
 

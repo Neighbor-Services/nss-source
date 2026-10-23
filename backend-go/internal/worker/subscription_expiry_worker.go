@@ -42,7 +42,7 @@ func NewSubscriptionExpiryWorker(db *gorm.DB, cfg *config.Config, fcmClient fcm.
 }
 
 func (w *SubscriptionExpiryWorker) Start() {
-	log.Println("📅 Starting Subscription Expiry Background Worker...")
+	log.Println(" Starting Subscription Expiry Background Worker...")
 
 	go func() {
 		// Run once a day
@@ -55,7 +55,7 @@ func (w *SubscriptionExpiryWorker) Start() {
 		for {
 			select {
 			case <-w.stopChan:
-				log.Println("📅 Stopping Subscription Expiry Worker...")
+				log.Println(" Stopping Subscription Expiry Worker...")
 				return
 			case <-ticker.C:
 				w.processSubscriptions()
@@ -110,15 +110,15 @@ func (w *SubscriptionExpiryWorker) processSubscriptions() {
 			ID:               uuid.New(),
 			UserID:           sub.UserID,
 			NotificationType: "SUB_EXPIRY_REMINDER",
-			Title:            "Subscription Expiring Soon ⚠️",
+			Title: "Subscription Expiring Soon ",
 			Message:          msg,
 			Data:             entity.JSONMap{"subscription_id": sub.ID.String()},
 			CreatedAt:        time.Now(),
 		})
 
-		w.sendPush(sub.UserID, "Subscription Expiring Soon ⚠️", msg, map[string]string{
-			"notification_type": "sub_expiry_reminder",
-			"subscription_id":   sub.ID.String(),
+		w.sendPush(sub.UserID, "Subscription Expiring Soon ", msg, map[string]string{
+ "notification_type": "sub_expiry_reminder",
+ "subscription_id":   sub.ID.String(),
 		})
 
 		if isEmailNotificationEnabled(w.db, sub.UserID) {
@@ -170,15 +170,15 @@ func (w *SubscriptionExpiryWorker) processSubscriptions() {
 			ID:               uuid.New(),
 			UserID:           sub.UserID,
 			NotificationType: "SUB_EXPIRED",
-			Title:            "Subscription Expired",
+			Title: "Subscription Expired",
 			Message:          msg,
 			Data:             entity.JSONMap{"subscription_id": sub.ID.String()},
 			CreatedAt:        time.Now(),
 		})
 
 		w.sendPush(sub.UserID, "Subscription Expired", msg, map[string]string{
-			"notification_type": "sub_expired",
-			"subscription_id":   sub.ID.String(),
+ "notification_type": "sub_expired",
+ "subscription_id":   sub.ID.String(),
 		})
 
 		if isEmailNotificationEnabled(w.db, sub.UserID) {

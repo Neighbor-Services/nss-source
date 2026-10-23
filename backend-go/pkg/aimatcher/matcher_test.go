@@ -11,10 +11,10 @@ func TestVectorMatchPlumbing(t *testing.T) {
 	candidates := []entity.Profile{
 		{
 			ID:                 uuid.New(),
-			FirstName:          "John",
-			LastName:           "Plumber",
-			Service:            "Licensed Master Plumbing & Pipe Repair",
-			Bio:                "Specializing in drain cleaning, leaking pipes, faucet repair and water heaters.",
+			FirstName: "John",
+			LastName: "Plumber",
+			Service: "Licensed Master Plumbing & Pipe Repair",
+			Bio: "Specializing in drain cleaning, leaking pipes, faucet repair and water heaters.",
 			AverageRating:      4.9,
 			TotalReviews:       34,
 			IsIdentityVerified: true,
@@ -25,10 +25,10 @@ func TestVectorMatchPlumbing(t *testing.T) {
 		},
 		{
 			ID:            uuid.New(),
-			FirstName:     "Alice",
-			LastName:      "Painter",
-			Service:       "Interior & Exterior Wall Painting",
-			Bio:           "Professional home painting, drywall repair, and staining.",
+			FirstName: "Alice",
+			LastName: "Painter",
+			Service: "Interior & Exterior Wall Painting",
+			Bio: "Professional home painting, drywall repair, and staining.",
 			AverageRating: 4.8,
 			TotalReviews:  20,
 		},
@@ -55,19 +55,19 @@ func TestVectorMatchMobileBarber(t *testing.T) {
 	candidates := []entity.Profile{
 		{
 			ID:            uuid.New(),
-			FirstName:     "Marcus",
-			LastName:      "Blade",
-			Service:       "Mobile Barber & Beard Specialist",
-			Bio:           "Traveling haircuts, skin fade, hot towel shave, and beard sculpting right at your location.",
+			FirstName: "Marcus",
+			LastName: "Blade",
+			Service: "Mobile Barber & Beard Specialist",
+			Bio: "Traveling haircuts, skin fade, hot towel shave, and beard sculpting right at your location.",
 			AverageRating: 5.0,
 			TotalReviews:  28,
 		},
 		{
 			ID:            uuid.New(),
-			FirstName:     "Sam",
-			LastName:      "Mover",
-			Service:       "Debris Removal Service & Hauling",
-			Bio:           "Junk removal and cleanout.",
+			FirstName: "Sam",
+			LastName: "Mover",
+			Service: "Debris Removal Service & Hauling",
+			Bio: "Junk removal and cleanout.",
 		},
 	}
 
@@ -84,19 +84,19 @@ func TestVectorMatchEldercareAndPet(t *testing.T) {
 	candidates := []entity.Profile{
 		{
 			ID:                 uuid.New(),
-			FirstName:          "Sarah",
-			LastName:           "Care",
-			Service:            "Adult Homecare & Senior Companion",
-			Bio:                "Certified caregiver assisting seniors with daily activities, companionship, and medication reminders.",
+			FirstName: "Sarah",
+			LastName: "Care",
+			Service: "Adult Homecare & Senior Companion",
+			Bio: "Certified caregiver assisting seniors with daily activities, companionship, and medication reminders.",
 			IsIdentityVerified: true,
 			AverageRating:      4.95,
 		},
 		{
 			ID:            uuid.New(),
-			FirstName:     "Mike",
-			LastName:      "Paws",
-			Service:       "Mobile Dog Grooming & Puppy Training",
-			Bio:           "Hydrobath, dog nail clipping, fur trim, and behavioral obedience.",
+			FirstName: "Mike",
+			LastName: "Paws",
+			Service: "Mobile Dog Grooming & Puppy Training",
+			Bio: "Hydrobath, dog nail clipping, fur trim, and behavioral obedience.",
 			AverageRating: 4.8,
 		},
 	}
@@ -119,26 +119,26 @@ func TestVectorMatchNewServices(t *testing.T) {
 		{
 			ID:        uuid.New(),
 			FirstName: "Gordon",
-			Service:   "Personal Chef & Private Catering",
-			Bio:       "Custom weekly meal prep and multi-course private dinners.",
+			Service: "Personal Chef & Private Catering",
+			Bio: "Custom weekly meal prep and multi-course private dinners.",
 		},
 		{
 			ID:        uuid.New(),
 			FirstName: "Victor",
-			Service:   "Concierge Car Buyer & Auto Consultant",
-			Bio:       "Negotiating dealership prices and vehicle inspection for car buyers.",
+			Service: "Concierge Car Buyer & Auto Consultant",
+			Bio: "Negotiating dealership prices and vehicle inspection for car buyers.",
 		},
 		{
 			ID:        uuid.New(),
 			FirstName: "Claire",
-			Service:   "Dress Maker & Alterations Specialist",
-			Bio:       "Custom tailoring, dress alterations, hems, and fashion styling.",
+			Service: "Dress Maker & Alterations Specialist",
+			Bio: "Custom tailoring, dress alterations, hems, and fashion styling.",
 		},
 		{
 			ID:        uuid.New(),
 			FirstName: "Arthur",
-			Service:   "Certified Home Inspection Services",
-			Bio:       "Full property foundation, roof, plumbing, and electrical pre-purchase inspections.",
+			Service: "Certified Home Inspection Services",
+			Bio: "Full property foundation, roof, plumbing, and electrical pre-purchase inspections.",
 		},
 	}
 
@@ -214,13 +214,13 @@ func TestReviewSentimentAndProviderIndex(t *testing.T) {
 	provider := entity.Profile{
 		ID:                 pID,
 		UserID:             uID,
-		FirstName:          "Marcus",
-		LastName:           "MasterBarber",
-		Service:            "Mobile Barber & Beard Specialist",
+		FirstName: "Marcus",
+		LastName: "MasterBarber",
+		Service: "Mobile Barber & Beard Specialist",
 		AverageRating:      4.9,
 		TotalReviews:       2,
 		IsIdentityVerified: true,
-		SubscriptionTier:   "PLATINUM",
+		SubscriptionTier: "PLATINUM",
 	}
 
 	reviews := []entity.Review{
@@ -228,13 +228,13 @@ func TestReviewSentimentAndProviderIndex(t *testing.T) {
 			ID:         uuid.New(),
 			ProviderID: uID,
 			Rating:     5.0,
-			Comment:    "Best barber in town, super clean and on time!",
+			Comment: "Best barber in town, super clean and on time!",
 		},
 		{
 			ID:         uuid.New(),
 			ProviderID: uID,
 			Rating:     5.0,
-			Comment:    "Top notch expert haircut, very professional and friendly.",
+			Comment: "Top notch expert haircut, very professional and friendly.",
 		},
 	}
 

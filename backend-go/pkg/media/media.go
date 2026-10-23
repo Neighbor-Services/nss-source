@@ -33,11 +33,11 @@ func ValidateAndSaveUploadedFile(fileHeader *multipart.FileHeader, subfolder str
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	allowedExts := map[string]bool{
-		".jpg":  true,
-		".jpeg": true,
-		".png":  true,
-		".webp": true,
-		".pdf":  true,
+ ".jpg":  true,
+ ".jpeg": true,
+ ".png":  true,
+ ".webp": true,
+ ".pdf":  true,
 	}
 	if !allowedExts[ext] {
 		return "", fmt.Errorf("invalid file extension: %s. Allowed: jpg, jpeg, png, webp, pdf", ext)
@@ -58,11 +58,11 @@ func ValidateAndSaveUploadedFile(fileHeader *multipart.FileHeader, subfolder str
 
 	mimeType := http.DetectContentType(buf[:n])
 	allowedMimes := map[string]bool{
-		"image/jpeg":               true,
-		"image/png":                true,
-		"image/webp":               true,
-		"application/pdf":          true,
-		"application/octet-stream": true, // fallback for some binary formats
+ "image/jpeg":               true,
+ "image/png":                true,
+ "image/webp":               true,
+ "application/pdf":          true,
+ "application/octet-stream": true, // fallback for some binary formats
 	}
 
 	if !allowedMimes[mimeType] && !strings.HasPrefix(mimeType, "image/") {
@@ -80,9 +80,9 @@ func ValidateAndSaveUploadedFile(fileHeader *multipart.FileHeader, subfolder str
 
 	// Stream directly to GoStore Content-Addressed Storage
 	if err := StreamToGoStore(subfolder, sanitizedName, file, mimeType); err != nil {
-		log.Printf("⚠️ [GoStore Direct Upload Warning] %v", err)
+		log.Printf(" [GoStore Direct Upload Warning] %v", err)
 	} else {
-		log.Printf("✅ [GoStore Direct Upload SUCCESS] %s", relPath)
+		log.Printf(" [GoStore Direct Upload SUCCESS] %s", relPath)
 	}
 
 	return relPath, nil
@@ -114,7 +114,7 @@ func StreamToGoStore(subfolder, filename string, reader io.Reader, contentType s
 	}
 
 	endpoint := fmt.Sprintf(
-		"%s/v0/b/%s/o?name=%s",
+ "%s/v0/b/%s/o?name=%s",
 		strings.TrimRight(gostoreURL, "/"),
 		url.PathEscape(bucket),
 		strings.ReplaceAll(objectPath, "/", "%2F"),

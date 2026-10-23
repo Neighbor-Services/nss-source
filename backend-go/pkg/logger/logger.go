@@ -76,7 +76,7 @@ func InitGlobalLogger(env string, proleadCfg ...ProleadConfig) *slog.Logger {
 		pCfg = ProleadConfig{
 			ServerURL:   os.Getenv("PROLEAD_LOGGER_URL"),
 			APIKey:      os.Getenv("PROLEAD_API_KEY"),
-			Service:     "neighbor-services-backend",
+			Service: "neighbor-services-backend",
 			Environment: env,
 			Enabled:     os.Getenv("PROLEAD_API_KEY") != "" || os.Getenv("PROLEAD_ENABLED") == "true" || os.Getenv("PROLEAD_ENABLED") == "1",
 		}

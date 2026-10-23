@@ -31,7 +31,7 @@ func main() {
 	logger.InitGlobalLogger(cfg.Env, logger.ProleadConfig{
 		ServerURL:   cfg.ProleadLoggerURL,
 		APIKey:      cfg.ProleadAPIKey,
-		Service:     "neighbor-services-backend",
+		Service: "neighbor-services-backend",
 		Environment: cfg.Env,
 		Enabled:     cfg.ProleadEnabled,
 	})
@@ -121,7 +121,7 @@ func main() {
 	profileUC := usecase.NewProfileUseCase(profileRepo, aboutRepo, portfolioRepo, servicePackageRepo, legalRepo, redisCache)
 	serviceUC := usecase.NewServiceUseCase(categoryRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, userRepo, adminRepo, dispatchRepo, knowledgeRepo, convRepo, msgRepo, redisCache, cfg)
 	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, walletTxRepo, userRepo, requestRepo, notifRepo, tokenRepo, fcmClient, cfg)
-	chatUC := usecase.NewChatUseCase(convRepo, msgRepo, chatBlockRepo, tokenRepo, fcmClient)
+	chatUC := usecase.NewChatUseCase(convRepo, msgRepo, chatBlockRepo, tokenRepo, fcmClient, profileRepo)
 	notifUC := usecase.NewNotificationUseCase(notifRepo, tokenRepo, profileRepo, fcmClient)
 	paymentUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, walletTxRepo, payoutRepo, customerRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, cfg)
 	consultUC := usecase.NewConsultationUseCase(cfg)
@@ -142,7 +142,7 @@ func main() {
 	moderateH := handler.NewModerationHandler(moderateUC)
 	auditH := handler.NewAuditHandler(auditUC)
 	adminH := handler.NewAdminHandler(adminUC, cfg)
-	publicH := handler.NewPublicHandler(publicUC)
+	publicH := handler.NewPublicHandler(publicUC, db)
 	docsH := handler.NewDocsHandler()
 	gostoreH := handler.NewGoStoreHandler(cfg)
 	locationH := handler.NewLocationHandler(profileUC, hub, cfg)
@@ -150,6 +150,7 @@ func main() {
 	// 5. Setup HTTP Router with Handlers & Middleware
 	router := deliveryHttp.SetupRouter(deliveryHttp.RouterDependencies{
 		Config:          cfg,
+		Cache:           redisCache,
 		UserRepo:        userRepo,
 		AdminRepo:       adminRepo,
 		AuditRepo:       auditRepo,
@@ -241,7 +242,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("🚀 Clean Architecture Golang Neighbor Services backend running on http://0.0.0.0:%s", cfg.Port)
+		log.Printf(" Clean Architecture Golang Neighbor Services backend running on http://0.0.0.0:%s", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server listen error: %v", err)
 		}
