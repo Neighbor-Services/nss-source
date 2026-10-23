@@ -495,6 +495,9 @@ server {
 EOF
 fi
 
+# Clean up any legacy inline real_ip directives from all existing site configs (now managed globally in conf.d)
+sed -i '/set_real_ip_from/d; /real_ip_header/d; /real_ip_recursive/d' /etc/nginx/sites-available/* 2>/dev/null || true
+
 ln -sf /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
 nginx -t && systemctl reload nginx || systemctl restart nginx
 echo -e "${GREEN}✓ Staging Nginx API gateway configured and active${NC}"
