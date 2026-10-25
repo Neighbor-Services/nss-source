@@ -55,12 +55,88 @@ func (u *authUseCase) Register(ctx context.Context, input domainUsecase.Register
 		return nil, errors.New("email is required")
 	}
 
-	count, err := u.userRepo.CountByEmail(ctx, emailStr)
+	existingUser, err := u.userRepo.GetByEmail(ctx, emailStr)
 	if err != nil {
 		return nil, err
 	}
-	if count > 0 {
-		return nil, errors.New("an account with this email already exists")
+	if existingUser != nil {
+		if existingUser.IsVerified {
+			return nil, errors.New("an account with this email already exists")
+		}
+
+		// Account exists but is unverified: update password, generate fresh OTP, and resend
+		hashedPassword, err := auth.HashPassword(input.Password)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process password: %w", err)
+		}
+
+		otp := fmt.Sprintf("%04d", rand.Intn(10000))
+		otpExpiry := time.Now().Add(10 * time.Minute)
+
+		existingUser.Password = hashedPassword
+		existingUser.OTPCode = otp
+		existingUser.OTPExpiry = &otpExpiry
+		existingUser.UpdatedAt = time.Now()
+
+		if err := u.userRepo.Update(ctx, existingUser); err != nil {
+			return nil, err
+		}
+
+		log.Printf("[AUTH] Regenerated registration OTP %s for unverified user %s", otp, existingUser.Email)
+		if u.cfg != nil && u.cfg.SMTPHost != "" {
+			go func(to, code string) {
+				if err := email.SendOTPEmail(&email.Config{
+					Host:     u.cfg.SMTPHost,
+					Port:     u.cfg.SMTPPort,
+					User:     u.cfg.SMTPUser,
+					Password: u.cfg.SMTPPassword,
+					From:     u.cfg.EmailFrom,
+				}, to, code); err != nil {
+					log.Printf("[EMAIL ERROR] SendOTPEmail to %s failed: %v", to, err)
+				} else {
+					log.Printf("[EMAIL SUCCESS] Sent registration OTP email to %s", to)
+				}
+			}(existingUser.Email, otp)
+		} else {
+			log.Printf("[EMAIL WARNING] SMTP not configured, OTP for %s is %s", existingUser.Email, otp)
+		}
+
+		profile, err := u.profileRepo.GetByUserID(ctx, existingUser.ID)
+		if err != nil || profile == nil {
+			userType := strings.ToUpper(input.UserType)
+			if userType != "PROVIDER" {
+				userType = "SEEKER"
+			}
+			newProfile := entity.Profile{
+				ID:        uuid.New(),
+				UserID:    existingUser.ID,
+				FirstName: input.FirstName,
+				LastName:  input.LastName,
+				Phone:     input.Phone,
+				UserType:  userType,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			_ = u.profileRepo.Create(ctx, &newProfile)
+			profile = &newProfile
+		}
+
+		accessToken, refreshToken, _ := auth.GenerateTokenPair(
+			existingUser.ID.String(),
+			existingUser.Email,
+			profile.UserType,
+			u.cfg.JWTSecret,
+			u.cfg.JWTSecret,
+			24,
+			30,
+		)
+
+		return &domainUsecase.AuthResult{
+			User:         existingUser,
+			Profile:      profile,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		}, nil
 	}
 
 	hashedPassword, err := auth.HashPassword(input.Password)

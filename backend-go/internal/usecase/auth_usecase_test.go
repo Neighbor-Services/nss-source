@@ -216,4 +216,25 @@ func TestAuthUseCase_RegisterAndLogin(t *testing.T) {
 	if minimalReg.AccessToken == "" || minimalReg.RefreshToken == "" {
 		t.Error("Expected token pair on minimal registration")
 	}
+
+	// 6. Re-registering with UNVERIFIED email should succeed and refresh OTP
+	reReg, err := authUC.Register(ctx, domainUsecase.RegisterInput{
+		Email:    "minimal@example.com",
+		Password: "NewPassword456!",
+	})
+	if err != nil {
+		t.Fatalf("Expected re-registration of unverified user to succeed, got: %v", err)
+	}
+	if reReg.User.Email != "minimal@example.com" {
+		t.Errorf("Expected email minimal@example.com, got %s", reReg.User.Email)
+	}
+
+	// 7. Re-registering with VERIFIED email should fail with already exists
+	_, err = authUC.Register(ctx, domainUsecase.RegisterInput{
+		Email:    "provider@example.com",
+		Password: "AnotherPassword123!",
+	})
+	if err == nil || err.Error() != "an account with this email already exists" {
+		t.Errorf("Expected 'an account with this email already exists', got: %v", err)
+	}
 }
