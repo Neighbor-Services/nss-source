@@ -388,6 +388,62 @@ func (m *mockAdminRepo) UpdateNotificationTemplate(ctx context.Context, tpl *ent
 	m.templates[tpl.Key] = tpl
 	return nil
 }
+
+type mockRefundRepo struct {
+	refunds map[uuid.UUID]*entity.RefundRequest
+}
+
+func (m *mockRefundRepo) Create(ctx context.Context, req *entity.RefundRequest) error {
+	if m.refunds == nil {
+		m.refunds = make(map[uuid.UUID]*entity.RefundRequest)
+	}
+	m.refunds[req.ID] = req
+	return nil
+}
+func (m *mockRefundRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefundRequest, error) {
+	return m.refunds[id], nil
+}
+func (m *mockRefundRepo) GetByPaymentIntentID(ctx context.Context, piID string) (*entity.RefundRequest, error) {
+	for _, r := range m.refunds {
+		if r.PaymentIntentID == piID {
+			return r, nil
+		}
+	}
+	return nil, nil
+}
+func (m *mockRefundRepo) GetByAppointmentID(ctx context.Context, appointmentID uuid.UUID) (*entity.RefundRequest, error) {
+	for _, r := range m.refunds {
+		if r.AppointmentID != nil && *r.AppointmentID == appointmentID {
+			return r, nil
+		}
+	}
+	return nil, nil
+}
+func (m *mockRefundRepo) ListByUserID(ctx context.Context, userID uuid.UUID) ([]entity.RefundRequest, error) {
+	var list []entity.RefundRequest
+	for _, r := range m.refunds {
+		if r.UserID == userID {
+			list = append(list, *r)
+		}
+	}
+	return list, nil
+}
+func (m *mockRefundRepo) List(ctx context.Context, status string, limit, offset int) ([]entity.RefundRequest, int64, error) {
+	var list []entity.RefundRequest
+	for _, r := range m.refunds {
+		if status == "" || r.Status == status {
+			list = append(list, *r)
+		}
+	}
+	return list, int64(len(list)), nil
+}
+func (m *mockRefundRepo) Update(ctx context.Context, req *entity.RefundRequest) error {
+	if m.refunds == nil {
+		m.refunds = make(map[uuid.UUID]*entity.RefundRequest)
+	}
+	m.refunds[req.ID] = req
+	return nil
+}
 func (m *mockAdminRepo) ListBackupSnapshots(ctx context.Context) ([]entity.BackupSnapshot, error) {
 	return m.snapshots, nil
 }
@@ -674,7 +730,7 @@ func TestAdminUseCase_DashboardAndUserOperations(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: map[uuid.UUID]*entity.Wallet{}}
 
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, nil, nil, nil, nil, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Test Dashboard Stats
@@ -731,7 +787,7 @@ func TestAdminUseCase_DisputesAndPayouts(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: map[uuid.UUID]*entity.Wallet{walletID: wallet, providerID: wallet}}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, nil, nil, nil, nil, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Resolve Dispute
@@ -790,7 +846,7 @@ func TestAdminUseCase_VerificationAndBackgroundChecks(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: make(map[uuid.UUID]*entity.Wallet)}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, nil, nil, nil, nil, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Approve Verification
@@ -822,9 +878,10 @@ func TestAdminUseCase_AdvancedOperations(t *testing.T) {
 	profileRepo := &mockProfileRepo{profiles: make(map[uuid.UUID]*entity.Profile)}
 	userRepo := &mockUserRepo{users: make(map[string]*entity.User)}
 	walletRepo := &mockWalletRepo{wallets: map[uuid.UUID]*entity.Wallet{walletID: wallet, targetUserID: wallet}}
+	refundRepo := &mockRefundRepo{refunds: make(map[uuid.UUID]*entity.RefundRequest)}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, refundRepo, nil, nil, nil, nil, nil, cfg)
 	ctx := context.Background()
 
 	// 1. Wallet Adjustment
@@ -882,6 +939,10 @@ func TestAdminUseCase_AdvancedOperations(t *testing.T) {
 	disputesCSV, err := adminUC.ExportDisputesCSV(ctx, adminID, "")
 	assert.NoError(t, err)
 	assert.Contains(t, string(disputesCSV), "RaisedByID")
+
+	refundsCSV, err := adminUC.ExportRefundsCSV(ctx, adminID, "")
+	assert.NoError(t, err)
+	assert.Contains(t, string(refundsCSV), "PaymentIntentID")
 }
 
 func TestAdminUseCase_EnterpriseFeatures(t *testing.T) {
@@ -910,7 +971,7 @@ func TestAdminUseCase_EnterpriseFeatures(t *testing.T) {
 	walletRepo := &mockWalletRepo{wallets: make(map[uuid.UUID]*entity.Wallet)}
 	cfg := &config.Config{JWTSecret: "test-super-secret-jwt-key-for-admin-tests-12345"}
 
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, nil, nil, nil, nil, nil, nil, cfg)
 	ctx := context.Background()
 
 	// 1. TOTP 2FA Setup

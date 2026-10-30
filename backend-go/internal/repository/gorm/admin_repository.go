@@ -139,6 +139,13 @@ func (r *adminRepository) ListUsers(ctx context.Context, filter repository.Admin
 	}
 
 	err = query.Order("accounts_user.created_at DESC").Find(&users).Error
+	if err == nil {
+		for i := range users {
+			if users[i].BackgroundCheck != nil {
+				users[i].BackgroundCheck.ComputeTrialFields()
+			}
+		}
+	}
 	return users, total, err
 }
 
@@ -155,6 +162,9 @@ func (r *adminRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*entit
 		First(&user, "id = ?", id).Error
 	if err != nil {
 		return nil, err
+	}
+	if user.BackgroundCheck != nil {
+		user.BackgroundCheck.ComputeTrialFields()
 	}
 	return &user, nil
 }
@@ -293,6 +303,11 @@ func (r *adminRepository) ListBackgroundChecks(ctx context.Context, status strin
 		query = query.Offset(offset)
 	}
 	err := query.Order("created_at DESC").Find(&list).Error
+	if err == nil {
+		for i := range list {
+			list[i].ComputeTrialFields()
+		}
+	}
 	return list, total, err
 }
 
@@ -302,6 +317,7 @@ func (r *adminRepository) GetBackgroundCheckByID(ctx context.Context, id uuid.UU
 	if err != nil {
 		return nil, err
 	}
+	bc.ComputeTrialFields()
 	return &bc, nil
 }
 
@@ -311,6 +327,7 @@ func (r *adminRepository) GetBackgroundCheckByProviderID(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
+	bc.ComputeTrialFields()
 	return &bc, nil
 }
 
@@ -843,6 +860,9 @@ func (r *adminRepository) GetGDPRUserData(ctx context.Context, userID uuid.UUID)
 		Preload("AdminRole").
 		First(&user, "id = ?", userID).Error; err != nil {
 		return nil, err
+	}
+	if user.BackgroundCheck != nil {
+		user.BackgroundCheck.ComputeTrialFields()
 	}
 
 	var profile entity.Profile

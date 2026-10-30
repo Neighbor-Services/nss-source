@@ -46,6 +46,7 @@ export const ADMIN_API_CONFIG = {
     exportUsers: '/admin/export/users',
     exportPayouts: '/admin/export/payouts',
     exportDisputes: '/admin/export/disputes',
+    exportRefunds: '/admin/export/refunds',
     broadcastNotifications: '/admin/notifications/broadcast',
     roles: '/admin/roles',
     fraudRiskAlerts: '/admin/fraud/risk-alerts',
@@ -81,7 +82,8 @@ export const ADMIN_API_CONFIG = {
     telemetryProviders: '/admin/telemetry/providers',
     systemWorkers: '/admin/system/workers',
     ledgerSummary: '/admin/financial/ledger/summary',
-    ledgerEntries: '/admin/financial/ledger/entries'
+    ledgerEntries: '/admin/financial/ledger/entries',
+    refunds: '/admin/refunds'
   }
 };
 

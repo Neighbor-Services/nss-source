@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -33,6 +35,7 @@ type serviceUseCase struct {
 	fcmClient     fcm.Client
 	userRepo      repository.UserRepository
 	adminRepo     repository.AdminRepository
+	bgCheckRepo   repository.BackgroundCheckRepository
 	dispatchRepo  repository.FlashDispatchRepository
 	knowledgeRepo repository.AIKnowledgeRepository
 	convRepo      repository.ConversationRepository
@@ -53,6 +56,7 @@ func NewServiceUseCase(
 	fcmClient fcm.Client,
 	userRepo repository.UserRepository,
 	adminRepo repository.AdminRepository,
+	bgCheckRepo repository.BackgroundCheckRepository,
 	dispatchRepo repository.FlashDispatchRepository,
 	knowledgeRepo repository.AIKnowledgeRepository,
 	convRepo repository.ConversationRepository,
@@ -72,6 +76,7 @@ func NewServiceUseCase(
 		fcmClient:     fcmClient,
 		userRepo:      userRepo,
 		adminRepo:     adminRepo,
+		bgCheckRepo:   bgCheckRepo,
 		dispatchRepo:  dispatchRepo,
 		knowledgeRepo: knowledgeRepo,
 		convRepo:      convRepo,
@@ -452,9 +457,29 @@ func (u *serviceUseCase) enrichServiceRequestInternal(
 		}
 	}
 
-	// 5. Image URL
+	// 5. Image & Video URLs
 	if req.ImageURL == "" && req.Image != "" {
 		req.ImageURL = req.Image
+	}
+	if req.Video != "" && req.VideoURL == "" {
+		if strings.HasPrefix(req.Video, "/media/") || strings.HasPrefix(req.Video, "request_videos/") {
+			cleanPath := strings.TrimPrefix(req.Video, "/media/")
+			gostoreURL := os.Getenv("GOSTORE_URL")
+			if gostoreURL == "" {
+				gostoreURL = "https://file.proleadsolutions.co"
+			}
+			bucket := os.Getenv("GOSTORE_BUCKET")
+			if bucket == "" {
+				bucket = "neighborservice"
+			}
+			req.VideoURL = fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
+				strings.TrimRight(gostoreURL, "/"),
+				url.PathEscape(bucket),
+				url.PathEscape(cleanPath),
+			)
+		} else {
+			req.VideoURL = req.Video
+		}
 	}
 }
 
@@ -1014,6 +1039,26 @@ func (u *serviceUseCase) UploadRequestImage(ctx context.Context, userID, id uuid
 	return u.GetRequestByID(ctx, id)
 }
 
+func (u *serviceUseCase) UploadRequestVideo(ctx context.Context, userID, id uuid.UUID, videoURL string) (*entity.ServiceRequest, error) {
+	req, err := u.requestRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, errors.New("request not found")
+	}
+
+	if req.UserID != userID {
+		return nil, errors.New("not authorized")
+	}
+
+	req.Video = videoURL
+	req.UpdatedAt = time.Now()
+	if err := u.requestRepo.Update(ctx, req); err != nil {
+		return nil, err
+	}
+
+	u.invalidateRequestCaches(ctx)
+	return u.GetRequestByID(ctx, id)
+}
+
 func (u *serviceUseCase) DeleteRequest(ctx context.Context, userID, id uuid.UUID) error {
 	req, err := u.requestRepo.GetByID(ctx, id)
 	if err != nil || req == nil {
@@ -1426,7 +1471,25 @@ func (u *serviceUseCase) IsProviderSubscribed(ctx context.Context, userID uuid.U
 			}
 		}
 	}
-	return false
+	// Grant free access during the 30-day trial window after Checkr clearance.
+	return u.isProviderInCheckrTrial(ctx, userID)
+}
+
+// isProviderInCheckrTrial returns true if the provider's Checkr background check
+// was cleared within the last 30 days (the free-trial window).
+func (u *serviceUseCase) isProviderInCheckrTrial(ctx context.Context, userID uuid.UUID) bool {
+	if u.bgCheckRepo == nil {
+		return false
+	}
+	bc, err := u.bgCheckRepo.GetLatestByProvider(ctx, userID)
+	if err != nil || bc == nil {
+		return false
+	}
+	if bc.Status != "clear" || bc.ClearedAt == nil {
+		return false
+	}
+	trialEnd := bc.ClearedAt.Add(time.Duration(entity.TrialWindowDays) * 24 * time.Hour)
+	return time.Now().Before(trialEnd)
 }
 
 func (u *serviceUseCase) CreateProposal(ctx context.Context, providerUserID uuid.UUID, prop *entity.Proposal) (*entity.Proposal, error) {

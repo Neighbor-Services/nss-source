@@ -33,57 +33,11 @@ func NewConsultationUseCase(cfg *config.Config) domainUsecase.ConsultationUseCas
 }
 
 func (u *consultationUseCase) GetRTCToken(ctx context.Context, channelName string, uid uint32, role string) (*domainUsecase.AgoraTokenResponse, error) {
-	appID := ""
-	appCert := ""
-	if u.cfg != nil {
-		appID = u.cfg.AgoraAppID
-		appCert = u.cfg.AgoraAppCertificate
-	}
-	expiredTs := time.Now().Add(1 * time.Hour).Unix()
-	var token string
-	if appID != "" && appCert != "" {
-		message := fmt.Sprintf("%s%s%d%d", appID, channelName, uid, expiredTs)
-		mac := hmac.New(sha256.New, []byte(appCert))
-		mac.Write([]byte(message))
-		signature := hex.EncodeToString(mac.Sum(nil))
-		token = fmt.Sprintf("006%s%s%d%d%s", appID, signature, uid, expiredTs, channelName)
-	} else {
-		token = fmt.Sprintf("AGORA_RTC_%s_%d_%d", channelName, uid, expiredTs)
-	}
-
-	return &domainUsecase.AgoraTokenResponse{
-		Token:       token,
-		ChannelName: channelName,
-		Channel:     channelName,
-		UID:         uid,
-		AppID:       appID,
-	}, nil
+	return nil, errors.New("agora video/audio consultations have been deprecated and disabled")
 }
 
 func (u *consultationUseCase) GetRTMToken(ctx context.Context, userAccount string) (*domainUsecase.AgoraTokenResponse, error) {
-	appID := ""
-	appCert := ""
-	if u.cfg != nil {
-		appID = u.cfg.AgoraAppID
-		appCert = u.cfg.AgoraAppCertificate
-	}
-	expiredTs := time.Now().Add(1 * time.Hour).Unix()
-	var token string
-	if appID != "" && appCert != "" {
-		message := fmt.Sprintf("%s%s%d", appID, userAccount, expiredTs)
-		mac := hmac.New(sha256.New, []byte(appCert))
-		mac.Write([]byte(message))
-		signature := hex.EncodeToString(mac.Sum(nil))
-		token = fmt.Sprintf("006%s%s%d%s", appID, signature, expiredTs, userAccount)
-	} else {
-		token = fmt.Sprintf("AGORA_RTM_%s_%d", userAccount, expiredTs)
-	}
-
-	return &domainUsecase.AgoraTokenResponse{
-		Token:   token,
-		UserID:  userAccount,
-		Channel: userAccount,
-	}, nil
+	return nil, errors.New("agora real-time messaging tokens have been deprecated and disabled")
 }
 
 // Moderation UseCase
@@ -649,6 +603,11 @@ func (u *moderationUseCase) applyReportToBackgroundCheck(ctx context.Context, bc
 		switch checkrStatus {
 		case "CLEAR", "COMPLETE":
 			bc.Status = "clear"
+			// Record the first-ever clearance time to anchor the 30-day free-trial window.
+			if bc.ClearedAt == nil {
+				t := time.Now()
+				bc.ClearedAt = &t
+			}
 		case "CONSIDER":
 			bc.Status = "consider"
 		case "SUSPENDED":

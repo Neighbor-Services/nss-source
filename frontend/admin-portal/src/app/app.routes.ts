@@ -26,6 +26,7 @@ import { PromosComponent } from './presentation/pages/promos/promos.component';
 import { LegalComponent } from './presentation/pages/legal/legal.component';
 import { SupportComponent } from './presentation/pages/support/support.component';
 import { CmsComponent } from './presentation/pages/cms/cms.component';
+import { RefundsComponent } from './presentation/pages/refunds/refunds.component';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -49,6 +50,7 @@ export const routes: Routes = [
       { path: 'financial', component: FinancialComponent },
       { path: 'finance', redirectTo: 'financial' },
       { path: 'payouts', component: PayoutsComponent },
+      { path: 'refunds', component: RefundsComponent },
       { path: 'promos', component: PromosComponent },
       { path: 'subscriptions', component: SubscriptionsComponent },
       { path: 'media', component: MediaBrowserComponent },

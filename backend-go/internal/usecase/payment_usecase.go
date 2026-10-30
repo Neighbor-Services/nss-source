@@ -17,6 +17,7 @@ import (
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
 	domainUsecase "backend-go/internal/domain/usecase"
+	"backend-go/pkg/email"
 	"backend-go/pkg/fcm"
 	"backend-go/internal/websocket"
 	"github.com/google/uuid"
@@ -39,12 +40,14 @@ type paymentUseCase struct {
 	walletRepo   repository.WalletRepository
 	txRepo       repository.WalletTransactionRepository
 	payoutRepo   repository.PayoutRequestRepository
+	refundRepo   repository.RefundRequestRepository
 	customerRepo repository.CustomerRepository
 	profileRepo  repository.ProfileRepository
 	aptRepo      repository.AppointmentRepository
 	notifRepo    repository.NotificationRepository
 	tokenRepo    repository.DeviceTokenRepository
 	fcmClient    fcm.Client
+	userRepo     repository.UserRepository
 	cfg          *config.Config
 }
 
@@ -54,12 +57,14 @@ func NewPaymentUseCase(
 	walletRepo repository.WalletRepository,
 	txRepo repository.WalletTransactionRepository,
 	payoutRepo repository.PayoutRequestRepository,
+	refundRepo repository.RefundRequestRepository,
 	customerRepo repository.CustomerRepository,
 	profileRepo repository.ProfileRepository,
 	aptRepo repository.AppointmentRepository,
 	notifRepo repository.NotificationRepository,
 	tokenRepo repository.DeviceTokenRepository,
 	fcmClient fcm.Client,
+	userRepo repository.UserRepository,
 	cfg *config.Config,
 ) domainUsecase.PaymentUseCase {
 	return &paymentUseCase{
@@ -68,12 +73,14 @@ func NewPaymentUseCase(
 		walletRepo:   walletRepo,
 		txRepo:       txRepo,
 		payoutRepo:   payoutRepo,
+		refundRepo:   refundRepo,
 		customerRepo: customerRepo,
 		profileRepo:  profileRepo,
 		aptRepo:      aptRepo,
 		notifRepo:    notifRepo,
 		tokenRepo:    tokenRepo,
 		fcmClient:    fcmClient,
+		userRepo:     userRepo,
 		cfg:          cfg,
 	}
 }
@@ -1370,10 +1377,245 @@ func (u *paymentUseCase) ProcessStripeWebhook(ctx context.Context, payload []byt
 				}
 			}
 		}
-	case "charge.refunded":
-		// Handle refund event logging
+	case "charge.refunded", "charge.refund.updated":
+		var rawMap map[string]interface{}
+		if err := json.Unmarshal(event.Data.Raw, &rawMap); err == nil {
+			piID := ""
+			if pi, ok := rawMap["payment_intent"].(string); ok {
+				piID = pi
+			} else if piObj, ok := rawMap["payment_intent"].(map[string]interface{}); ok {
+				if id, ok := piObj["id"].(string); ok {
+					piID = id
+				}
+			}
+
+			stripeRefundID := ""
+			if refundsObj, ok := rawMap["refunds"].(map[string]interface{}); ok {
+				if dataArr, ok := refundsObj["data"].([]interface{}); ok && len(dataArr) > 0 {
+					if firstRef, ok := dataArr[0].(map[string]interface{}); ok {
+						if id, ok := firstRef["id"].(string); ok {
+							stripeRefundID = id
+						}
+					}
+				}
+			}
+
+			amountRefunded := 0.0
+			if amtRef, ok := rawMap["amount_refunded"].(float64); ok {
+				amountRefunded = amtRef / 100.0
+			}
+
+			isFullyRefunded := false
+			if ref, ok := rawMap["refunded"].(bool); ok {
+				isFullyRefunded = ref
+			}
+
+			now := time.Now()
+			if piID != "" && u.refundRepo != nil {
+				refReq, _ := u.refundRepo.GetByPaymentIntentID(ctx, piID)
+				if refReq != nil {
+					if refReq.Status != "PROCESSED" {
+						refReq.Status = "PROCESSED"
+						refReq.StripeRefundID = stripeRefundID
+						refReq.ProcessedAt = &now
+						if refReq.Amount <= 0 {
+							refReq.Amount = amountRefunded
+						}
+						_ = u.refundRepo.Update(ctx, refReq)
+
+						// Realtime WebSocket broadcast
+						websocket.GlobalHub.SendToUser(refReq.UserID.String(), map[string]interface{}{
+							"type":              "refund_processed",
+							"refund_request_id": refReq.ID.String(),
+							"amount":            refReq.Amount,
+							"status":            "PROCESSED",
+							"stripe_refund_id":  stripeRefundID,
+							"message":           fmt.Sprintf("Your refund of $%.2f has been synchronized and processed via Stripe.", refReq.Amount),
+							"processed_at":      now.UTC(),
+						})
+
+						// Push notification
+						u.sendPush(refReq.UserID, "Refund Issued!", fmt.Sprintf("Your refund of $%.2f has been processed back to your original payment method.", refReq.Amount), map[string]string{
+							"notification_type": "refund_processed",
+							"refund_id":         refReq.ID.String(),
+						})
+
+						// Email notification
+						if u.userRepo != nil && u.cfg != nil {
+							go func(uID uuid.UUID, amt float64, refID string) {
+								user, err := u.userRepo.GetByID(context.Background(), uID)
+								if err == nil && user != nil && user.Email != "" {
+									userName := user.Email
+									if userName == "" {
+										// use email as fallback
+									}
+									emailCfg := &email.Config{
+										Host:     u.cfg.SMTPHost,
+										Port:     u.cfg.SMTPPort,
+										User:     u.cfg.SMTPUser,
+										Password: u.cfg.SMTPPassword,
+										From:     u.cfg.EmailFrom,
+									}
+									_ = email.SendRefundProcessedEmail(emailCfg, user.Email, userName, "Service Booking", amt, refID)
+								}
+							}(refReq.UserID, refReq.Amount, stripeRefundID)
+						}
+					}
+				}
+
+				// If linked appointment exists, mark as REFUNDED if charge is fully refunded
+				if isFullyRefunded && u.aptRepo != nil {
+					if refReq != nil && refReq.AppointmentID != nil && *refReq.AppointmentID != uuid.Nil {
+						if apt, err := u.aptRepo.GetByID(ctx, *refReq.AppointmentID); err == nil && apt != nil {
+							apt.Status = "REFUNDED"
+							apt.IsFunded = false
+							apt.UpdatedAt = now
+							_ = u.aptRepo.Update(ctx, apt)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return nil
 }
 
+
+
+func (u *paymentUseCase) RequestRefund(ctx context.Context, userID uuid.UUID, appointmentID *uuid.UUID, paymentIntentID string, amount float64, reason string) (*entity.RefundRequest, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return nil, errors.New("a reason is required for requesting a refund")
+	}
+
+	paymentIntentID = strings.TrimSpace(paymentIntentID)
+
+	var apt *entity.Appointment
+	if appointmentID != nil && *appointmentID != uuid.Nil && u.aptRepo != nil {
+		var aErr error
+		apt, aErr = u.aptRepo.GetByID(ctx, *appointmentID)
+		if aErr != nil || apt == nil {
+			return nil, errors.New("linked appointment not found")
+		}
+		if apt.SeekerID != userID {
+			return nil, errors.New("you are not authorized to request a refund for this appointment")
+		}
+		if paymentIntentID == "" && apt.PaymentIntentID != "" {
+			paymentIntentID = apt.PaymentIntentID
+		}
+		if amount <= 0 && apt.TotalPrice > 0 {
+			amount = apt.TotalPrice
+		}
+
+		// Safeguard 1: 30-day refund window policy
+		cutoff := time.Now().AddDate(0, 0, -30)
+		if apt.CreatedAt.Before(cutoff) && (apt.AppointmentDate == nil || apt.AppointmentDate.Before(cutoff)) {
+			return nil, errors.New("refund requests must be submitted within 30 days of the appointment date")
+		}
+	}
+
+	if paymentIntentID == "" {
+		return nil, errors.New("valid Stripe payment intent ID is required")
+	}
+
+	// Safeguard 2: Escrow protection notice if service is completed
+	notes := ""
+	if apt != nil && (apt.Status == "COMPLETED" || apt.Status == "RESOLVED") {
+		notes = "Escrow Review Required: Service was already marked completed; escrow clawback/provider balance holds will be reviewed by admin prior to disbursement."
+	}
+
+	// Check if a pending or processed refund request already exists for this payment intent or appointment
+	if u.refundRepo != nil {
+		if existing, err := u.refundRepo.GetByPaymentIntentID(ctx, paymentIntentID); err == nil && existing != nil {
+			if existing.Status == "PENDING" || existing.Status == "APPROVED" || existing.Status == "PROCESSED" {
+				return nil, fmt.Errorf("a refund request is already %s for this payment", strings.ToLower(existing.Status))
+			}
+		}
+		if appointmentID != nil && *appointmentID != uuid.Nil {
+			if existing, err := u.refundRepo.GetByAppointmentID(ctx, *appointmentID); err == nil && existing != nil {
+				if existing.Status == "PENDING" || existing.Status == "APPROVED" || existing.Status == "PROCESSED" {
+					return nil, fmt.Errorf("a refund request is already %s for this appointment", strings.ToLower(existing.Status))
+				}
+			}
+		}
+	}
+
+	refReq := &entity.RefundRequest{
+		ID:              uuid.New(),
+		UserID:          userID,
+		AppointmentID:   appointmentID,
+		PaymentIntentID: paymentIntentID,
+		Amount:          amount,
+		Currency:        "USD",
+		Reason:          reason,
+		Notes:           notes,
+		Status:          "PENDING",
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	if u.refundRepo != nil {
+		if err := u.refundRepo.Create(ctx, refReq); err != nil {
+			return nil, fmt.Errorf("failed to save refund request: %w", err)
+		}
+	}
+
+	// Real-time broadcast and notification to user
+	websocket.GlobalHub.SendToUser(userID.String(), map[string]interface{}{
+		"type":              "refund_requested",
+		"refund_request_id": refReq.ID.String(),
+		"amount":            refReq.Amount,
+		"status":            "PENDING",
+		"message":           "Your refund request has been received and is pending administrator review.",
+		"created_at":        refReq.CreatedAt.UTC(),
+	})
+
+	if u.notifRepo != nil {
+		notif := entity.Notification{
+			ID:               uuid.New(),
+			UserID:           userID,
+			NotificationType: "PAYMENT",
+			Title:            "Refund Request Submitted",
+			Message:          fmt.Sprintf("Your refund request of $%.2f is under review.", refReq.Amount),
+			Data:             entity.JSONMap{"refund_request_id": refReq.ID.String(), "status": "PENDING"},
+			CreatedAt:        time.Now(),
+		}
+		_ = u.notifRepo.Create(ctx, &notif)
+	}
+
+	// Send transactional email confirming request receipt
+	if u.userRepo != nil && u.cfg != nil {
+		go func(uID uuid.UUID, reqAmt float64, reqReason string, aptTitle string) {
+			user, err := u.userRepo.GetByID(context.Background(), uID)
+			if err == nil && user != nil && user.Email != "" {
+				userName := user.Email
+				if userName == "" {
+					// use email as fallback
+				}
+				emailCfg := &email.Config{
+					Host:     u.cfg.SMTPHost,
+					Port:     u.cfg.SMTPPort,
+					User:     u.cfg.SMTPUser,
+					Password: u.cfg.SMTPPassword,
+					From:     u.cfg.EmailFrom,
+				}
+				_ = email.SendRefundRequestedEmail(emailCfg, user.Email, userName, aptTitle, reqAmt, reqReason)
+			}
+		}(userID, refReq.Amount, refReq.Reason, func() string {
+			if apt != nil && apt.Title != "" {
+				return apt.Title
+			}
+			return "Service Booking"
+		}())
+	}
+
+	return refReq, nil
+}
+
+func (u *paymentUseCase) GetMyRefundRequests(ctx context.Context, userID uuid.UUID) ([]entity.RefundRequest, error) {
+	if u.refundRepo == nil {
+		return []entity.RefundRequest{}, nil
+	}
+	return u.refundRepo.ListByUserID(ctx, userID)
+}

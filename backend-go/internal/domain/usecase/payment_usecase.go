@@ -54,5 +54,7 @@ type PaymentUseCase interface {
 	FundAppointment(ctx context.Context, userID, appointmentID uuid.UUID, amount float64) (map[string]string, error)
 	FundBackgroundCheck(ctx context.Context, userID uuid.UUID) (map[string]interface{}, error)
 	TipProvider(ctx context.Context, senderID, providerID, appointmentID uuid.UUID, amount float64) (string, error)
+	RequestRefund(ctx context.Context, userID uuid.UUID, appointmentID *uuid.UUID, paymentIntentID string, amount float64, reason string) (*entity.RefundRequest, error)
+	GetMyRefundRequests(ctx context.Context, userID uuid.UUID) ([]entity.RefundRequest, error)
 	ProcessStripeWebhook(ctx context.Context, payload []byte, signature string) error
 }

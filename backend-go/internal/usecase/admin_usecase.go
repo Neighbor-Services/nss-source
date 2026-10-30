@@ -21,7 +21,11 @@ import (
 	"backend-go/pkg/auth"
 	"backend-go/pkg/cache"
 	"backend-go/pkg/email"
+	"backend-go/internal/websocket"
+	"backend-go/pkg/fcm"
 	"github.com/google/uuid"
+	"github.com/stripe/stripe-go/v74"
+	"github.com/stripe/stripe-go/v74/refund"
 )
 
 type adminUseCase struct {
@@ -29,6 +33,11 @@ type adminUseCase struct {
 	profileRepo repository.ProfileRepository
 	userRepo    repository.UserRepository
 	walletRepo  repository.WalletRepository
+	refundRepo  repository.RefundRequestRepository
+	aptRepo     repository.AppointmentRepository
+	notifRepo   repository.NotificationRepository
+	tokenRepo   repository.DeviceTokenRepository
+	fcmClient   fcm.Client
 	cache       cache.Cache
 	cfg         *config.Config
 }
@@ -38,6 +47,11 @@ func NewAdminUseCase(
 	profileRepo repository.ProfileRepository,
 	userRepo repository.UserRepository,
 	walletRepo repository.WalletRepository,
+	refundRepo repository.RefundRequestRepository,
+	aptRepo repository.AppointmentRepository,
+	notifRepo repository.NotificationRepository,
+	tokenRepo repository.DeviceTokenRepository,
+	fcmClient fcm.Client,
 	cache cache.Cache,
 	cfg *config.Config,
 ) domainUsecase.AdminUseCase {
@@ -46,9 +60,39 @@ func NewAdminUseCase(
 		profileRepo: profileRepo,
 		userRepo:    userRepo,
 		walletRepo:  walletRepo,
+		refundRepo:  refundRepo,
+		aptRepo:     aptRepo,
+		notifRepo:   notifRepo,
+		tokenRepo:   tokenRepo,
+		fcmClient:   fcmClient,
 		cache:       cache,
 		cfg:         cfg,
 	}
+}
+
+func (u *adminUseCase) sendPush(userID uuid.UUID, title, body string, data map[string]string) {
+	if u.fcmClient == nil || u.tokenRepo == nil {
+		return
+	}
+	go func() {
+		tokens, err := u.tokenRepo.ListByUser(context.Background(), userID)
+		if err != nil || len(tokens) == 0 {
+			return
+		}
+		var tokenList []string
+		for _, t := range tokens {
+			if t.Token != "" && t.IsActive {
+				tokenList = append(tokenList, t.Token)
+			}
+		}
+		if len(tokenList) == 0 {
+			return
+		}
+		invalidTokens, _ := u.fcmClient.SendMulticast(context.Background(), tokenList, title, body, data)
+		for _, invToken := range invalidTokens {
+			_ = u.tokenRepo.DeleteByToken(context.Background(), invToken)
+		}
+	}()
 }
 
 func (u *adminUseCase) logAudit(ctx context.Context, adminID *uuid.UUID, action, resType, resID string, details map[string]interface{}) {
@@ -521,6 +565,10 @@ func (u *adminUseCase) OverrideBackgroundCheck(ctx context.Context, adminID, che
 		if isClear {
 			bc.Status = "clear"
 			bc.Adjudication = "CLEARED"
+			if bc.ClearedAt == nil {
+				t := now
+				bc.ClearedAt = &t
+			}
 		} else {
 			bc.Status = strings.ToLower(normStatus)
 			bc.Adjudication = normStatus
@@ -542,6 +590,10 @@ func (u *adminUseCase) OverrideBackgroundCheck(ctx context.Context, adminID, che
 			if isClear {
 				bc.Status = "clear"
 				bc.Adjudication = "CLEARED"
+				if bc.ClearedAt == nil {
+					t := now
+					bc.ClearedAt = &t
+				}
 			} else {
 				bc.Status = strings.ToLower(normStatus)
 				bc.Adjudication = normStatus
@@ -559,15 +611,19 @@ func (u *adminUseCase) OverrideBackgroundCheck(ctx context.Context, adminID, che
 			// Check if provider user profile exists
 			if profile, pErr := u.profileRepo.GetByUserID(ctx, providerID); pErr == nil && profile != nil {
 				statusVal := "consider"
+				var clearedAt *time.Time
 				if isClear {
 					statusVal = "clear"
+					t := now
+					clearedAt = &t
 				}
 				newBC := &entity.BackgroundCheck{
 					ID:           uuid.New(),
 					ProviderID:   providerID,
 					Status:       statusVal,
 					Adjudication: normStatus,
-					Package: "tasker_standard",
+					Package:      "tasker_standard",
+					ClearedAt:    clearedAt,
 					Notes:        notes,
 					LastSyncedAt: &now,
 					CreatedAt:    now,
@@ -1344,6 +1400,56 @@ func (u *adminUseCase) ExportDisputesCSV(ctx context.Context, adminID uuid.UUID,
 	writer.Flush()
 
 	u.logAudit(ctx, &adminID, "ADMIN_EXPORT_DISPUTES_CSV", "Dispute", fmt.Sprintf("count:%d", len(disputes)), nil)
+	return buf.Bytes(), nil
+}
+
+func (u *adminUseCase) ExportRefundsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error) {
+	if u.refundRepo == nil {
+		return nil, errors.New("refund repository not configured")
+	}
+
+	refunds, _, err := u.refundRepo.List(ctx, status, 10000, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	_ = writer.Write([]string{
+		"ID", "UserID", "AppointmentID", "PaymentIntentID", "StripeRefundID",
+		"Amount", "Currency", "Status", "Reason", "AdminNotes",
+		"StripeDashboardURL", "CreatedAt", "UpdatedAt",
+	})
+
+	for _, r := range refunds {
+		aptID := ""
+		if r.AppointmentID != nil {
+			aptID = r.AppointmentID.String()
+		}
+		stripeDashURL := ""
+		if r.PaymentIntentID != "" {
+			stripeDashURL = fmt.Sprintf("https://dashboard.stripe.com/payments/%s", r.PaymentIntentID)
+		}
+		_ = writer.Write([]string{
+			r.ID.String(),
+			r.UserID.String(),
+			aptID,
+			r.PaymentIntentID,
+			r.StripeRefundID,
+			fmt.Sprintf("%.2f", r.Amount),
+			r.Currency,
+			r.Status,
+			r.Reason,
+			r.AdminNotes,
+			stripeDashURL,
+			r.CreatedAt.Format(time.RFC3339),
+			r.UpdatedAt.Format(time.RFC3339),
+		})
+	}
+	writer.Flush()
+
+	u.logAudit(ctx, &adminID, "ADMIN_EXPORT_REFUNDS_CSV", "RefundRequest", fmt.Sprintf("count:%d status:%s", len(refunds), status), nil)
 	return buf.Bytes(), nil
 }
 
@@ -2418,3 +2524,285 @@ func (u *adminUseCase) ListLedgerEntries(ctx context.Context, adminID uuid.UUID,
 
 
 
+
+
+// ─── STRIPE REFUNDS MANAGEMENT ──────────────────────────────────────────────
+
+func (u *adminUseCase) ListRefundRequests(ctx context.Context, adminID uuid.UUID, status string, limit, offset int) ([]entity.RefundRequest, int64, error) {
+	if u.refundRepo == nil {
+		return []entity.RefundRequest{}, 0, nil
+	}
+	return u.refundRepo.List(ctx, status, limit, offset)
+}
+
+func (u *adminUseCase) GetRefundRequest(ctx context.Context, adminID, refundID uuid.UUID) (*entity.RefundRequest, error) {
+	if u.refundRepo == nil {
+		return nil, errors.New("refund repository not configured")
+	}
+	return u.refundRepo.GetByID(ctx, refundID)
+}
+
+func (u *adminUseCase) ProcessRefund(ctx context.Context, adminID, refundID uuid.UUID, amount float64, notes string) (*entity.RefundRequest, error) {
+	if u.refundRepo == nil {
+		return nil, errors.New("refund repository not configured")
+	}
+
+	refReq, err := u.refundRepo.GetByID(ctx, refundID)
+	if err != nil || refReq == nil {
+		return nil, errors.New("refund request not found")
+	}
+
+	if refReq.Status == "PROCESSED" {
+		return nil, errors.New("this refund request has already been processed")
+	}
+
+	refundAmount := refReq.Amount
+	if amount > 0 {
+		refundAmount = amount
+	}
+	if refundAmount <= 0 {
+		return nil, errors.New("refund amount must be greater than zero")
+	}
+
+	// 1. Execute actual Stripe refund
+	stripeRefundID := ""
+	if u.cfg != nil && u.cfg.StripeSecretKey != "" && refReq.PaymentIntentID != "" {
+		stripe.Key = u.cfg.StripeSecretKey
+		amountCents := int64(refundAmount * 100)
+		refParams := &stripe.RefundParams{
+			PaymentIntent: stripe.String(refReq.PaymentIntentID),
+			Reason:        stripe.String(string(stripe.RefundReasonRequestedByCustomer)),
+		}
+		if amountCents > 0 {
+			refParams.Amount = stripe.Int64(amountCents)
+		}
+		stRefund, refErr := refund.New(refParams)
+		if refErr != nil {
+			return nil, fmt.Errorf("stripe refund execution failed: %w", refErr)
+		}
+		if stRefund != nil {
+			stripeRefundID = stRefund.ID
+		}
+	} else if refReq.PaymentIntentID != "" {
+		stripeRefundID = fmt.Sprintf("re_dev_%s_%d", uuid.New().String()[:12], time.Now().Unix())
+	}
+
+	// 2. Update RefundRequest
+	now := time.Now()
+	refReq.Status = "PROCESSED"
+	refReq.Amount = refundAmount
+	refReq.StripeRefundID = stripeRefundID
+	refReq.AdminID = &adminID
+	refReq.AdminNotes = notes
+	refReq.UpdatedAt = now
+
+	if err := u.refundRepo.Update(ctx, refReq); err != nil {
+		return nil, fmt.Errorf("failed to update refund request: %w", err)
+	}
+
+	// 3. If linked to an appointment, update appointment funding status
+	if refReq.AppointmentID != nil && *refReq.AppointmentID != uuid.Nil && u.aptRepo != nil {
+		if apt, aErr := u.aptRepo.GetByID(ctx, *refReq.AppointmentID); aErr == nil && apt != nil {
+			apt.IsFunded = false
+			apt.UpdatedAt = now
+			_ = u.aptRepo.Update(ctx, apt)
+
+			websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+				"type":           "appointment_refunded",
+				"appointment_id": apt.ID.String(),
+				"is_funded":      false,
+				"refund_amount":  refundAmount,
+				"title":          "Refund Processed",
+				"message":        fmt.Sprintf("Your refund of $%.2f for '%s' has been processed back to your card via Stripe.", refundAmount, apt.Title),
+				"created_at":     now.UTC(),
+			})
+		}
+	}
+
+	// 4. Record wallet transaction and audit log
+	if u.walletRepo != nil {
+		if w, wErr := u.walletRepo.GetByUserID(ctx, refReq.UserID); wErr == nil && w != nil {
+			tx := &entity.WalletTransaction{
+				ID:              uuid.New(),
+				WalletID:        w.ID,
+				Amount:          refundAmount,
+				TransactionType: "REFUND",
+				Description:     fmt.Sprintf("Stripe refund %s processed by admin", stripeRefundID),
+				ReferenceID:     refReq.ID.String(),
+				CreatedAt:       now,
+			}
+			_ = u.adminRepo.CreateWalletTransaction(ctx, tx)
+		}
+	}
+
+	// 5. Send real-time notifications to the user
+	websocket.GlobalHub.SendToUser(refReq.UserID.String(), map[string]interface{}{
+		"type":              "refund_processed",
+		"refund_request_id": refReq.ID.String(),
+		"stripe_refund_id":  stripeRefundID,
+		"amount":            refundAmount,
+		"status":            "PROCESSED",
+		"title":             "Refund Issued to Card",
+		"message":           fmt.Sprintf("Your refund of $%.2f has been processed back to your original payment method via Stripe.", refundAmount),
+		"created_at":        now.UTC(),
+	})
+
+	if u.notifRepo != nil {
+		notif := entity.Notification{
+			ID:               uuid.New(),
+			UserID:           refReq.UserID,
+			NotificationType: "PAYMENT",
+			Title:            "Refund Issued to Card",
+			Message:          fmt.Sprintf("Your refund of $%.2f has been credited back to your original payment method via Stripe.", refundAmount),
+			Data:             entity.JSONMap{"refund_request_id": refReq.ID.String(), "stripe_refund_id": stripeRefundID, "amount": refundAmount},
+			CreatedAt:        now,
+		}
+		_ = u.notifRepo.Create(ctx, &notif)
+	}
+
+	u.sendPush(refReq.UserID, "Refund Issued to Card", fmt.Sprintf("Your refund of $%.2f has been processed back to your card via Stripe.", refundAmount), map[string]string{
+		"notification_type": "refund_processed",
+		"refund_request_id": refReq.ID.String(),
+		"stripe_refund_id":  stripeRefundID,
+	})
+
+	// 6. Email notification to user confirming Stripe refund
+	go func(uID uuid.UUID, amt float64, refID string, aptID *uuid.UUID) {
+		user, err := u.userRepo.GetByID(context.Background(), uID)
+		if err == nil && user != nil && user.Email != "" {
+			userName := user.Email // fallback to email if no profile
+			if u.profileRepo != nil {
+				if prof, pErr := u.profileRepo.GetByUserID(context.Background(), uID); pErr == nil && prof != nil && prof.FirstName != "" {
+					userName = prof.FirstName
+				}
+			}
+			aptTitle := "Service Booking"
+			if aptID != nil && *aptID != uuid.Nil && u.aptRepo != nil {
+				if apt, err := u.aptRepo.GetByID(context.Background(), *aptID); err == nil && apt != nil && apt.Title != "" {
+					aptTitle = apt.Title
+				}
+			}
+			emailCfg := &email.Config{
+				Host:     u.cfg.SMTPHost,
+				Port:     u.cfg.SMTPPort,
+				User:     u.cfg.SMTPUser,
+				Password: u.cfg.SMTPPassword,
+				From:     u.cfg.EmailFrom,
+			}
+			_ = email.SendRefundProcessedEmail(emailCfg, user.Email, userName, aptTitle, amt, refID)
+		}
+	}(refReq.UserID, refundAmount, stripeRefundID, refReq.AppointmentID)
+
+	// 7. Audit log
+	u.logAudit(ctx, &adminID, "ADMIN_REFUND_PROCESSED", "REFUND_REQUEST", refReq.ID.String(), map[string]interface{}{
+		"payment_intent_id": refReq.PaymentIntentID,
+		"stripe_refund_id":  stripeRefundID,
+		"refund_amount":     refundAmount,
+		"admin_notes":       notes,
+	})
+
+	return refReq, nil
+}
+
+func (u *adminUseCase) RejectRefund(ctx context.Context, adminID, refundID uuid.UUID, reason string) (*entity.RefundRequest, error) {
+	if u.refundRepo == nil {
+		return nil, errors.New("refund repository not configured")
+	}
+
+	refReq, err := u.refundRepo.GetByID(ctx, refundID)
+	if err != nil || refReq == nil {
+		return nil, errors.New("refund request not found")
+	}
+
+	if refReq.Status == "PROCESSED" {
+		return nil, errors.New("cannot reject an already processed refund")
+	}
+
+	now := time.Now()
+	refReq.Status = "REJECTED"
+	refReq.AdminID = &adminID
+	refReq.AdminNotes = reason
+	refReq.UpdatedAt = now
+
+	if err := u.refundRepo.Update(ctx, refReq); err != nil {
+		return nil, fmt.Errorf("failed to update refund request: %w", err)
+	}
+
+	// Notify user
+	websocket.GlobalHub.SendToUser(refReq.UserID.String(), map[string]interface{}{
+		"type":              "refund_rejected",
+		"refund_request_id": refReq.ID.String(),
+		"status":            "REJECTED",
+		"reason":            reason,
+		"title":             "Refund Request Declined",
+		"message":           fmt.Sprintf("Your refund request has been reviewed and declined: %s", reason),
+		"created_at":        now.UTC(),
+	})
+
+	if u.notifRepo != nil {
+		notif := entity.Notification{
+			ID:               uuid.New(),
+			UserID:           refReq.UserID,
+			NotificationType: "PAYMENT",
+			Title:            "Refund Request Declined",
+			Message:          fmt.Sprintf("Your refund request was declined: %s", reason),
+			Data:             entity.JSONMap{"refund_request_id": refReq.ID.String(), "reason": reason},
+			CreatedAt:        now,
+		}
+		_ = u.notifRepo.Create(ctx, &notif)
+	}
+
+	u.sendPush(refReq.UserID, "Refund Request Declined", fmt.Sprintf("Your refund request was reviewed and declined: %s", reason), map[string]string{
+		"notification_type": "refund_rejected",
+		"refund_request_id": refReq.ID.String(),
+	})
+
+	u.logAudit(ctx, &adminID, "ADMIN_REFUND_REJECTED", "REFUND_REQUEST", refReq.ID.String(), map[string]interface{}{
+		"reason": reason,
+	})
+
+	return refReq, nil
+}
+
+func (u *adminUseCase) ProcessDirectRefund(ctx context.Context, adminID uuid.UUID, paymentIntentID string, amount float64, reason, notes string, appointmentID *uuid.UUID) (*entity.RefundRequest, error) {
+	paymentIntentID = strings.TrimSpace(paymentIntentID)
+	if paymentIntentID == "" {
+		return nil, errors.New("payment intent ID is required")
+	}
+
+	var userID uuid.UUID
+	if appointmentID != nil && *appointmentID != uuid.Nil && u.aptRepo != nil {
+		if apt, err := u.aptRepo.GetByID(ctx, *appointmentID); err == nil && apt != nil {
+			userID = apt.SeekerID
+			if paymentIntentID == "" && apt.PaymentIntentID != "" {
+				paymentIntentID = apt.PaymentIntentID
+			}
+			if amount <= 0 && apt.TotalPrice > 0 {
+				amount = apt.TotalPrice
+			}
+		}
+	}
+
+	if userID == uuid.Nil {
+		userID = adminID
+	}
+
+	refReq := &entity.RefundRequest{
+		ID:              uuid.New(),
+		UserID:          userID,
+		AppointmentID:   appointmentID,
+		PaymentIntentID: paymentIntentID,
+		Amount:          amount,
+		Currency:        "USD",
+		Reason:          reason,
+		Status:          "PENDING",
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	if u.refundRepo != nil {
+		_ = u.refundRepo.Create(ctx, refReq)
+	}
+
+	return u.ProcessRefund(ctx, adminID, refReq.ID, amount, notes)
+}

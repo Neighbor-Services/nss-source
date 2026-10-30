@@ -28,6 +28,7 @@ import { SupportRepository } from './core/repositories/support.repository';
 import { CmsRepository } from './core/repositories/cms.repository';
 import { DispatchRepository } from './core/repositories/dispatch.repository';
 import { GovernanceRepository } from './core/repositories/governance.repository';
+import { RefundRepository } from './core/repositories/refund.repository';
 
 // Feature Repository Implementations
 import { DashboardRepositoryImpl } from './data/repositories/dashboard.repository.impl';
@@ -53,6 +54,7 @@ import { SupportRepositoryImpl } from './data/repositories/support.repository.im
 import { CmsRepositoryImpl } from './data/repositories/cms.repository.impl';
 import { DispatchRepositoryImpl } from './data/repositories/dispatch.repository.impl';
 import { GovernanceRepositoryImpl } from './data/repositories/governance.repository.impl';
+import { RefundRepositoryImpl } from './data/repositories/refund.repository.impl';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -88,6 +90,7 @@ export const appConfig: ApplicationConfig = {
     { provide: SupportRepository, useClass: SupportRepositoryImpl },
     { provide: CmsRepository, useClass: CmsRepositoryImpl },
     { provide: DispatchRepository, useClass: DispatchRepositoryImpl },
-    { provide: GovernanceRepository, useClass: GovernanceRepositoryImpl }
+    { provide: GovernanceRepository, useClass: GovernanceRepositoryImpl },
+    { provide: RefundRepository, useClass: RefundRepositoryImpl }
   ]
 };

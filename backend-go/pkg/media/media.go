@@ -1,6 +1,7 @@
 package media
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -33,14 +34,21 @@ func ValidateAndSaveUploadedFile(fileHeader *multipart.FileHeader, subfolder str
 
 	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 	allowedExts := map[string]bool{
- ".jpg":  true,
- ".jpeg": true,
- ".png":  true,
- ".webp": true,
- ".pdf":  true,
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".webp": true,
+		".pdf":  true,
+		".mp4":  true,
+		".mov":  true,
+		".avi":  true,
+		".mkv":  true,
+		".webm": true,
+		".m4v":  true,
+		".3gp":  true,
 	}
 	if !allowedExts[ext] {
-		return "", fmt.Errorf("invalid file extension: %s. Allowed: jpg, jpeg, png, webp, pdf", ext)
+		return "", fmt.Errorf("invalid file extension: %s. Allowed: jpg, jpeg, png, webp, pdf, mp4, mov, avi, mkv, webm, m4v, 3gp", ext)
 	}
 
 	file, err := fileHeader.Open()
@@ -58,15 +66,30 @@ func ValidateAndSaveUploadedFile(fileHeader *multipart.FileHeader, subfolder str
 
 	mimeType := http.DetectContentType(buf[:n])
 	allowedMimes := map[string]bool{
- "image/jpeg":               true,
- "image/png":                true,
- "image/webp":               true,
- "application/pdf":          true,
- "application/octet-stream": true, // fallback for some binary formats
+		"image/jpeg":               true,
+		"image/png":                true,
+		"image/webp":               true,
+		"application/pdf":          true,
+		"application/octet-stream": true, // fallback for video and binary formats
+		"video/mp4":                true,
+		"video/quicktime":          true,
+		"video/x-msvideo":          true,
+		"video/webm":               true,
+		"video/3gpp":               true,
 	}
 
-	if !allowedMimes[mimeType] && !strings.HasPrefix(mimeType, "image/") {
+	if !allowedMimes[mimeType] && !strings.HasPrefix(mimeType, "image/") && !strings.HasPrefix(mimeType, "video/") {
 		return "", fmt.Errorf("invalid file content type detected: %s", mimeType)
+	}
+
+	// If it is a video file, enforce max 30s duration (+1s margin for container overhead)
+	if strings.HasPrefix(mimeType, "video/") || ext == ".mp4" || ext == ".mov" || ext == ".m4v" {
+		if duration, err := DetectMP4Duration(file); err == nil && duration > 31.0 {
+			return "", fmt.Errorf("video duration exceeds 30-second limit (detected %.1f seconds)", duration)
+		}
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			return "", fmt.Errorf("failed to seek file: %w", err)
+		}
 	}
 
 	// Reset read cursor
@@ -110,7 +133,7 @@ func StreamToGoStore(subfolder, filename string, reader io.Reader, contentType s
 		bucket = os.Getenv("MEDIA_BUCKET")
 	}
 	if bucket == "" {
-		bucket = "default"
+		bucket = "neighborservice"
 	}
 
 	endpoint := fmt.Sprintf(
@@ -130,7 +153,7 @@ func StreamToGoStore(subfolder, filename string, reader io.Reader, contentType s
 		req.Header.Set("X-API-Key", apiKey)
 	}
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: 180 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
@@ -152,4 +175,121 @@ func SyncToGoStore(subfolder, filename, filePath, contentType string) error {
 	}
 	defer f.Close()
 	return StreamToGoStore(subfolder, filename, f, contentType)
+}
+
+// DetectMP4Duration reads an MP4 / MOV / ISO-BMFF stream and returns the duration in seconds.
+// Returns 0 if moov/mvhd atom is not found or cannot be parsed.
+func DetectMP4Duration(r io.ReadSeeker) (float64, error) {
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return 0, err
+	}
+
+	buf := make([]byte, 8)
+	for {
+		n, err := io.ReadFull(r, buf)
+		if err != nil || n < 8 {
+			break
+		}
+
+		boxSize := uint64(binary.BigEndian.Uint32(buf[0:4]))
+		boxType := string(buf[4:8])
+
+		headerSize := uint64(8)
+		if boxSize == 1 {
+			buf64 := make([]byte, 8)
+			if _, err := io.ReadFull(r, buf64); err != nil {
+				break
+			}
+			boxSize = binary.BigEndian.Uint64(buf64)
+			headerSize = 16
+		} else if boxSize == 0 {
+			break
+		}
+
+		if boxType == "moov" {
+			return parseMoovForMvhd(r, boxSize-headerSize)
+		}
+
+		if boxSize < headerSize {
+			break
+		}
+		if _, err := r.Seek(int64(boxSize-headerSize), io.SeekCurrent); err != nil {
+			break
+		}
+	}
+
+	return 0, nil
+}
+
+func parseMoovForMvhd(r io.ReadSeeker, remaining uint64) (float64, error) {
+	buf := make([]byte, 8)
+	var bytesRead uint64
+
+	for bytesRead+8 <= remaining {
+	n, err := io.ReadFull(r, buf)
+	if err != nil || n < 8 {
+		break
+	}
+	bytesRead += 8
+
+	subBoxSize := uint64(binary.BigEndian.Uint32(buf[0:4]))
+	subBoxType := string(buf[4:8])
+
+	subHeaderSize := uint64(8)
+	if subBoxSize == 1 {
+		buf64 := make([]byte, 8)
+		if _, err := io.ReadFull(r, buf64); err != nil {
+			break
+		}
+		subBoxSize = binary.BigEndian.Uint64(buf64)
+		subHeaderSize = 16
+		bytesRead += 8
+	} else if subBoxSize == 0 {
+		subBoxSize = remaining - bytesRead + subHeaderSize
+	}
+
+	if subBoxType == "mvhd" {
+		payloadSize := subBoxSize - subHeaderSize
+		if payloadSize < 20 {
+			return 0, nil
+		}
+		mvhdBytes := make([]byte, payloadSize)
+		if _, err := io.ReadFull(r, mvhdBytes); err != nil {
+			return 0, err
+		}
+
+		version := mvhdBytes[0]
+		var timescale uint32
+		var duration uint64
+
+		if version == 0 {
+			if len(mvhdBytes) < 20 {
+				return 0, nil
+			}
+			timescale = binary.BigEndian.Uint32(mvhdBytes[12:16])
+			duration = uint64(binary.BigEndian.Uint32(mvhdBytes[16:20]))
+		} else if version == 1 {
+			if len(mvhdBytes) < 28 {
+				return 0, nil
+			}
+			timescale = binary.BigEndian.Uint32(mvhdBytes[20:24])
+			duration = binary.BigEndian.Uint64(mvhdBytes[24:32])
+		}
+
+		if timescale > 0 {
+			return float64(duration) / float64(timescale), nil
+		}
+		return 0, nil
+	}
+
+	if subBoxSize < subHeaderSize {
+		break
+	}
+	skipBytes := subBoxSize - subHeaderSize
+	if _, err := r.Seek(int64(skipBytes), io.SeekCurrent); err != nil {
+		break
+	}
+	bytesRead += skipBytes
+	}
+	return 0, nil
 }

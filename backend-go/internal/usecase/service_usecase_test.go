@@ -172,7 +172,7 @@ func TestServiceUseCase_ProposalApprovalFlow(t *testing.T) {
 	}}
 	aptRepo := &mockAppointmentRepo{apts: make(map[uuid.UUID]*entity.Appointment)}
 
-	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, aptRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 
@@ -251,7 +251,7 @@ func TestServiceUseCase_ImageUploadAndProposalDeletion(t *testing.T) {
 		providerID: {ID: uuid.New(), UserID: providerID, Latitude: 51.5074, Longitude: -0.1278},
 	}}
 
-	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(catRepo, catalogRepo, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 
@@ -316,7 +316,7 @@ func TestServiceUseCase_DeleteRequest(t *testing.T) {
 		seekerID: {ID: uuid.New(), UserID: seekerID},
 	}}
 
-	srvUC := usecase.NewServiceUseCase(nil, nil, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srvUC := usecase.NewServiceUseCase(nil, nil, requestRepo, proposalRepo, profileRepo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	ctx := context.Background()
 
 	// 1. Unauthorized delete attempt
@@ -338,4 +338,78 @@ func TestServiceUseCase_DeleteRequest(t *testing.T) {
 	if _, ok := proposalRepo.proposals[propID]; ok {
 		t.Errorf("Expected associated proposals to be cleaned up on request delete")
 	}
+}
+
+
+type mockBgCheckRepoForService struct {
+	check *entity.BackgroundCheck
+}
+
+func (m *mockBgCheckRepoForService) Create(ctx context.Context, check *entity.BackgroundCheck) error {
+	return nil
+}
+func (m *mockBgCheckRepoForService) GetByID(ctx context.Context, id uuid.UUID) (*entity.BackgroundCheck, error) {
+	return m.check, nil
+}
+func (m *mockBgCheckRepoForService) GetByCandidateID(ctx context.Context, candidateID string) (*entity.BackgroundCheck, error) {
+	return m.check, nil
+}
+func (m *mockBgCheckRepoForService) GetByReportID(ctx context.Context, reportID string) (*entity.BackgroundCheck, error) {
+	return m.check, nil
+}
+func (m *mockBgCheckRepoForService) GetPendingByProvider(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
+	return m.check, nil
+}
+func (m *mockBgCheckRepoForService) GetLatestByProvider(ctx context.Context, providerID uuid.UUID) (*entity.BackgroundCheck, error) {
+	return m.check, nil
+}
+func (m *mockBgCheckRepoForService) List(ctx context.Context, providerID *uuid.UUID) ([]entity.BackgroundCheck, error) {
+	if m.check != nil {
+		return []entity.BackgroundCheck{*m.check}, nil
+	}
+	return nil, nil
+}
+func (m *mockBgCheckRepoForService) Update(ctx context.Context, check *entity.BackgroundCheck) error {
+	return nil
+}
+func (m *mockBgCheckRepoForService) GetModerationSetting(ctx context.Context) (*entity.ModerationSetting, error) {
+	return nil, nil
+}
+
+func TestServiceUseCase_IsProviderSubscribed_CheckrTrial(t *testing.T) {
+	providerID := uuid.New()
+	ctx := context.Background()
+	now := time.Now()
+
+	t.Run("provider in active 30-day trial is considered subscribed", func(t *testing.T) {
+		clearedAt := now.Add(-5 * 24 * time.Hour)
+		bgMock := &mockBgCheckRepoForService{
+			check: &entity.BackgroundCheck{
+				ProviderID: providerID,
+				Status:     "clear",
+				ClearedAt:  &clearedAt,
+			},
+		}
+		srvUC := usecase.NewServiceUseCase(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, bgMock, nil, nil, nil, nil, nil, nil)
+
+		if !srvUC.IsProviderSubscribed(ctx, providerID) {
+			t.Errorf("expected provider in trial to be considered subscribed")
+		}
+	})
+
+	t.Run("provider with expired trial (>30 days) is not subscribed", func(t *testing.T) {
+		clearedAt := now.Add(-35 * 24 * time.Hour)
+		bgMock := &mockBgCheckRepoForService{
+			check: &entity.BackgroundCheck{
+				ProviderID: providerID,
+				Status:     "clear",
+				ClearedAt:  &clearedAt,
+			},
+		}
+		srvUC := usecase.NewServiceUseCase(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, bgMock, nil, nil, nil, nil, nil, nil)
+
+		if srvUC.IsProviderSubscribed(ctx, providerID) {
+			t.Errorf("expected provider with expired trial not to be subscribed")
+		}
+	})
 }

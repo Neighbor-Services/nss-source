@@ -523,3 +523,58 @@ func (h *PaymentHandler) TipProvider(c *gin.Context) {
 	})
 }
 
+
+
+type RequestRefundInput struct {
+	AppointmentID   string  `json:"appointment_id"`
+	PaymentIntentID string  `json:"payment_intent_id"`
+	Amount          float64 `json:"amount"`
+	Reason          string  `json:"reason" binding:"required"`
+}
+
+func (h *PaymentHandler) RequestRefund(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	var req RequestRefundInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Reason is required for refund request")
+		return
+	}
+
+	var aptUUID *uuid.UUID
+	if req.AppointmentID != "" {
+		if parsed, err := uuid.Parse(req.AppointmentID); err == nil {
+			aptUUID = &parsed
+		}
+	}
+
+	result, err := h.paymentUC.RequestRefund(c.Request.Context(), userUUID, aptUUID, req.PaymentIntentID, req.Amount, req.Reason)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.Created(c, "Refund request submitted successfully and is pending administrator review", result)
+}
+
+func (h *PaymentHandler) GetMyRefundRequests(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	list, err := h.paymentUC.GetMyRefundRequests(c.Request.Context(), userUUID)
+	if err != nil {
+		response.InternalError(c, "Failed to load refund requests: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, list)
+}

@@ -231,6 +231,10 @@ func (m *mockAdminUseCase) ExportDisputesCSV(ctx context.Context, adminID uuid.U
 	return []byte("ID,Reason\n1,Service not rendered"), m.err
 }
 
+func (m *mockAdminUseCase) ExportRefundsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error) {
+	return []byte("ID,Amount,Status\n1,50.00,PENDING"), m.err
+}
+
 func (m *mockAdminUseCase) Setup2FA(ctx context.Context, adminID uuid.UUID) (*entity.TOTPSetupResponse, error) {
 	return &entity.TOTPSetupResponse{Secret: "JBSWY3DPEHPK3PXP", OTPAuthURL: "otpauth://totp/NS:admin?secret=JBSWY3DPEHPK3PXP"}, m.err
 }
@@ -397,6 +401,26 @@ func (m *mockAdminUseCase) DeletePromoCode(ctx context.Context, adminID, id uuid
 
 func (m *mockAdminUseCase) ExecuteDisputeRefund(ctx context.Context, adminID, disputeID uuid.UUID, amount float64, reason string) error {
 	return m.err
+}
+
+func (m *mockAdminUseCase) ListRefundRequests(ctx context.Context, adminID uuid.UUID, status string, limit, offset int) ([]entity.RefundRequest, int64, error) {
+	return []entity.RefundRequest{}, 0, m.err
+}
+
+func (m *mockAdminUseCase) GetRefundRequest(ctx context.Context, adminID, refundID uuid.UUID) (*entity.RefundRequest, error) {
+	return &entity.RefundRequest{ID: refundID}, m.err
+}
+
+func (m *mockAdminUseCase) ProcessRefund(ctx context.Context, adminID, refundID uuid.UUID, amount float64, notes string) (*entity.RefundRequest, error) {
+	return &entity.RefundRequest{ID: refundID, Status: "PROCESSED"}, m.err
+}
+
+func (m *mockAdminUseCase) RejectRefund(ctx context.Context, adminID, refundID uuid.UUID, reason string) (*entity.RefundRequest, error) {
+	return &entity.RefundRequest{ID: refundID, Status: "REJECTED"}, m.err
+}
+
+func (m *mockAdminUseCase) ProcessDirectRefund(ctx context.Context, adminID uuid.UUID, paymentIntentID string, amount float64, reason, notes string, appointmentID *uuid.UUID) (*entity.RefundRequest, error) {
+	return &entity.RefundRequest{ID: uuid.New(), Status: "PROCESSED"}, m.err
 }
 
 func (m *mockAdminUseCase) ExportVerificationsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error) {

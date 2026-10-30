@@ -438,6 +438,7 @@ type ServiceRequest struct {
 	Urgency              string     `gorm:"size:50;default:'SCHEDULED'" json:"urgency,omitempty"`
 	WithImage            bool       `gorm:"default:false" json:"with_image"`
 	Image                string     `gorm:"size:500" json:"image,omitempty"`
+	Video                string     `gorm:"size:500" json:"video,omitempty"` // URL of job video (up to 30s)
 	Longitude            *float64   `gorm:"type:numeric(100,50)" json:"longitude,omitempty"`
 	Latitude             *float64   `gorm:"type:numeric(100,50)" json:"latitude,omitempty"`
 	ScheduledTime        *time.Time     `json:"scheduled_time,omitempty"`
@@ -461,6 +462,7 @@ type ServiceRequest struct {
 	IsFunded           bool        `gorm:"-" json:"is_funded"`
 	ImageURL           string      `gorm:"-" json:"image_url,omitempty"`
 	Distance           *float64    `gorm:"-" json:"distance,omitempty"`
+	VideoURL           string      `gorm:"-" json:"video_url,omitempty"`
 }
 
 func (ServiceRequest) TableName() string { return "services_servicerequest" }
@@ -835,6 +837,30 @@ type PayoutRequest struct {
 
 func (PayoutRequest) TableName() string { return "payments_payoutrequest" }
 
+type RefundRequest struct {
+	ID              uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID          uuid.UUID  `gorm:"type:uuid;index;not null" json:"user_id"`
+	AppointmentID   *uuid.UUID `gorm:"type:uuid;index" json:"appointment_id,omitempty"`
+	PaymentIntentID string     `gorm:"size:255;index;not null" json:"payment_intent_id"`
+	Amount          float64    `gorm:"default:0.00" json:"amount"`
+	Currency        string     `gorm:"size:10;default:'USD'" json:"currency"`
+	Reason          string     `gorm:"type:text;not null" json:"reason"`
+	Notes           string     `gorm:"type:text" json:"notes,omitempty"`
+	Status          string     `gorm:"size:30;default:'PENDING';index" json:"status"` // PENDING, APPROVED, PROCESSED, REJECTED, FAILED
+	StripeRefundID  string     `gorm:"size:255" json:"stripe_refund_id,omitempty"`
+	AdminID         *uuid.UUID `gorm:"type:uuid;index" json:"admin_id,omitempty"`
+	AdminNotes      string     `gorm:"type:text" json:"admin_notes,omitempty"`
+	ProcessedAt     *time.Time `json:"processed_at,omitempty"`
+	CreatedAt       time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt       time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+
+	User        *User        `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Appointment *Appointment `gorm:"foreignKey:AppointmentID" json:"appointment,omitempty"`
+	Admin       *User        `gorm:"foreignKey:AdminID" json:"admin,omitempty"`
+}
+
+func (RefundRequest) TableName() string { return "payments_refundrequest" }
+
 type LedgerAccount struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	Code      string    `gorm:"size:64;uniqueIndex;not null" json:"code"` // e.g. ESCROW_HOLD, PLATFORM_REVENUE, PROVIDER_WALLET_{ID}
@@ -978,6 +1004,9 @@ type ProviderVerification struct {
 
 func (ProviderVerification) TableName() string { return "moderation_providerverification" }
 
+// TrialWindowDays is how many days providers get free platform access after Checkr clearance.
+const TrialWindowDays = 30
+
 type BackgroundCheck struct {
 	ID                 uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	ProviderID         uuid.UUID  `gorm:"type:uuid;index;not null" json:"provider"`
@@ -990,6 +1019,9 @@ type BackgroundCheck struct {
 	Adjudication       string     `gorm:"size:30" json:"adjudication,omitempty"`
 	Result             JSONMap    `gorm:"type:text" json:"result,omitempty"`
 	LastSyncedAt       *time.Time `json:"last_synced_at,omitempty"`
+	// ClearedAt is set once when the check first reaches "clear" status.
+	// It anchors the 30-day free-trial window and is never overwritten.
+	ClearedAt          *time.Time `gorm:"index" json:"cleared_at,omitempty"`
 	SyncAttemptCount   int        `gorm:"default:0" json:"sync_attempt_count"`
 	Notes              string     `gorm:"type:text" json:"notes,omitempty"`
 	PaymentIntentID    string     `gorm:"size:255" json:"payment_intent_id,omitempty"`
@@ -998,13 +1030,31 @@ type BackgroundCheck struct {
 
 	Provider *User `gorm:"foreignKey:ProviderID" json:"provider_details,omitempty"`
 
-	// Serializer Parity
-	ProviderEmail string `gorm:"-" json:"provider_email,omitempty"`
-	IsClear       bool   `gorm:"-" json:"is_clear"`
-	IsTerminal    bool   `gorm:"-" json:"is_terminal"`
+	// Serializer Parity (computed, not persisted)
+	ProviderEmail string     `gorm:"-" json:"provider_email,omitempty"`
+	IsClear       bool       `gorm:"-" json:"is_clear"`
+	IsTerminal    bool       `gorm:"-" json:"is_terminal"`
+	IsInTrial     bool       `gorm:"-" json:"is_in_trial"`
+	TrialEndsAt   *time.Time `gorm:"-" json:"trial_ends_at,omitempty"`
+	TrialDaysLeft int        `gorm:"-" json:"trial_days_left"`
 }
 
 func (BackgroundCheck) TableName() string { return "moderation_backgroundcheck" }
+
+// ComputeTrialFields populates the computed trial fields based on ClearedAt.
+// Call this before serialising any BackgroundCheck to the client.
+func (bc *BackgroundCheck) ComputeTrialFields() {
+	bc.IsClear = bc.Status == "clear"
+	if bc.IsClear && bc.ClearedAt != nil {
+		trialEnd := bc.ClearedAt.Add(time.Duration(TrialWindowDays) * 24 * time.Hour)
+		bc.TrialEndsAt = &trialEnd
+		remaining := time.Until(trialEnd)
+		if remaining > 0 {
+			bc.IsInTrial = true
+			bc.TrialDaysLeft = int(remaining.Hours()/24) + 1
+		}
+	}
+}
 
 type ModerationSetting struct {
 	ID                         uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`

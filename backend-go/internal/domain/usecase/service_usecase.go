@@ -28,6 +28,7 @@ type ServiceUseCase interface {
 	CreateRequest(ctx context.Context, customerID uuid.UUID, req *entity.ServiceRequest) (*entity.ServiceRequest, error)
 	UpdateRequest(ctx context.Context, userID, id uuid.UUID, updates map[string]interface{}) (*entity.ServiceRequest, error)
 	UploadRequestImage(ctx context.Context, userID, id uuid.UUID, imageURL string) (*entity.ServiceRequest, error)
+	UploadRequestVideo(ctx context.Context, userID, id uuid.UUID, videoURL string) (*entity.ServiceRequest, error)
 	DeleteRequest(ctx context.Context, userID, id uuid.UUID) error
 	ApproveProposal(ctx context.Context, userID, requestID, proposalID uuid.UUID) (*entity.ServiceRequest, error)
 	CancelApproval(ctx context.Context, userID, requestID uuid.UUID) error

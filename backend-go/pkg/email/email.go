@@ -1663,5 +1663,97 @@ func SendWorkerAlertEmail(cfg *Config, toEmail, workerName, title, details strin
 	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
 }
 
+// ─── REFUND TRANSACTIONAL EMAILS ──────────────────────────────────────────────
+
+// SendRefundRequestedEmail confirms to the user that their refund request has been received.
+func SendRefundRequestedEmail(cfg *Config, toEmail, userName, aptTitle string, amount float64, reason string) error {
+	subject := fmt.Sprintf("Refund Request Received ($%.2f) - Neighbor Services", amount)
+	plainText := fmt.Sprintf("Hello %s,\n\nWe have received your refund request of $%.2f for \"%s\".\nReason: %s\n\nOur operations and billing team will review your request within 24 hours. You will receive an email confirmation once processed.\n\nThank you,\nNeighbor Services Support Team", userName, amount, aptTitle, reason)
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Request Received</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b; margin: 0; }
+        .container { max-width: 580px; margin: 0 auto; background-color: #ffffff; padding: 36px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .badge { display: inline-block; padding: 6px 12px; background: #e0f2fe; color: #0369a1; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+        .highlight-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .amount { font-size: 28px; font-weight: 800; color: #166534; }
+        .footer { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">Refund Request Under Review</span>
+        <h2 style="margin: 0 0 16px 0; color: #0f172a;">We received your refund request</h2>
+        <p>Hello %s,</p>
+        <p>We received your request to refund payment for <strong>%s</strong>.</p>
+        <div class="highlight-box">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #15803d; font-weight: 600;">Requested Refund Amount</div>
+            <div class="amount">$%.2f</div>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #374151;"><strong>Reason:</strong> %s</p>
+        </div>
+        <p style="color: #475569; font-size: 14px; line-height: 1.6;">Our team reviews all refund requests directly to resolve them rapidly—typically within <strong>24 business hours</strong>. If approved, funds will be returned via Stripe back to your original payment method.</p>
+        <div class="footer">
+            <p>Neighbor Services Solutions LLC &bull; support@neighborservice.com</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`, userName, aptTitle, amount, reason)
+
+	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
+}
+
+// SendRefundProcessedEmail notifies the user that their refund has been processed through Stripe.
+func SendRefundProcessedEmail(cfg *Config, toEmail, userName, aptTitle string, amount float64, stripeRefundID string) error {
+	subject := fmt.Sprintf("Your Refund of $%.2f Has Been Processed - Neighbor Services", amount)
+	plainText := fmt.Sprintf("Hello %s,\n\nGood news! Your refund of $%.2f for \"%s\" has been successfully processed through Stripe.\nReference: %s\n\nStandard card refunds typically appear on your card or bank statement in 5 to 10 business days.\n\nThank you for choosing Neighbor Services.\nNeighbor Services Billing Team", userName, amount, aptTitle, stripeRefundID)
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Processed</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b; margin: 0; }
+        .container { max-width: 580px; margin: 0 auto; background-color: #ffffff; padding: 36px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .badge { display: inline-block; padding: 6px 12px; background: #dcfce7; color: #15803d; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+        .highlight-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .amount { font-size: 32px; font-weight: 800; color: #0284c7; }
+        .info-pill { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; font-size: 13px; color: #166534; margin-top: 16px; }
+        .footer { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span class="badge">✓ Refund Issued</span>
+        <h2 style="margin: 0 0 16px 0; color: #0f172a;">Your refund is on its way</h2>
+        <p>Hello %s,</p>
+        <p>We've processed a refund for your appointment: <strong>%s</strong>.</p>
+        <div class="highlight-box">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600;">Refunded Amount</div>
+            <div class="amount">$%.2f</div>
+            <div style="margin-top: 8px; font-size: 12px; color: #64748b; font-family: monospace;">Stripe Reference: %s</div>
+        </div>
+        <div class="info-pill">
+            <strong>⏱ Processing Timeline:</strong> Credit and debit card refunds typically take <strong>5–10 business days</strong> to post to your bank or card statement depending on your bank's processing schedule.
+        </div>
+        <p style="color: #475569; font-size: 14px; margin-top: 20px;">If you don't see the refund credited after 10 business days, please reach out to us with the Stripe reference above.</p>
+        <div class="footer">
+            <p>Neighbor Services Solutions LLC &bull; billing@neighborservice.com</p>
+            <p>&copy; Neighbor Services Solutions LLC. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`, userName, aptTitle, amount, stripeRefundID)
+
+	return SendMultipartEmail(cfg, toEmail, subject, plainText, htmlBody)
+}
+
 
 

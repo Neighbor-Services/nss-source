@@ -43,6 +43,16 @@ type PayoutRequestRepository interface {
 	ListByWalletID(ctx context.Context, walletID uuid.UUID) ([]entity.PayoutRequest, error)
 }
 
+type RefundRequestRepository interface {
+	Create(ctx context.Context, req *entity.RefundRequest) error
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.RefundRequest, error)
+	GetByPaymentIntentID(ctx context.Context, piID string) (*entity.RefundRequest, error)
+	GetByAppointmentID(ctx context.Context, appointmentID uuid.UUID) (*entity.RefundRequest, error)
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]entity.RefundRequest, error)
+	List(ctx context.Context, status string, limit, offset int) ([]entity.RefundRequest, int64, error)
+	Update(ctx context.Context, req *entity.RefundRequest) error
+}
+
 type LedgerRepository interface {
 	GetOrCreateAccount(ctx context.Context, code, name, accType, currency string) (*entity.LedgerAccount, error)
 	RecordEntry(ctx context.Context, entry *entity.LedgerEntry) error

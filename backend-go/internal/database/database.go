@@ -126,6 +126,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.Wallet{},
 		&entity.WalletTransaction{},
 		&entity.PayoutRequest{},
+		&entity.RefundRequest{},
 		&entity.LedgerAccount{},
 		&entity.LedgerEntry{},
 		&entity.SubscriptionPlan{},
@@ -218,6 +219,28 @@ func ensureExplicitTables(db *gorm.DB) {
 			result_count INTEGER DEFAULT 0,
 			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 		)`,
+		`CREATE TABLE IF NOT EXISTS payments_refundrequest (
+			id UUID PRIMARY KEY,
+			user_id UUID NOT NULL,
+			appointment_id UUID,
+			payment_intent_id VARCHAR(255) NOT NULL,
+			amount DOUBLE PRECISION DEFAULT 0.00,
+			currency VARCHAR(10) DEFAULT 'USD',
+			reason TEXT NOT NULL,
+			notes TEXT,
+			status VARCHAR(30) DEFAULT 'PENDING',
+			stripe_refund_id VARCHAR(255),
+			admin_id UUID,
+			admin_notes TEXT,
+			processed_at TIMESTAMPTZ,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`ALTER TABLE payments_refundrequest ADD COLUMN IF NOT EXISTS notes TEXT`,
+		`ALTER TABLE payments_refundrequest ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ`,
+		`CREATE INDEX IF NOT EXISTS idx_payments_refundrequest_user ON payments_refundrequest (user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_payments_refundrequest_status ON payments_refundrequest (status)`,
+		`CREATE INDEX IF NOT EXISTS idx_payments_refundrequest_pi ON payments_refundrequest (payment_intent_id)`,
 		// Performance indexes for spatial queries, feeds, and messaging
 		`CREATE INDEX IF NOT EXISTS idx_accounts_profile_user_coords ON accounts_profile (user_type, latitude, longitude)`,
 		`CREATE INDEX IF NOT EXISTS idx_services_servicerequest_user_status ON services_servicerequest (user_id, status)`,
@@ -305,6 +328,9 @@ func cleanOrphanRecords(db *gorm.DB) {
 
 	if db.Migrator().HasTable("moderation_backgroundcheck") {
 		_ = db.Exec("DROP INDEX IF EXISTS idx_moderation_backgroundcheck_payment_intent_id").Error
+		_ = db.Exec("ALTER TABLE moderation_backgroundcheck ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMP WITH TIME ZONE").Error
+		// Backfill: set cleared_at = updated_at for already-cleared checks that have no cleared_at yet
+		_ = db.Exec("UPDATE moderation_backgroundcheck SET cleared_at = updated_at WHERE status = 'clear' AND cleared_at IS NULL").Error
 	}
 
 	if db.Migrator().HasTable("moderation_moderationsetting") {

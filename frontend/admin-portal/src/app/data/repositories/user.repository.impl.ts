@@ -5,6 +5,25 @@ import { UserRepository, ListUsersParams } from '../../core/repositories/user.re
 import { AdminUser, ImpersonationResult } from '../../core/domain/entities/user.model';
 import { ADMIN_API_CONFIG } from '../datasources/admin-api.config';
 
+function extractCheckrTrial(u: any) {
+  const bc = u.background_check;
+  if (!bc) return { isInTrial: false, daysLeft: 0, endsAt: undefined };
+  if (typeof bc.is_in_trial === 'boolean') {
+    return {
+      isInTrial: bc.is_in_trial,
+      daysLeft: bc.trial_days_left ?? 0,
+      endsAt: bc.trial_ends_at
+    };
+  }
+  if (bc.status === 'clear' && bc.cleared_at) {
+    const elapsed = Math.floor((Date.now() - new Date(bc.cleared_at).getTime()) / (24 * 60 * 60 * 1000));
+    const daysLeft = Math.max(0, 30 - elapsed);
+    const endsAt = new Date(new Date(bc.cleared_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    return { isInTrial: daysLeft > 0, daysLeft, endsAt };
+  }
+  return { isInTrial: false, daysLeft: 0, endsAt: undefined };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -37,6 +56,9 @@ export class UserRepositoryImpl implements UserRepository {
           isIdentityVerified: u.is_identity_verified ?? (u.profile?.is_identity_verified) ?? false,
           subscriptionTier: (u.subscription_tier || (u.profile?.subscription_tier) || 'NONE').toUpperCase(),
           checkrStatus: (u.checkr_status || (u.background_check?.status) || 'none').toLowerCase(),
+        isInCheckrTrial: extractCheckrTrial(u).isInTrial,
+        checkrTrialDaysLeft: extractCheckrTrial(u).daysLeft,
+        checkrTrialEndsAt: extractCheckrTrial(u).endsAt,
           createdAt: u.created_at || u.createdAt || new Date().toISOString(),
           walletBalance: u.wallet_balance ?? (u.wallet?.balance) ?? 0,
           roleId: u.role_id || u.admin_role_id || '',
@@ -67,6 +89,9 @@ export class UserRepositoryImpl implements UserRepository {
         subscriptionInterval: (u.subscription_interval || (u.profile?.subscription_interval) || 'month').toLowerCase(),
         preferredPaymentMode: u.preferred_payment_mode || (u.profile?.preferred_payment_mode) || 'ON_SITE',
         checkrStatus: (u.checkr_status || (u.background_check?.status) || 'none').toLowerCase(),
+        isInCheckrTrial: extractCheckrTrial(u).isInTrial,
+        checkrTrialDaysLeft: extractCheckrTrial(u).daysLeft,
+        checkrTrialEndsAt: extractCheckrTrial(u).endsAt,
         bio: u.bio || (u.profile?.bio) || '',
         city: u.city || (u.profile?.city) || '',
         state: u.state || (u.profile?.state) || '',
@@ -123,7 +148,10 @@ export class UserRepositoryImpl implements UserRepository {
         subscriptionTier: u.subscription_tier || (u.profile?.subscription_tier) || 'Free',
         subscriptionInterval: u.subscription_interval || (u.profile?.subscription_interval) || 'month',
         preferredPaymentMode: u.preferred_payment_mode || (u.profile?.preferred_payment_mode) || 'ON_SITE',
-        checkrStatus: u.checkr_status || 'none',
+        checkrStatus: (u.checkr_status || (u.background_check?.status) || 'none').toLowerCase(),
+        isInCheckrTrial: extractCheckrTrial(u).isInTrial,
+        checkrTrialDaysLeft: extractCheckrTrial(u).daysLeft,
+        checkrTrialEndsAt: extractCheckrTrial(u).endsAt,
         bio: u.bio || (u.profile?.bio) || '',
         city: u.city || (u.profile?.city) || '',
         state: u.state || (u.profile?.state) || '',

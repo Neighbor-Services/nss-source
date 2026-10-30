@@ -16,6 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"backend-go/internal/config"
+	"backend-go/pkg/media"
 	"backend-go/pkg/response"
 )
 
@@ -106,7 +107,7 @@ func (h *GoStoreHandler) ProxyMedia(c *gin.Context) {
 		bucket = os.Getenv("BUCKET_NAME")
 	}
 	if bucket == "" {
-		bucket = "default"
+		bucket = "neighborservice"
 	}
 
 	targetURL := fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
@@ -121,14 +122,18 @@ func (h *GoStoreHandler) ProxyMedia(c *gin.Context) {
 		return
 	}
 
+	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
+		req.Header.Set("Range", rangeHeader)
+	}
+
 	if h.cfg.GoStoreAPIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+h.cfg.GoStoreAPIKey)
 		req.Header.Set("X-API-Key", h.cfg.GoStoreAPIKey)
 	}
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: 180 * time.Second}
 	resp, err := client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil || (resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent) {
 		if resp != nil {
 			resp.Body.Close()
 		}
@@ -137,12 +142,17 @@ func (h *GoStoreHandler) ProxyMedia(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	c.Status(resp.StatusCode)
 	if cType := resp.Header.Get("Content-Type"); cType != "" {
 		c.Header("Content-Type", cType)
 	}
 	if cLen := resp.Header.Get("Content-Length"); cLen != "" {
 		c.Header("Content-Length", cLen)
 	}
+	if cRange := resp.Header.Get("Content-Range"); cRange != "" {
+		c.Header("Content-Range", cRange)
+	}
+	c.Header("Accept-Ranges", "bytes")
 
 	// Stream directly to client
 	_, _ = io.Copy(c.Writer, resp.Body)
@@ -222,5 +232,54 @@ func (h *GoStoreHandler) ListMedia(c *gin.Context) {
  "source": "gostore",
  "bucket":         bucket,
  "default_bucket": defaultBucket,
+	})
+}
+
+// UploadMedia handles direct file uploads from clients,
+// validating the file, streaming it to GoStore CAS using server credentials, and returning the public download URL.
+func (h *GoStoreHandler) UploadMedia(c *gin.Context) {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		response.BadRequest(c, "No file provided in form field 'file'")
+		return
+	}
+
+	subfolder := strings.TrimSpace(c.DefaultPostForm("subfolder", "uploads"))
+	if subfolder == "" {
+		subfolder = "uploads"
+	}
+	subfolder = strings.ReplaceAll(subfolder, "..", "")
+	subfolder = strings.Trim(subfolder, "/\\")
+
+	relPath, err := media.ValidateAndSaveUploadedFile(fileHeader, subfolder, 100*1024*1024)
+	if err != nil {
+		response.BadRequest(c, "File upload rejected: "+err.Error())
+		return
+	}
+
+	gostoreURL := h.cfg.GoStoreURL
+	if gostoreURL == "" {
+		gostoreURL = "https://file.proleadsolutions.co"
+	}
+	bucket := h.cfg.GoStoreBucket
+	if bucket == "" {
+		bucket = os.Getenv("GOSTORE_BUCKET")
+	}
+	if bucket == "" {
+		bucket = "neighborservice"
+	}
+
+	downloadURL := fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
+		strings.TrimRight(gostoreURL, "/"),
+		url.PathEscape(bucket),
+		url.PathEscape(relPath),
+	)
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":    "success",
+		"url":       downloadURL,
+		"path":      relPath,
+		"file_name": fileHeader.Filename,
+		"size":      fileHeader.Size,
 	})
 }

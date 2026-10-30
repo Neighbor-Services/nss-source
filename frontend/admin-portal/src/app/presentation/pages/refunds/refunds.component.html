@@ -1,0 +1,526 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Stripe Refunds &amp; Payment Reversals</h1>
+        <span class="live-pill"><span class="live-dot"></span> Stripe API Active</span>
+      </div>
+      <p class="hero-subtitle">
+        Review customer refund requests, execute direct credit card reversals via Stripe, and audit payment dispositions.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-outline-light" (click)="exportCSV()" [disabled]="isLoading()" title="Export Refunds as CSV">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+      <button class="btn btn-primary" (click)="openDirectRefundModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span>Direct Stripe Refund</span>
+      </button>
+      <button class="btn btn-soft-light" (click)="loadRefunds()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'ALL'" (click)="setStatusFilter('ALL')">
+      <span>All Requests</span>
+      <span class="tab-badge">{{ totalCount() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'PENDING'" (click)="setStatusFilter('PENDING')">
+      <span>Pending Review</span>
+      <span class="tab-badge amber">{{ pendingCount() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'PROCESSED'" (click)="setStatusFilter('PROCESSED')">
+      <span>Processed on Stripe</span>
+      <span class="tab-badge green">{{ processedCount() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'REJECTED'" (click)="setStatusFilter('REJECTED')">
+      <span>Declined</span>
+      <span class="tab-badge red">{{ rejectedCount() }}</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-title">PENDING ACTION</span>
+        <div class="kpi-icon-box amber">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-value amber-text">{{ pendingCount() }}</div>
+      <div class="kpi-subtext">${{ totalPendingAmount().toFixed(2) }} awaiting administrator adjudication</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-title">PROCESSED TO CARD</span>
+        <div class="kpi-icon-box green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-value green-text">${{ totalProcessedAmount().toFixed(2) }}</div>
+      <div class="kpi-subtext">{{ processedCount() }} successfully refunded via Stripe</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-title">TOTAL REVENUE PROTECTED</span>
+        <div class="kpi-icon-box blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-value">{{ rejectedCount() }}</div>
+      <div class="kpi-subtext">Declined refund claims after review</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-title">ALL-TIME CLAIMS</span>
+        <div class="kpi-icon-box purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-value">{{ totalCount() }}</div>
+      <div class="kpi-subtext">Total payment refund lifecycle events</div>
+    </div>
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="hope-card mt-4">
+    <div class="card-header flex-between">
+      <div class="flex-align gap-2">
+        <span class="card-title">Refund Requests Ledger</span>
+        <span class="badge badge-secondary">{{ filteredRefunds().length }} records</span>
+      </div>
+      <div class="search-input-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Filter by email, reason, PaymentIntent..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          class="form-control form-control-sm"
+        />
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      @if (isLoading()) {
+        <div class="loading-state p-5 text-center">
+          <div class="spinner"></div>
+          <p class="text-muted mt-2">Loading refund requests from ledger...</p>
+        </div>
+      } @else if (filteredRefunds().length === 0) {
+        <div class="empty-state p-5 text-center">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-muted mb-2">
+            <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+          </svg>
+          <h4>No Refund Requests Found</h4>
+          <p class="text-muted">No refund requests match the current status and search filters.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>CUSTOMER / REQUESTER</th>
+                <th>LINKED JOB / APPOINTMENT</th>
+                <th>STRIPE PAYMENT INTENT</th>
+                <th>AMOUNT</th>
+                <th>REASON FOR REFUND</th>
+                <th>STATUS</th>
+                <th>REQUESTED AT</th>
+                <th class="text-right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (refund of filteredRefunds(); track refund.id) {
+                <tr>
+                  <td>
+                    <div class="user-cell">
+                      <div class="avatar-circle">
+                        {{ getRequesterName(refund).charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="user-meta">
+                        <span class="user-name">{{ getRequesterName(refund) }}</span>
+                        <span class="user-email">{{ refund.user?.email || refund.user_id }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (refund.appointment) {
+                      <div class="appt-cell">
+                        <span class="appt-title">{{ refund.appointment.title || 'Service Booking' }}</span>
+                        <span class="appt-sub text-muted">ID: #{{ refund.appointment.id.slice(0, 8) }}</span>
+                      </div>
+                    } @else if (refund.appointment_id) {
+                      <span class="text-mono text-xs">Appt #{{ refund.appointment_id.slice(0, 8) }}</span>
+                    } @else {
+                      <span class="text-muted text-xs">Direct Payment</span>
+                    }
+                  </td>
+                  <td>
+                    <div class="pi-cell">
+                      <a [href]="getStripeDashboardUrl(refund.payment_intent_id)" target="_blank" rel="noopener noreferrer" class="font-mono text-xs text-primary d-inline-flex align-items-center gap-1" title="Open Payment in Stripe Dashboard">
+                        <span>{{ refund.payment_intent_id }}</span>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      </a>
+                      @if (refund.stripe_refund_id) {
+                        <span class="badge badge-sm badge-success mt-1 font-mono">
+                          Refund: {{ refund.stripe_refund_id }}
+                        </span>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="amount-badge font-mono font-bold">
+                      ${{ refund.amount.toFixed(2) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="reason-cell" [attr.title]="refund.reason">
+                      {{ refund.reason }}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(refund.status)">
+                      {{ refund.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-muted text-xs">{{ refund.created_at | date:'short' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <div class="action-buttons">
+                      <button class="btn btn-xs btn-outline-secondary" (click)="viewDetail(refund)" title="View Details">
+                        Details
+                      </button>
+
+                      @if (refund.status === 'PENDING') {
+                        <button class="btn btn-xs btn-success" (click)="openProcessModal(refund)" title="Execute Stripe Refund">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                          Process
+                        </button>
+                        <button class="btn btn-xs btn-outline-danger" (click)="openRejectModal(refund)" title="Decline Refund">
+                          Decline
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- PROCESS REFUND MODAL -->
+@if (showProcessModal() && selectedRefund()) {
+  <div class="modal-backdrop" (click)="showProcessModal.set(false)">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Execute Stripe Refund</h3>
+          <p class="modal-subtitle">Direct card reimbursement via Stripe Gateway</p>
+        </div>
+        <button class="btn-close" (click)="showProcessModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="info-callout mb-3">
+          <div class="callout-row">
+            <span class="text-muted">Customer:</span>
+            <strong>{{ getRequesterName(selectedRefund()!) }} ({{ selectedRefund()!.user?.email }})</strong>
+          </div>
+          <div class="callout-row">
+            <span class="text-muted">Stripe Payment Intent:</span>
+            <span class="font-mono text-primary text-xs">{{ selectedRefund()!.payment_intent_id }}</span>
+          </div>
+          <div class="callout-row">
+            <span class="text-muted">Original Requested Amount:</span>
+            <strong class="text-success">${{ selectedRefund()!.amount.toFixed(2) }}</strong>
+          </div>
+          <div class="callout-row">
+            <span class="text-muted">Customer Reason:</span>
+            <em>{{ selectedRefund()!.reason }}</em>
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label font-bold">Refund Amount ($ USD) *</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0.50"
+              [(ngModel)]="processAmount"
+              class="form-control font-mono font-bold"
+              placeholder="0.00"
+            />
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <button type="button" class="btn btn-xs btn-outline-secondary" (click)="setProcessAmountFraction(1.0)">100% Full (${{ selectedRefund()!.amount.toFixed(2) }})</button>
+            <button type="button" class="btn btn-xs btn-outline-secondary" (click)="setProcessAmountFraction(0.75)">75% (${{ (selectedRefund()!.amount * 0.75).toFixed(2) }})</button>
+            <button type="button" class="btn btn-xs btn-outline-secondary" (click)="setProcessAmountFraction(0.50)">50% (${{ (selectedRefund()!.amount * 0.50).toFixed(2) }})</button>
+            <button type="button" class="btn btn-xs btn-outline-secondary" (click)="setProcessAmountFraction(0.25)">25% (${{ (selectedRefund()!.amount * 0.25).toFixed(2) }})</button>
+          </div>
+          <small class="form-text text-muted mt-1">Select a quick percentage or enter any custom partial amount.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Administrator Audit Notes (Optional)</label>
+          <textarea
+            [(ngModel)]="processNotes"
+            rows="3"
+            class="form-control"
+            placeholder="Reason for approval, investigation notes..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showProcessModal.set(false)" [disabled]="isProcessing()">
+          Cancel
+        </button>
+        <button class="btn btn-success" (click)="submitProcessRefund()" [disabled]="isProcessing() || processAmount <= 0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" [class.spin]="isProcessing()">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          <span>{{ isProcessing() ? 'Executing Stripe Refund...' : 'Confirm & Refund via Stripe' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- DECLINE REFUND MODAL -->
+@if (showRejectModal() && selectedRefund()) {
+  <div class="modal-backdrop" (click)="showRejectModal.set(false)">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Decline Refund Request</h3>
+          <p class="modal-subtitle">Reject the refund claim and send notification to customer</p>
+        </div>
+        <button class="btn-close" (click)="showRejectModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-muted text-sm mb-3">
+          Please provide a clear reason for declining this refund request. This explanation will be logged and communicated to the customer.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label font-bold">Decline Reason *</label>
+          <textarea
+            [(ngModel)]="rejectReason"
+            rows="4"
+            class="form-control"
+            placeholder="e.g. Service was successfully verified as completed according to terms of service..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showRejectModal.set(false)" [disabled]="isProcessing()">
+          Cancel
+        </button>
+        <button class="btn btn-danger" (click)="submitRejectRefund()" [disabled]="isProcessing() || !rejectReason.trim()">
+          <span>{{ isProcessing() ? 'Declining...' : 'Decline Refund' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- DIRECT STRIPE REFUND MODAL -->
+@if (showDirectRefundModal()) {
+  <div class="modal-backdrop" (click)="showDirectRefundModal.set(false)">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Direct Stripe Refund</h3>
+          <p class="modal-subtitle">Issue an immediate reversal for any PaymentIntent ID</p>
+        </div>
+        <button class="btn-close" (click)="showDirectRefundModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label class="form-label font-bold">Stripe Payment Intent ID *</label>
+          <input
+            type="text"
+            [(ngModel)]="directPaymentIntentId"
+            class="form-control font-mono"
+            placeholder="pi_3MtwBwLkdIwHu7ix28a3tqPa"
+          />
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label font-bold">Refund Amount ($ USD) *</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0.50"
+            [(ngModel)]="directAmount"
+            class="form-control"
+            placeholder="0.00"
+          />
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Linked Appointment ID (Optional)</label>
+          <input
+            type="text"
+            [(ngModel)]="directAppointmentId"
+            class="form-control font-mono"
+            placeholder="UUID if linked to an appointment"
+          />
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Reason</label>
+          <input
+            type="text"
+            [(ngModel)]="directReason"
+            class="form-control"
+            placeholder="Reason for refund"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Administrator Notes</label>
+          <textarea
+            [(ngModel)]="directNotes"
+            rows="2"
+            class="form-control"
+            placeholder="Internal notes..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showDirectRefundModal.set(false)" [disabled]="isProcessing()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" (click)="submitDirectRefund()" [disabled]="isProcessing() || !directPaymentIntentId.trim() || directAmount <= 0">
+          <span>{{ isProcessing() ? 'Processing...' : 'Execute Immediate Refund' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- DETAIL VIEW MODAL -->
+@if (showDetailModal() && selectedRefund()) {
+  <div class="modal-backdrop" (click)="showDetailModal.set(false)">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Refund Request Record</h3>
+        <button class="btn-close" (click)="showDetailModal.set(false)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="info-callout">
+          <div class="callout-row">
+            <span class="text-muted">Record ID:</span>
+            <span class="font-mono text-xs">{{ selectedRefund()!.id }}</span>
+          </div>
+          <div class="callout-row">
+            <span class="text-muted">Status:</span>
+            <span class="badge" [ngClass]="getStatusClass(selectedRefund()!.status)">{{ selectedRefund()!.status }}</span>
+          </div>
+          <div class="callout-row">
+            <span class="text-muted">Amount:</span>
+            <strong class="text-lg">${{ selectedRefund()!.amount.toFixed(2) }} {{ selectedRefund()!.currency }}</strong>
+          </div>
+          <div class="callout-row">
+            <span class="text-muted">Payment Intent:</span>
+            <a [href]="getStripeDashboardUrl(selectedRefund()!.payment_intent_id)" target="_blank" rel="noopener noreferrer" class="font-mono text-xs text-primary d-inline-flex align-items-center gap-1" title="Open in Stripe Dashboard">
+              <span>{{ selectedRefund()!.payment_intent_id }}</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          </div>
+          @if (selectedRefund()!.stripe_refund_id) {
+            <div class="callout-row">
+              <span class="text-muted">Stripe Refund ID:</span>
+              <span class="font-mono text-xs text-success font-bold">{{ selectedRefund()!.stripe_refund_id }}</span>
+            </div>
+          }
+          <div class="callout-row">
+            <span class="text-muted">Customer:</span>
+            <span>{{ getRequesterName(selectedRefund()!) }} ({{ selectedRefund()!.user?.email }})</span>
+          </div>
+          <div class="callout-row">
+            <span class="text-muted">Reason:</span>
+            <span>{{ selectedRefund()!.reason }}</span>
+          </div>
+          @if (selectedRefund()!.admin_notes) {
+            <div class="callout-row">
+              <span class="text-muted">Admin Notes:</span>
+              <span>{{ selectedRefund()!.admin_notes }}</span>
+            </div>
+          }
+          <div class="callout-row">
+            <span class="text-muted">Submitted At:</span>
+            <span>{{ selectedRefund()!.created_at | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showDetailModal.set(false)">Close</button>
+      </div>
+    </div>
+  </div>
+}
+

@@ -406,6 +406,11 @@
                       <span class="badge badge-sm" [ngClass]="user.checkrStatus === 'clear' ? 'badge-success' : 'badge-warning'">
                         Checkr: {{ user.checkrStatus }}
                       </span>
+                      @if (user.isInCheckrTrial) {
+                        <span class="badge badge-sm badge-info" title="30-day trial active from Checkr clearance">
+                          Trial: {{ user.checkrTrialDaysLeft }}d left
+                        </span>
+                      }
                     }
                   </div>
                 </td>

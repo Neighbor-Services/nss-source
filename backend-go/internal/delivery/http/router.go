@@ -66,8 +66,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 	r.GET("/api/v1/media/*filepath", mediaHandler)
 	r.HEAD("/api/v1/media/*filepath", mediaHandler)
 
-	// GoStore Webhooks
+	// GoStore Webhooks & Secure Client Media Upload
 	if deps.GoStoreHandler != nil {
+		r.POST("/api/v1/media/upload", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.GoStoreHandler.UploadMedia)
+		r.POST("/api/v1/media/upload/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.GoStoreHandler.UploadMedia)
+		r.POST("/media/upload", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.GoStoreHandler.UploadMedia)
+		r.POST("/media/upload/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.GoStoreHandler.UploadMedia)
 		r.POST("/api/v1/webhooks/gostore", deps.GoStoreHandler.HandleWebhook)
 		r.POST("/api/v1/webhooks/gostore/", deps.GoStoreHandler.HandleWebhook)
 		r.POST("/webhooks/gostore", deps.GoStoreHandler.HandleWebhook)
@@ -277,6 +281,14 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			srv.PATCH("/requests/image", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestImage)
 			srv.POST("/requests/:id/upload_image/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestImage)
 			srv.POST("/requests/:id/upload_image", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestImage)
+			srv.PATCH("/requests/videos/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
+			srv.PATCH("/requests/videos", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
+			srv.POST("/requests/:id/upload_videos/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
+			srv.POST("/requests/:id/upload_videos", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
+			srv.PATCH("/requests/video/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
+			srv.PATCH("/requests/video", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
+			srv.POST("/requests/:id/upload_video/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
+			srv.POST("/requests/:id/upload_video", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.UploadRequestVideo)
 
 			// Proposals ViewSet
 			srv.GET("/proposals/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.ServiceHandler.GetProposals)
@@ -434,6 +446,12 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			pay.POST("/tip/", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.PaymentRateLimit(), deps.PaymentHandler.TipProvider)
 			pay.POST("/tip", middleware.AuthRequired(deps.Config, deps.UserRepo), middleware.PaymentRateLimit(), deps.PaymentHandler.TipProvider)
 
+			// Refund Requests
+			pay.POST("/refunds/request/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.RequestRefund)
+			pay.POST("/refunds/request", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.RequestRefund)
+			pay.GET("/refunds/me/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetMyRefundRequests)
+			pay.GET("/refunds/me", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetMyRefundRequests)
+
 			// Webhooks
 			pay.POST("/webhook/", deps.PaymentHandler.StripeWebhook)
 			pay.POST("/webhook/stripe/", deps.PaymentHandler.StripeWebhook)
@@ -466,6 +484,10 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 		v1.POST("/customer/fund-appointment/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.FundAppointment)
 		v1.POST("/customer/fund-background-check/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.FundBackgroundCheck)
 		v1.POST("/customer/payment-sheet/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.PaymentSheet)
+		v1.POST("/refunds/request/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.RequestRefund)
+		v1.POST("/refunds/request", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.RequestRefund)
+		v1.GET("/refunds/me/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetMyRefundRequests)
+		v1.GET("/refunds/me", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetMyRefundRequests)
 
 		// ─── CONSULTATIONS ───────────────────────────────────────────────────
 		cons := v1.Group("/consultations")
@@ -707,6 +729,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			admin.GET("/export/payouts/", deps.AdminHandler.ExportPayouts)
 			admin.GET("/export/disputes", deps.AdminHandler.ExportDisputes)
 			admin.GET("/export/disputes/", deps.AdminHandler.ExportDisputes)
+			admin.GET("/export/refunds", deps.AdminHandler.ExportRefunds)
+			admin.GET("/export/refunds/", deps.AdminHandler.ExportRefunds)
 			admin.GET("/export/appointments", deps.AdminHandler.ExportAppointments)
 			admin.GET("/export/appointments/", deps.AdminHandler.ExportAppointments)
 			admin.GET("/export/verifications", deps.AdminHandler.ExportVerifications)
@@ -745,6 +769,20 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			// Dispute Refund Execution
 			admin.POST("/disputes/:id/refund", deps.AdminHandler.ExecuteDisputeRefund)
 			admin.POST("/disputes/:id/refund/", deps.AdminHandler.ExecuteDisputeRefund)
+
+			// Stripe Refunds Management
+			admin.GET("/refunds", deps.AdminHandler.ListRefundRequests)
+			admin.GET("/refunds/", deps.AdminHandler.ListRefundRequests)
+			admin.GET("/refunds/:id", deps.AdminHandler.GetRefundRequest)
+			admin.GET("/refunds/:id/", deps.AdminHandler.GetRefundRequest)
+			admin.POST("/refunds/:id/process", deps.AdminHandler.ProcessRefund)
+			admin.POST("/refunds/:id/process/", deps.AdminHandler.ProcessRefund)
+			admin.POST("/refunds/:id/reject", deps.AdminHandler.RejectRefund)
+			admin.POST("/refunds/:id/reject/", deps.AdminHandler.RejectRefund)
+			admin.POST("/refunds/direct", deps.AdminHandler.ProcessDirectRefund)
+			admin.POST("/refunds/direct/", deps.AdminHandler.ProcessDirectRefund)
+			admin.GET("/export/refunds", deps.AdminHandler.ExportRefunds)
+			admin.GET("/export/refunds/", deps.AdminHandler.ExportRefunds)
 
 
 			// TOTP 2FA Engine

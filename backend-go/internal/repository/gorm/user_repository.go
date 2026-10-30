@@ -153,9 +153,9 @@ func (r *profileRepository) List(ctx context.Context, params repository.ProfileF
 
 	// Providers without an active paid subscription AND cleared Checkr verification must be invisible across AI match, popular listings, and provider searches.
 	if params.UserType == "PROVIDER" || params.Popular {
-		query = query.Where("accounts_profile.is_identity_verified = true AND (accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))")
+		query = query.Where("accounts_profile.is_identity_verified = true AND (accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())) OR EXISTS (SELECT 1 FROM moderation_backgroundcheck mbc WHERE mbc.provider_id = accounts_profile.user_id AND mbc.status = 'clear' AND mbc.cleared_at IS NOT NULL AND mbc.cleared_at > NOW() - INTERVAL '30 days'))")
 	} else if params.UserType == "" {
-		query = query.Where("(accounts_profile.user_type != 'PROVIDER' OR (accounts_profile.is_identity_verified = true AND (accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())))))")
+		query = query.Where("(accounts_profile.user_type != 'PROVIDER' OR (accounts_profile.is_identity_verified = true AND (accounts_profile.subscription_tier IN ('SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'PRO') OR EXISTS (SELECT 1 FROM payments_subscription ps WHERE ps.user_id = accounts_profile.user_id AND ps.is_active = true AND (ps.next_payment IS NULL OR ps.next_payment > NOW())) OR EXISTS (SELECT 1 FROM moderation_backgroundcheck mbc WHERE mbc.provider_id = accounts_profile.user_id AND mbc.status = 'clear' AND mbc.cleared_at IS NOT NULL AND mbc.cleared_at > NOW() - INTERVAL '30 days'))))")
 	}
 	if params.Search != "" {
 		s := "%" + params.Search + "%"

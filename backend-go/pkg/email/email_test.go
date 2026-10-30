@@ -59,6 +59,14 @@ func TestEmailTemplates(t *testing.T) {
 	if err := email.SendDisputeResolvedEmail(cfg, "test@example.com", "John", "apt-123", "Refund granted", "REFUNDED"); err != nil {
 		t.Fatalf("SendDisputeResolvedEmail returned error: %v", err)
 	}
+
+	if err := email.SendRefundRequestedEmail(cfg, "test@example.com", "John", "Plumbing Repair", 75.0, "Service cancelled"); err != nil {
+		t.Fatalf("SendRefundRequestedEmail returned error: %v", err)
+	}
+
+	if err := email.SendRefundProcessedEmail(cfg, "test@example.com", "John", "Plumbing Repair", 75.0, "re_12345"); err != nil {
+		t.Fatalf("SendRefundProcessedEmail returned error: %v", err)
+	}
 }
 
 func TestMaskEmail(t *testing.T) {

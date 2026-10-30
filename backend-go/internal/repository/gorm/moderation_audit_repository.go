@@ -119,6 +119,7 @@ func (r *bgCheckRepository) GetLatestByProvider(ctx context.Context, providerID 
 	if err != nil {
 		return nil, err
 	}
+	check.ComputeTrialFields()
 	return &check, nil
 }
 
@@ -129,6 +130,11 @@ func (r *bgCheckRepository) List(ctx context.Context, providerID *uuid.UUID) ([]
 		query = query.Where("provider_id = ?", *providerID)
 	}
 	err := query.Find(&list).Error
+	if err == nil {
+		for i := range list {
+			list[i].ComputeTrialFields()
+		}
+	}
 	return list, err
 }
 

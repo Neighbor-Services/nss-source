@@ -143,6 +143,7 @@ type AdminUseCase interface {
 	ExportUsersCSV(ctx context.Context, adminID uuid.UUID, filter repository.AdminUserFilter) ([]byte, error)
 	ExportPayoutsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error)
 	ExportDisputesCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error)
+	ExportRefundsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error)
 
 	// TOTP 2FA Engine
 	Setup2FA(ctx context.Context, adminID uuid.UUID) (*entity.TOTPSetupResponse, error)
@@ -207,6 +208,13 @@ type AdminUseCase interface {
 
 	// Dispute Refund Execution
 	ExecuteDisputeRefund(ctx context.Context, adminID, disputeID uuid.UUID, amount float64, reason string) error
+
+	// Stripe Refunds Management
+	ListRefundRequests(ctx context.Context, adminID uuid.UUID, status string, limit, offset int) ([]entity.RefundRequest, int64, error)
+	GetRefundRequest(ctx context.Context, adminID, refundID uuid.UUID) (*entity.RefundRequest, error)
+	ProcessRefund(ctx context.Context, adminID, refundID uuid.UUID, amount float64, notes string) (*entity.RefundRequest, error)
+	RejectRefund(ctx context.Context, adminID, refundID uuid.UUID, reason string) (*entity.RefundRequest, error)
+	ProcessDirectRefund(ctx context.Context, adminID uuid.UUID, paymentIntentID string, amount float64, reason, notes string, appointmentID *uuid.UUID) (*entity.RefundRequest, error)
 
 	// Additional Data Exports
 	ExportVerificationsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error)

@@ -13,6 +13,9 @@ export interface AdminUser {
   subscriptionInterval?: string;
   preferredPaymentMode?: string;
   checkrStatus: string;
+  isInCheckrTrial?: boolean;
+  checkrTrialDaysLeft?: number;
+  checkrTrialEndsAt?: string;
   bio?: string;
   city?: string;
   state?: string;

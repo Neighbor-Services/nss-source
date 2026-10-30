@@ -481,13 +481,23 @@ func (h *ModerationHandler) GetMyBackgroundCheck(c *gin.Context) {
 
 	check, err := h.moderationUC.GetMyBackgroundCheck(c.Request.Context(), userUUID)
 	if err != nil || check == nil {
-		response.JSON(c, http.StatusOK, gin.H{"has_check": false, "background_check": nil})
+		response.JSON(c, http.StatusOK, gin.H{
+			"has_check":      false,
+			"background_check": nil,
+			"is_in_trial":    false,
+			"trial_days_left": 0,
+			"trial_ends_at":  nil,
+		})
 		return
 	}
 
+	check.ComputeTrialFields()
 	response.JSON(c, http.StatusOK, gin.H{
- "has_check":        true,
- "background_check": check,
+		"has_check":        true,
+		"background_check": check,
+		"is_in_trial":      check.IsInTrial,
+		"trial_days_left":  check.TrialDaysLeft,
+		"trial_ends_at":    check.TrialEndsAt,
 	})
 }
 

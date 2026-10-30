@@ -322,3 +322,106 @@ func (r *ledgerRepository) GetPlatformFinancialSummary(ctx context.Context) (map
 	}
 	return summary, nil
 }
+
+type refundRequestRepository struct {
+	db *gorm.DB
+}
+
+func NewRefundRequestRepository(db *gorm.DB) repository.RefundRequestRepository {
+	return &refundRequestRepository{db: db}
+}
+
+func (r *refundRequestRepository) Create(ctx context.Context, req *entity.RefundRequest) error {
+	return r.db.WithContext(ctx).Create(req).Error
+}
+
+func (r *refundRequestRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.RefundRequest, error) {
+	var req entity.RefundRequest
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Preload("User.Profile").
+		Preload("Appointment").
+		Preload("Admin").
+		First(&req, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &req, nil
+}
+
+func (r *refundRequestRepository) GetByPaymentIntentID(ctx context.Context, piID string) (*entity.RefundRequest, error) {
+	var req entity.RefundRequest
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Preload("User.Profile").
+		Preload("Appointment").
+		Preload("Admin").
+		Order("created_at DESC").
+		First(&req, "payment_intent_id = ?", piID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &req, nil
+}
+
+func (r *refundRequestRepository) GetByAppointmentID(ctx context.Context, appointmentID uuid.UUID) (*entity.RefundRequest, error) {
+	var req entity.RefundRequest
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Preload("User.Profile").
+		Preload("Appointment").
+		Preload("Admin").
+		Order("created_at DESC").
+		First(&req, "appointment_id = ?", appointmentID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &req, nil
+}
+
+func (r *refundRequestRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]entity.RefundRequest, error) {
+	var list []entity.RefundRequest
+	err := r.db.WithContext(ctx).
+		Preload("Appointment").
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Find(&list).Error
+	return list, err
+}
+
+func (r *refundRequestRepository) List(ctx context.Context, status string, limit, offset int) ([]entity.RefundRequest, int64, error) {
+	var list []entity.RefundRequest
+	var total int64
+
+	q := r.db.WithContext(ctx).Model(&entity.RefundRequest{})
+	if status != "" {
+		q = q.Where("status = ?", status)
+	}
+
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	err := q.Preload("User").
+		Preload("User.Profile").
+		Preload("Appointment").
+		Preload("Admin").
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&list).Error
+
+	return list, total, err
+}
+
+func (r *refundRequestRepository) Update(ctx context.Context, req *entity.RefundRequest) error {
+	return r.db.WithContext(ctx).Save(req).Error
+}
+

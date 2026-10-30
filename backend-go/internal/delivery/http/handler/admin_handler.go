@@ -1174,6 +1174,20 @@ func (h *AdminHandler) ExportDisputes(c *gin.Context) {
 	c.Data(http.StatusOK, "text/csv", data)
 }
 
+func (h *AdminHandler) ExportRefunds(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	status := c.Query("status")
+
+	data, err := h.adminUC.ExportRefundsCSV(c.Request.Context(), adminID, status)
+	if err != nil {
+		response.InternalError(c, "Failed to export refunds: "+err.Error())
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename=refunds_export.csv")
+	c.Data(http.StatusOK, "text/csv", data)
+}
+
 // ─── TOTP 2FA ENGINE ────────────────────────────────────────────────────────
 
 func (h *AdminHandler) Setup2FA(c *gin.Context) {
@@ -3088,3 +3102,146 @@ func (h *AdminHandler) ListLedgerEntries(c *gin.Context) {
 }
 
 
+
+
+// ─── STRIPE REFUNDS MANAGEMENT ──────────────────────────────────────────────
+
+func (h *AdminHandler) ListRefundRequests(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	status := c.Query("status")
+	limit, offset, page, pageSize := parsePagination(c)
+
+	list, total, err := h.adminUC.ListRefundRequests(c.Request.Context(), adminID, status, limit, offset)
+	if err != nil {
+		response.InternalError(c, "Failed to list refund requests: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"results":   list,
+		"count":     total,
+		"page":      page,
+		"page_size": pageSize,
+	})
+}
+
+func (h *AdminHandler) GetRefundRequest(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	idStr := c.Param("id")
+	refundID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid refund request ID")
+		return
+	}
+
+	refReq, err := h.adminUC.GetRefundRequest(c.Request.Context(), adminID, refundID)
+	if err != nil {
+		response.NotFound(c, "Refund request not found: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, refReq)
+}
+
+type ProcessRefundRequestInput struct {
+	Amount float64 `json:"amount"`
+	Notes  string  `json:"notes"`
+}
+
+func (h *AdminHandler) ProcessRefund(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	idStr := c.Param("id")
+	refundID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid refund request ID")
+		return
+	}
+
+	var req ProcessRefundRequestInput
+	_ = c.ShouldBindJSON(&req)
+
+	result, err := h.adminUC.ProcessRefund(c.Request.Context(), adminID, refundID, req.Amount, req.Notes)
+	if err != nil {
+		response.BadRequest(c, "Failed to process refund: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Refund successfully processed and issued back to card via Stripe",
+		"refund":  result,
+	})
+}
+
+type RejectRefundRequestInput struct {
+	Reason string `json:"reason" binding:"required"`
+}
+
+func (h *AdminHandler) RejectRefund(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	idStr := c.Param("id")
+	refundID, err := uuid.Parse(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid refund request ID")
+		return
+	}
+
+	var req RejectRefundRequestInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Rejection reason is required")
+		return
+	}
+
+	result, err := h.adminUC.RejectRefund(c.Request.Context(), adminID, refundID, req.Reason)
+	if err != nil {
+		response.BadRequest(c, "Failed to reject refund: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Refund request rejected",
+		"refund":  result,
+	})
+}
+
+type ProcessDirectRefundInput struct {
+	PaymentIntentID string  `json:"payment_intent_id" binding:"required"`
+	AppointmentID   string  `json:"appointment_id"`
+	Amount          float64 `json:"amount" binding:"required"`
+	Reason          string  `json:"reason"`
+	Notes           string  `json:"notes"`
+}
+
+func (h *AdminHandler) ProcessDirectRefund(c *gin.Context) {
+	adminID := h.getAdminID(c)
+
+	var req ProcessDirectRefundInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "payment_intent_id and amount are required")
+		return
+	}
+
+	var aptUUID *uuid.UUID
+	if req.AppointmentID != "" {
+		if parsed, err := uuid.Parse(req.AppointmentID); err == nil {
+			aptUUID = &parsed
+		}
+	}
+
+	if req.Reason == "" {
+		req.Reason = "Direct administrator refund via portal"
+	}
+
+	result, err := h.adminUC.ProcessDirectRefund(c.Request.Context(), adminID, req.PaymentIntentID, req.Amount, req.Reason, req.Notes, aptUUID)
+	if err != nil {
+		response.BadRequest(c, "Failed to execute direct refund: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Stripe refund executed successfully",
+		"refund":  result,
+	})
+}

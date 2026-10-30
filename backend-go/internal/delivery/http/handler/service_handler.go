@@ -2,8 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -169,6 +172,8 @@ type CreateRequestPayload struct {
 	ServiceType          string      `json:"service_type"`
 	WithImage            *bool       `json:"with_image"`
 	Image                string      `json:"image"`
+	Video                string      `json:"video"`
+	Videos               interface{} `json:"videos"`
 	Longitude            interface{} `json:"longitude"`
 	Latitude             interface{} `json:"latitude"`
 	ScheduledTime        interface{} `json:"scheduled_time"`
@@ -313,6 +318,17 @@ func (h *ServiceHandler) CreateRequest(c *gin.Context) {
 		}
 	}
 
+	videoURL := strings.TrimSpace(payload.Video)
+	if videoURL == "" && payload.Videos != nil {
+		if s, ok := payload.Videos.(string); ok {
+			videoURL = strings.TrimSpace(s)
+		} else if list, ok := payload.Videos.([]interface{}); ok && len(list) > 0 {
+			if first, ok := list[0].(string); ok {
+				videoURL = strings.TrimSpace(first)
+			}
+		}
+	}
+
 	req := entity.ServiceRequest{
 		UserID:               userUUID,
 		CatalogServiceID:     catID,
@@ -325,6 +341,7 @@ func (h *ServiceHandler) CreateRequest(c *gin.Context) {
 		ServiceType:          srvType,
 		WithImage:            withImg,
 		Image:                payload.Image,
+		Video:                videoURL,
 		Longitude:            parseFloatField(payload.Longitude),
 		Latitude:             parseFloatField(payload.Latitude),
 		ScheduledTime:        parseTimeField(payload.ScheduledTime),
@@ -547,6 +564,108 @@ func (h *ServiceHandler) UploadRequestImage(c *gin.Context) {
 	if err != nil {
 		slog.Warn("UploadRequestImage: usecase error",
  "error", err.Error(), "request_id", reqUUID, "user_id", userUUID)
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, updatedReq)
+}
+
+func (h *ServiceHandler) UploadRequestVideo(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		slog.Warn("UploadRequestVideo: invalid or missing userID", "userID", userIDStr)
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	var reqUUID uuid.UUID
+	var videoURL string
+
+	// Path A: multipart file upload
+	file, fileErr := c.FormFile("video")
+	if fileErr == nil {
+		var reqIDStr string
+		if dataStr := c.PostForm("data"); dataStr != "" {
+			var d struct {
+				ID string `json:"id"`
+			}
+			if jsonErr := json.Unmarshal([]byte(dataStr), &d); jsonErr == nil {
+				reqIDStr = d.ID
+			}
+		}
+		if reqIDStr == "" {
+			reqIDStr = c.PostForm("id")
+		}
+		if reqIDStr == "" {
+			reqIDStr = c.Param("id")
+		}
+
+		parsed, parseErr := uuid.Parse(reqIDStr)
+		if parseErr != nil {
+			slog.Warn("UploadRequestVideo: missing or invalid request ID in multipart form",
+				"raw_id", reqIDStr, "user_id", userUUID)
+			response.BadRequest(c, "Request ID required")
+			return
+		}
+		reqUUID = parsed
+
+		// Allow up to 100MB video file (video duration validated to 30s on client)
+		relPath, saveErr := media.ValidateAndSaveUploadedFile(file, "request_videos", 100*1024*1024)
+		if saveErr != nil {
+			slog.Warn("UploadRequestVideo: file validation/save failed",
+				"error", saveErr.Error(), "request_id", reqUUID)
+			response.BadRequest(c, saveErr.Error())
+			return
+		}
+		gostoreURL := os.Getenv("GOSTORE_URL")
+		if gostoreURL == "" {
+			gostoreURL = "https://file.proleadsolutions.co"
+		}
+		bucket := os.Getenv("GOSTORE_BUCKET")
+		if bucket == "" {
+			bucket = "neighborservice"
+		}
+		videoURL = fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
+			strings.TrimRight(gostoreURL, "/"),
+			url.PathEscape(bucket),
+			url.PathEscape(relPath),
+		)
+
+	} else {
+		// Path B: JSON body
+		var body struct {
+			ID    string `json:"id"`
+			Video string `json:"video"`
+		}
+		if bindErr := c.ShouldBindJSON(&body); bindErr != nil {
+			response.BadRequest(c, "Request ID required")
+			return
+		}
+
+		parsed, parseErr := uuid.Parse(body.ID)
+		if parseErr != nil {
+			if paramID := c.Param("id"); paramID != "" {
+				parsed, parseErr = uuid.Parse(paramID)
+			}
+			if parseErr != nil {
+				response.BadRequest(c, "Request ID required")
+				return
+			}
+		}
+		reqUUID = parsed
+
+		if body.Video == "" {
+			response.BadRequest(c, "No video provided")
+			return
+		}
+		videoURL = body.Video
+	}
+
+	updatedReq, err := h.serviceUC.UploadRequestVideo(c.Request.Context(), userUUID, reqUUID, videoURL)
+	if err != nil {
+		slog.Warn("UploadRequestVideo: usecase error", "error", err.Error(), "request_id", reqUUID)
 		response.BadRequest(c, err.Error())
 		return
 	}

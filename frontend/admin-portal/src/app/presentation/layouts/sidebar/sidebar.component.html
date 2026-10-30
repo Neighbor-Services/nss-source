@@ -167,6 +167,16 @@
       }
     </a>
 
+    <a routerLink="/admin/refunds" routerLinkActive="active" class="nav-link" [attr.title]="layoutService.isDesktopCollapsed() ? 'Stripe Refunds' : null">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+      @if (!layoutService.isDesktopCollapsed()) {
+        <span class="nav-label">Stripe Refunds</span>
+      }
+    </a>
+
     <a routerLink="/admin/promos" routerLinkActive="active" class="nav-link" [attr.title]="layoutService.isDesktopCollapsed() ? 'Promo Codes & Coupons' : null">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>

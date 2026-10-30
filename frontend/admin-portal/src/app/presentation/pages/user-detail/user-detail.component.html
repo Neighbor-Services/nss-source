@@ -243,6 +243,22 @@
                 </span>
               </div>
             </div>
+
+            @if (user()!.isInCheckrTrial) {
+              <div class="kpi-metric-chip">
+                <div class="kpi-circle-widget green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <div class="kpi-chip-text">
+                  <span class="chip-label">TRIAL ACCESS</span>
+                  <span class="badge badge-success">
+                    {{ user()!.checkrTrialDaysLeft }}D LEFT
+                  </span>
+                </div>
+              </div>
+            }
           }
         </div>
       </div>
@@ -535,6 +551,30 @@
                   }
                 </div>
               </div>
+
+              @if (isProvider() && user()!.isInCheckrTrial) {
+                <div class="comp-status-card verified" style="border-left: 3px solid #10b981; margin-top: 12px;">
+                  <div class="comp-card-head">
+                    <div class="comp-icon-box icon-green">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4>Checkr 30-Day Free Trial</h4>
+                      <span class="comp-sub">Complimentary full platform access granted on clearance</span>
+                    </div>
+                  </div>
+                  <div class="comp-card-footer">
+                    <span class="badge badge-success">
+                      {{ user()!.checkrTrialDaysLeft }} DAYS REMAINING
+                    </span>
+                    <span class="text-muted text-xs ml-2" style="font-size: 11px;">
+                      Ends {{ user()!.checkrTrialEndsAt | date:'mediumDate' }}
+                    </span>
+                  </div>
+                </div>
+              }
             </div>
 
             <div class="compliance-advisory-box mt-4">
