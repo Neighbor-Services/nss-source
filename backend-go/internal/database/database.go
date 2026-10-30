@@ -263,6 +263,9 @@ func ensureExplicitTables(db *gorm.DB) {
 		)`,
 		`ALTER TABLE payments_refundrequest ADD COLUMN IF NOT EXISTS notes TEXT`,
 		`ALTER TABLE payments_refundrequest ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ`,
+		`ALTER TABLE payments_subscription ADD COLUMN IF NOT EXISTS is_trial BOOLEAN DEFAULT FALSE`,
+		`ALTER TABLE payments_subscription ADD COLUMN IF NOT EXISTS has_used_trial BOOLEAN DEFAULT FALSE`,
+		`ALTER TABLE payments_subscription ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`,
 		`CREATE INDEX IF NOT EXISTS idx_payments_refundrequest_user ON payments_refundrequest (user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_payments_refundrequest_status ON payments_refundrequest (status)`,
 		`CREATE INDEX IF NOT EXISTS idx_payments_refundrequest_pi ON payments_refundrequest (payment_intent_id)`,
@@ -406,6 +409,7 @@ func createCompositeIndexes(db *gorm.DB) {
  "CREATE INDEX IF NOT EXISTS idx_wallettx_wallet_created ON payments_wallettransaction (wallet_id, created_at DESC)",
  "CREATE INDEX IF NOT EXISTS idx_payoutrequest_status_created ON payments_payoutrequest (status, created_at DESC)",
  "CREATE INDEX IF NOT EXISTS idx_subscription_user_active ON payments_subscription (user_id, is_active)",
+		"CREATE INDEX IF NOT EXISTS idx_subscription_trial_active ON payments_subscription (is_trial, is_active)",
 
 		// Auth & AI Search
  "CREATE INDEX IF NOT EXISTS idx_otp_email_created ON accounts_otpverification (email, created_at DESC)",
