@@ -936,6 +936,9 @@ type Subscription struct {
 	NextPayment        *time.Time `json:"next_payment,omitempty"`
 	IsActive           bool       `gorm:"default:false" json:"is_active"`
 	IsSandbox          bool       `gorm:"default:false" json:"is_sandbox"`
+	IsTrial            bool       `gorm:"default:false" json:"is_trial"`
+	HasUsedTrial       bool       `gorm:"default:false" json:"has_used_trial"`
+	TrialEndsAt        *time.Time `json:"trial_ends_at,omitempty"`
 	CreatedAt          time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt          time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 

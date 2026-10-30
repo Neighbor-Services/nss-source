@@ -70,7 +70,59 @@ func (w *SubscriptionExpiryWorker) Stop() {
 
 func (w *SubscriptionExpiryWorker) processSubscriptions() {
 	now := time.Now()
+	in7Days := now.Add(7 * 24 * time.Hour)
 	in3Days := now.Add(3 * 24 * time.Hour)
+
+	// 0. Send 7-day reminder for free trials
+	var trials7d []entity.Subscription
+	_ = w.db.Preload("User").Preload("Plan").
+		Where("is_active = ? AND is_trial = ? AND next_payment IS NOT NULL AND next_payment <= ? AND next_payment > ?", true, true, in7Days, in3Days).
+		Find(&trials7d).Error
+
+	for _, sub := range trials7d {
+		if sub.User == nil {
+			continue
+		}
+		refID := fmt.Sprintf("trial_7d_%s", sub.ID.String())
+		var count int64
+		w.db.Model(&entity.EmailCampaignLog{}).
+			Where("campaign_type = ? AND reference_id = ?", "TRIAL_7D_REMINDER", refID).
+			Count(&count)
+		if count > 0 {
+			continue
+		}
+
+		expiryStr := ""
+		if sub.NextPayment != nil {
+			expiryStr = sub.NextPayment.Format("Jan 02, 2006")
+		}
+		tTitle := "Free Trial: 7 Days Remaining ⏳"
+		tMsg := fmt.Sprintf("Your 30-Day Free Pro Trial ends on %s. Explore customer requests and choose a plan to keep quoting jobs uninterrupted.", expiryStr)
+
+		_ = w.db.Create(&entity.Notification{
+			ID:               uuid.New(),
+			UserID:           sub.UserID,
+			NotificationType: "TRIAL_EXPIRY_REMINDER",
+			Title:            tTitle,
+			Message:          tMsg,
+			Data:             entity.JSONMap{"subscription_id": sub.ID.String(), "days_remaining": 7},
+			CreatedAt:        time.Now(),
+		})
+
+		w.sendPush(sub.UserID, tTitle, tMsg, map[string]string{
+			"notification_type": "trial_expiry_reminder",
+			"subscription_id":   sub.ID.String(),
+		})
+
+		w.db.Create(&entity.EmailCampaignLog{
+			ID:           uuid.New(),
+			UserID:       sub.UserID,
+			TargetEmail:  sub.User.Email,
+			CampaignType: "TRIAL_7D_REMINDER",
+			ReferenceID:  &refID,
+			SentAt:       time.Now(),
+		})
+	}
 
 	// 1. Send renewal reminders for subscriptions expiring in ≤ 3 days
 	var expiringSoon []entity.Subscription
@@ -104,24 +156,29 @@ func (w *SubscriptionExpiryWorker) processSubscriptions() {
 			expiryStr = sub.NextPayment.Format("Jan 02, 2006")
 		}
 
+		title := "Subscription Expiring Soon ⏳"
 		msg := fmt.Sprintf("Your '%s' plan expires on %s. Renew now to keep your benefits!", planName, expiryStr)
+		if sub.IsTrial {
+			title = "Free Trial Ending in 3 Days ⏳"
+			msg = fmt.Sprintf("Your 30-Day Free Trial ends on %s. Pick a plan now to continue quoting customer jobs without disruption.", expiryStr)
+		}
 
 		_ = w.db.Create(&entity.Notification{
 			ID:               uuid.New(),
 			UserID:           sub.UserID,
 			NotificationType: "SUB_EXPIRY_REMINDER",
-			Title: "Subscription Expiring Soon ",
+			Title:            title,
 			Message:          msg,
-			Data:             entity.JSONMap{"subscription_id": sub.ID.String()},
+			Data:             entity.JSONMap{"subscription_id": sub.ID.String(), "is_trial": sub.IsTrial},
 			CreatedAt:        time.Now(),
 		})
 
-		w.sendPush(sub.UserID, "Subscription Expiring Soon ", msg, map[string]string{
- "notification_type": "sub_expiry_reminder",
- "subscription_id":   sub.ID.String(),
+		w.sendPush(sub.UserID, title, msg, map[string]string{
+			"notification_type": "sub_expiry_reminder",
+			"subscription_id":   sub.ID.String(),
 		})
 
-		if isEmailNotificationEnabled(w.db, sub.UserID) {
+		if !sub.IsTrial && isEmailNotificationEnabled(w.db, sub.UserID) {
 			userName := sub.User.Email
 			planN := planName
 			_ = email.SendSubscriptionExpiryReminderEmail(w.emailCfg, sub.User.Email, userName, planN, expiryStr)
@@ -164,24 +221,32 @@ func (w *SubscriptionExpiryWorker) processSubscriptions() {
 			planName = sub.Plan.Name
 		}
 
+		// Reset profile subscription tier to NONE for expired trials/pro
+		w.db.Model(&entity.Profile{}).Where("user_id = ?", sub.UserID).Update("subscription_tier", "NONE")
+
+		title := "Subscription Expired"
 		msg := fmt.Sprintf("Your '%s' plan has expired. Resubscribe to restore premium features.", planName)
+		if sub.IsTrial {
+			title = "Free Trial Ended"
+			msg = "Your 30-Day Free Pro Trial has concluded. Choose an affordable provider plan to restore full Pro access."
+		}
 
 		_ = w.db.Create(&entity.Notification{
 			ID:               uuid.New(),
 			UserID:           sub.UserID,
 			NotificationType: "SUB_EXPIRED",
-			Title: "Subscription Expired",
+			Title:            title,
 			Message:          msg,
-			Data:             entity.JSONMap{"subscription_id": sub.ID.String()},
+			Data:             entity.JSONMap{"subscription_id": sub.ID.String(), "is_trial": sub.IsTrial},
 			CreatedAt:        time.Now(),
 		})
 
-		w.sendPush(sub.UserID, "Subscription Expired", msg, map[string]string{
- "notification_type": "sub_expired",
- "subscription_id":   sub.ID.String(),
+		w.sendPush(sub.UserID, title, msg, map[string]string{
+			"notification_type": "sub_expired",
+			"subscription_id":   sub.ID.String(),
 		})
 
-		if isEmailNotificationEnabled(w.db, sub.UserID) {
+		if !sub.IsTrial && isEmailNotificationEnabled(w.db, sub.UserID) {
 			userName := sub.User.Email
 			planN := planName
 			_ = email.SendSubscriptionExpiredEmail(w.emailCfg, sub.User.Email, userName, planN)

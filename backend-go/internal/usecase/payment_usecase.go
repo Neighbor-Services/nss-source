@@ -48,6 +48,7 @@ type paymentUseCase struct {
 	tokenRepo    repository.DeviceTokenRepository
 	fcmClient    fcm.Client
 	userRepo     repository.UserRepository
+	bgCheckRepo  repository.BackgroundCheckRepository
 	cfg          *config.Config
 }
 
@@ -65,6 +66,7 @@ func NewPaymentUseCase(
 	tokenRepo repository.DeviceTokenRepository,
 	fcmClient fcm.Client,
 	userRepo repository.UserRepository,
+	bgCheckRepo repository.BackgroundCheckRepository,
 	cfg *config.Config,
 ) domainUsecase.PaymentUseCase {
 	return &paymentUseCase{
@@ -81,6 +83,7 @@ func NewPaymentUseCase(
 		tokenRepo:    tokenRepo,
 		fcmClient:    fcmClient,
 		userRepo:     userRepo,
+		bgCheckRepo:  bgCheckRepo,
 		cfg:          cfg,
 	}
 }
@@ -656,7 +659,138 @@ func (u *paymentUseCase) FundBackgroundCheck(ctx context.Context, userID uuid.UU
 }
 
 func (u *paymentUseCase) GetUserSubscription(ctx context.Context, userID uuid.UUID) (*entity.UserSubscription, error) {
-	return u.subRepo.GetByUserID(ctx, userID)
+	sub, err := u.subRepo.GetByUserID(ctx, userID)
+	if err != nil || sub == nil {
+		return nil, err
+	}
+	// Automatically expire trial if trial window has elapsed
+	if sub.IsTrial && sub.TrialEndsAt != nil && time.Now().After(*sub.TrialEndsAt) {
+		sub.IsActive = false
+		_ = u.subRepo.Upsert(ctx, sub)
+		if profile, pErr := u.profileRepo.GetByUserID(ctx, userID); pErr == nil && profile != nil {
+			if strings.EqualFold(profile.SubscriptionTier, "PRO") {
+				profile.SubscriptionTier = "NONE"
+				_ = u.profileRepo.Update(ctx, profile)
+			}
+		}
+	}
+	return sub, nil
+}
+
+func (u *paymentUseCase) StartFreeTrial(ctx context.Context, userID uuid.UUID) (*entity.UserSubscription, error) {
+	sub, _ := u.subRepo.GetByUserID(ctx, userID)
+	now := time.Now().UTC()
+
+	// If user already has an active PAID subscription, do not overwrite it with a trial.
+	if sub != nil && sub.IsActive && !sub.IsTrial && (sub.NextPayment == nil || sub.NextPayment.After(now)) {
+		return sub, nil
+	}
+
+	// Prevent repeat trial redemption
+	if sub != nil && sub.HasUsedTrial {
+		if sub.IsTrial && sub.IsActive && sub.TrialEndsAt != nil && sub.TrialEndsAt.After(now) {
+			// Trial is already active, return current trial
+			return sub, nil
+		}
+		return nil, errors.New("the 30-day free trial has already been redeemed for this account. Please select a provider plan to continue.")
+	}
+
+	if sub == nil {
+		sub = &entity.UserSubscription{
+			ID:     uuid.New(),
+			UserID: userID,
+		}
+	}
+
+	trialEnd := now.Add(30 * 24 * time.Hour)
+	sub.IsActive = true
+	sub.IsTrial = true
+	sub.HasUsedTrial = true
+	sub.TrialEndsAt = &trialEnd
+	sub.NextPayment = &trialEnd
+	if sub.StoreTransactionID == "" {
+		sub.StoreTransactionID = "free_trial_30d"
+	}
+
+	// Associate with a Pro/Silver plan if available
+	if sub.PlanID == nil {
+		if plans, err := u.planRepo.ListActive(ctx); err == nil && len(plans) > 0 {
+			for _, p := range plans {
+				if strings.EqualFold(p.Tier, "PRO") || strings.EqualFold(p.Tier, "SILVER") {
+					sub.PlanID = &p.ID
+					break
+				}
+			}
+			if sub.PlanID == nil && len(plans) > 0 {
+				sub.PlanID = &plans[0].ID
+			}
+		}
+	}
+
+	if err := u.subRepo.Upsert(ctx, sub); err != nil {
+		return nil, err
+	}
+
+	// Update profile so provider has Pro features and catalog allowance
+	if profile, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && profile != nil {
+		if profile.SubscriptionTier == "NONE" || profile.SubscriptionTier == "" {
+			profile.SubscriptionTier = "PRO"
+		}
+		if profile.SubscriptionInterval == "none" || profile.SubscriptionInterval == "" {
+			profile.SubscriptionInterval = "month"
+		}
+		if profile.MaxCatalogServices < 5 {
+			profile.MaxCatalogServices = 5
+		}
+		_ = u.profileRepo.Update(ctx, profile)
+	}
+
+	// Sync Checkr background check so Checkr trial status is also active
+	if u.bgCheckRepo != nil {
+		bc, _ := u.bgCheckRepo.GetLatestByProvider(ctx, userID)
+		if bc != nil {
+			if bc.ClearedAt == nil {
+				bc.ClearedAt = &now
+				bc.Status = "clear"
+				_ = u.bgCheckRepo.Update(ctx, bc)
+			}
+		} else {
+			newBC := &entity.BackgroundCheck{
+				ID:         uuid.New(),
+				ProviderID: userID,
+				Status:     "clear",
+				ClearedAt:  &now,
+				Package:    "tasker_standard",
+			}
+			_ = u.bgCheckRepo.Create(ctx, newBC)
+		}
+	}
+
+	// Send Welcome notification & push
+	welcomeMsg := "Welcome to Pro! You now have 30 days of full platform access to explore customer requests and send quotes with zero subscription fees."
+	if u.notifRepo != nil {
+		notif := entity.Notification{
+			ID:               uuid.New(),
+			UserID:           userID,
+			NotificationType: "TRIAL_ACTIVATED",
+			Title:            "30-Day Free Pro Trial Activated! 🎉",
+			Message:          welcomeMsg,
+			Data:             entity.JSONMap{"subscription_id": sub.ID.String(), "trial_ends_at": trialEnd.Format(time.RFC3339)},
+			CreatedAt:        now,
+		}
+		_ = u.notifRepo.Create(ctx, &notif)
+	}
+	u.sendPush(userID, "30-Day Free Pro Trial Activated! 🎉", welcomeMsg, map[string]string{
+		"notification_type": "trial_activated",
+		"subscription_id":   sub.ID.String(),
+	})
+
+	// Return fresh subscription
+	freshSub, err := u.subRepo.GetByUserID(ctx, userID)
+	if err == nil && freshSub != nil {
+		return freshSub, nil
+	}
+	return sub, nil
 }
 
 func (u *paymentUseCase) DeleteUserSubscription(ctx context.Context, userID uuid.UUID) error {

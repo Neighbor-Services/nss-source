@@ -1456,18 +1456,22 @@ func (u *serviceUseCase) GetProposals(ctx context.Context, userID uuid.UUID, use
 }
 
 func (u *serviceUseCase) IsProviderSubscribed(ctx context.Context, userID uuid.UUID) bool {
-	if u.profileRepo != nil {
-		if profile, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && profile != nil {
-			tier := strings.ToUpper(strings.TrimSpace(profile.SubscriptionTier))
-			if tier == "SILVER" || tier == "GOLD" || tier == "PLATINUM" || tier == "DIAMOND" || tier == "PRO" {
-				return true
-			}
-		}
-	}
 	if u.adminRepo != nil {
 		if sub, err := u.adminRepo.GetSubscriptionByUserID(ctx, userID); err == nil && sub != nil {
 			if sub.IsActive && (sub.NextPayment == nil || sub.NextPayment.After(time.Now())) {
 				return true
+			}
+			return u.isProviderInCheckrTrial(ctx, userID)
+		}
+	}
+	if u.profileRepo != nil {
+		if profile, err := u.profileRepo.GetByUserID(ctx, userID); err == nil && profile != nil {
+			tier := strings.ToUpper(strings.TrimSpace(profile.SubscriptionTier))
+			if tier == "SILVER" || tier == "GOLD" || tier == "PLATINUM" || tier == "DIAMOND" {
+				return true
+			}
+			if tier == "PRO" {
+				return u.isProviderInCheckrTrial(ctx, userID)
 			}
 		}
 	}

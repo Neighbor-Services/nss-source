@@ -99,6 +99,29 @@ func (h *PaymentHandler) GetUserSubscription(c *gin.Context) {
 	})
 }
 
+func (h *PaymentHandler) StartFreeTrial(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	userUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		response.Unauthorized(c, "Authentication required")
+		return
+	}
+
+	sub, err := h.paymentUC.StartFreeTrial(c.Request.Context(), userUUID)
+	if err != nil {
+		response.InternalError(c, "Failed to start free trial: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":        "trial_started",
+		"is_active":     sub.IsActive,
+		"is_trial":      sub.IsTrial,
+		"trial_ends_at": sub.TrialEndsAt,
+		"subscription":  sub,
+	})
+}
+
 func (h *PaymentHandler) DeleteUserSubscription(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 	userUUID, _ := uuid.Parse(userIDStr)

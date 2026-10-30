@@ -39,6 +39,7 @@ type PaymentUseCase interface {
 	GetOnboardingStatus(ctx context.Context, userID uuid.UUID) (bool, error)
 	GetStripeDashboardLink(ctx context.Context, userID uuid.UUID) (string, error)
 	GetUserSubscription(ctx context.Context, userID uuid.UUID) (*entity.UserSubscription, error)
+	StartFreeTrial(ctx context.Context, userID uuid.UUID) (*entity.UserSubscription, error)
 	DeleteUserSubscription(ctx context.Context, userID uuid.UUID) error
 	ProcessAppleS2SWebhook(ctx context.Context, payload map[string]interface{}) error
 	ProcessGooglePubSubWebhook(ctx context.Context, payload map[string]interface{}) error

@@ -427,6 +427,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			pay.GET("/wallet/stripe-dashboard/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.StripeDashboard)
 			pay.GET("/user/get/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetUserSubscription)
 			pay.DELETE("/user/delete/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.DeleteUserSubscription)
+			pay.POST("/trial/start/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.StartFreeTrial)
+			pay.POST("/trial/start", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.StartFreeTrial)
 
 			// Customer endpoints
 			pay.GET("/user/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetCustomerUser)
@@ -464,6 +466,8 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 		// Alternate mapped payment paths (Django URL multi-include compatibility)
 		v1.GET("/subscription/user/get/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetUserSubscription)
 		v1.DELETE("/subscription/user/delete/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.DeleteUserSubscription)
+		v1.POST("/subscription/trial/start/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.StartFreeTrial)
+		v1.POST("/subscription/trial/start", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.StartFreeTrial)
 		v1.GET("/subscription/subscription-plans/", deps.PaymentHandler.GetSubscriptionPlans)
 		v1.GET("/wallet/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.GetWallet)
 		v1.GET("/wallet/my_wallet/", middleware.AuthRequired(deps.Config, deps.UserRepo), deps.PaymentHandler.MyWallet)
