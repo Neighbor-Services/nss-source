@@ -23,7 +23,7 @@
         </svg>
         <span>Direct Stripe Refund</span>
       </button>
-      <button class="btn btn-soft-light" (click)="loadRefunds()" [disabled]="isLoading()">
+      <button class="btn btn-soft-light" (click)="loadRefunds()" [disabled]="isLoading()" title="Sync and refresh refund requests">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
         </svg>
@@ -75,190 +75,464 @@
 
   <!-- KPI CARDS -->
   <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-header">
-        <span class="kpi-title">PENDING ACTION</span>
-        <div class="kpi-icon-box amber">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="kpi-card" (click)="setStatusFilter('PENDING')" [class.kpi-active]="selectedStatus() === 'PENDING'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
         </div>
+        <span class="badge badge-warning">Awaiting Action</span>
       </div>
-      <div class="kpi-value amber-text">{{ pendingCount() }}</div>
-      <div class="kpi-subtext">${{ totalPendingAmount().toFixed(2) }} awaiting administrator adjudication</div>
+      <div>
+        <div class="kpi-label">PENDING ACTION</div>
+        <div class="kpi-value amber-text">{{ pendingCount() }}</div>
+      </div>
+      <div class="kpi-meta">${{ totalPendingAmount() | number:'1.2-2' }} awaiting administrator adjudication</div>
     </div>
 
-    <div class="kpi-card">
-      <div class="kpi-header">
-        <span class="kpi-title">PROCESSED TO CARD</span>
-        <div class="kpi-icon-box green">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="kpi-card" (click)="setStatusFilter('PROCESSED')" [class.kpi-active]="selectedStatus() === 'PROCESSED'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 6L9 17l-5-5"/>
           </svg>
         </div>
+        <span class="badge badge-success">Processed</span>
       </div>
-      <div class="kpi-value green-text">${{ totalProcessedAmount().toFixed(2) }}</div>
-      <div class="kpi-subtext">{{ processedCount() }} successfully refunded via Stripe</div>
+      <div>
+        <div class="kpi-label">PROCESSED TO CARD</div>
+        <div class="kpi-value green-text">${{ totalProcessedAmount() | number:'1.2-2' }}</div>
+      </div>
+      <div class="kpi-meta">{{ processedCount() }} successfully refunded via Stripe</div>
     </div>
 
-    <div class="kpi-card">
-      <div class="kpi-header">
-        <span class="kpi-title">TOTAL REVENUE PROTECTED</span>
-        <div class="kpi-icon-box blue">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="kpi-card" (click)="setStatusFilter('REJECTED')" [class.kpi-active]="selectedStatus() === 'REJECTED'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
         </div>
+        <span class="badge badge-info">Protected</span>
       </div>
-      <div class="kpi-value">{{ rejectedCount() }}</div>
-      <div class="kpi-subtext">Declined refund claims after review</div>
+      <div>
+        <div class="kpi-label">TOTAL REVENUE PROTECTED</div>
+        <div class="kpi-value">{{ rejectedCount() }}</div>
+      </div>
+      <div class="kpi-meta">Declined refund claims after review</div>
     </div>
 
-    <div class="kpi-card">
-      <div class="kpi-header">
-        <span class="kpi-title">ALL-TIME CLAIMS</span>
-        <div class="kpi-icon-box purple">
+    <div class="kpi-card" (click)="setStatusFilter('ALL')" [class.kpi-active]="selectedStatus() === 'ALL'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">Total Log</span>
+      </div>
+      <div>
+        <div class="kpi-label">ALL-TIME CLAIMS</div>
+        <div class="kpi-value">{{ totalCount() }}</div>
+      </div>
+      <div class="kpi-meta">Total payment refund lifecycle events</div>
+    </div>
+  </div>
+
+  <!-- MODERN HOPE UI TABLE CARD -->
+  <div class="card table-card mt-4">
+    <!-- TOP PROGRESS BAR WHEN LOADING -->
+    @if (isLoading()) {
+      <div class="loading-progress-bar">
+        <div class="progress-bar-indicator"></div>
+      </div>
+    }
+
+    <!-- TABLE HEADER BAR -->
+    <div class="table-header">
+      <div class="table-title-group">
+        <div class="table-icon-badge blue">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
           </svg>
         </div>
-      </div>
-      <div class="kpi-value">{{ totalCount() }}</div>
-      <div class="kpi-subtext">Total payment refund lifecycle events</div>
-    </div>
-  </div>
-
-  <!-- TABLE CARD -->
-  <div class="hope-card mt-4">
-    <div class="card-header flex-between">
-      <div class="flex-align gap-2">
-        <span class="card-title">Refund Requests Ledger</span>
-        <span class="badge badge-secondary">{{ filteredRefunds().length }} records</span>
-      </div>
-      <div class="search-input-wrap">
-        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input
-          type="text"
-          placeholder="Filter by email, reason, PaymentIntent..."
-          [ngModel]="searchTerm()"
-          (ngModelChange)="searchTerm.set($event)"
-          class="form-control form-control-sm"
-        />
-      </div>
-    </div>
-
-    <div class="card-body p-0">
-      @if (isLoading()) {
-        <div class="loading-state p-5 text-center">
-          <div class="spinner"></div>
-          <p class="text-muted mt-2">Loading refund requests from ledger...</p>
+        <div>
+          <h3 class="table-title">Refund Requests Ledger</h3>
+          <div class="table-subtitle">
+            <span>{{ filteredRefunds().length }} records</span>
+            @if (searchTerm()) {
+              <span class="filter-pill">Filtered by: "{{ searchTerm() }}"</span>
+            }
+          </div>
         </div>
-      } @else if (filteredRefunds().length === 0) {
-        <div class="empty-state p-5 text-center">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-muted mb-2">
-            <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+      </div>
+
+      <div class="table-header-controls">
+        <!-- SEARCH INPUT -->
+        <div class="search-input-box">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <h4>No Refund Requests Found</h4>
-          <p class="text-muted">No refund requests match the current status and search filters.</p>
+          <input
+            type="text"
+            placeholder="Filter by email, reason, PaymentIntent..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="onSearchChange($event)"
+            class="form-control form-control-sm filter-input"
+          />
+          @if (searchTerm()) {
+            <button class="clear-btn" (click)="clearSearch()" title="Clear search">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          }
         </div>
-      } @else {
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>CUSTOMER / REQUESTER</th>
-                <th>LINKED JOB / APPOINTMENT</th>
-                <th>STRIPE PAYMENT INTENT</th>
-                <th>AMOUNT</th>
-                <th>REASON FOR REFUND</th>
-                <th>STATUS</th>
-                <th>REQUESTED AT</th>
-                <th class="text-right">ACTIONS</th>
+
+        <!-- REFRESH ICON BUTTON -->
+        <button class="btn btn-sm btn-icon-round" (click)="loadRefunds()" [disabled]="isLoading()" title="Refresh table data">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLE BODY CONTENT -->
+    @if (isLoading() && refunds().length === 0) {
+      <!-- SKELETON SHIMMER LOADING STATE -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>CUSTOMER / REQUESTER</th>
+              <th>LINKED SERVICE / APPT</th>
+              <th>STRIPE PAYMENT INTENT</th>
+              <th>AMOUNT</th>
+              <th>REASON</th>
+              <th>STATUS</th>
+              <th>REQUESTED AT</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of [1, 2, 3, 4, 5]; track item) {
+              <tr class="skeleton-row-item">
+                <td>
+                  <div class="user-cell">
+                    <div class="skeleton-shimmer skeleton-avatar"></div>
+                    <div class="skeleton-meta">
+                      <div class="skeleton-shimmer skeleton-line w-75"></div>
+                      <div class="skeleton-shimmer skeleton-line w-50"></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="skeleton-meta">
+                    <div class="skeleton-shimmer skeleton-line w-60"></div>
+                    <div class="skeleton-shimmer skeleton-line w-40"></div>
+                  </div>
+                </td>
+                <td>
+                  <div class="skeleton-shimmer skeleton-chip w-80"></div>
+                </td>
+                <td>
+                  <div class="skeleton-shimmer skeleton-line w-40"></div>
+                </td>
+                <td>
+                  <div class="skeleton-shimmer skeleton-line w-75"></div>
+                </td>
+                <td>
+                  <div class="skeleton-shimmer skeleton-pill w-50"></div>
+                </td>
+                <td>
+                  <div class="skeleton-shimmer skeleton-line w-60"></div>
+                </td>
+                <td class="text-right">
+                  <div class="skeleton-actions">
+                    <div class="skeleton-shimmer skeleton-btn"></div>
+                    <div class="skeleton-shimmer skeleton-btn"></div>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              @for (refund of filteredRefunds(); track refund.id) {
-                <tr>
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar-circle">
-                        {{ getRequesterName(refund).charAt(0).toUpperCase() }}
-                      </div>
-                      <div class="user-meta">
-                        <span class="user-name">{{ getRequesterName(refund) }}</span>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (filteredRefunds().length === 0) {
+      <!-- EMPTY STATE -->
+      <div class="empty-state">
+        <div class="empty-icon-wrap" [class.amber]="searchTerm()" [class.blue]="!searchTerm()">
+          @if (searchTerm()) {
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          } @else {
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+            </svg>
+          }
+        </div>
+        <h4 class="empty-title">
+          {{ searchTerm() ? 'No Matching Refund Records' : 'No Refund Requests Found' }}
+        </h4>
+        <p class="empty-sub">
+          @if (searchTerm()) {
+            No refund records match your search query: "<strong>{{ searchTerm() }}</strong>". Try searching with another term.
+          } @else {
+            There are currently no refund requests in <strong>{{ selectedStatus() === 'ALL' ? 'the ledger' : selectedStatus() }}</strong>.
+          }
+        </p>
+        <div class="empty-actions">
+          @if (searchTerm()) {
+            <button class="btn btn-secondary" (click)="clearSearch()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span>Clear Search Filter</span>
+            </button>
+          } @else {
+            <button class="btn btn-primary" (click)="openDirectRefundModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+              <span>Direct Stripe Refund</span>
+            </button>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- DATA TABLE -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sortable-th" (click)="toggleSort('customer')">
+                <div class="th-content">
+                  <span>CUSTOMER / REQUESTER</span>
+                  @if (sortBy() === 'customer') {
+                    <span class="sort-indicator">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </div>
+              </th>
+              <th>LINKED SERVICE / APPT</th>
+              <th>STRIPE PAYMENT INTENT</th>
+              <th class="sortable-th" (click)="toggleSort('amount')">
+                <div class="th-content">
+                  <span>AMOUNT</span>
+                  @if (sortBy() === 'amount') {
+                    <span class="sort-indicator">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </div>
+              </th>
+              <th>REASON FOR REFUND</th>
+              <th class="sortable-th" (click)="toggleSort('status')">
+                <div class="th-content">
+                  <span>STATUS</span>
+                  @if (sortBy() === 'status') {
+                    <span class="sort-indicator">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </div>
+              </th>
+              <th class="sortable-th" (click)="toggleSort('created_at')">
+                <div class="th-content">
+                  <span>REQUESTED AT</span>
+                  @if (sortBy() === 'created_at') {
+                    <span class="sort-indicator">{{ sortOrder() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </div>
+              </th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (refund of paginatedRefunds(); track refund.id) {
+              <tr class="table-row">
+                <!-- CUSTOMER / REQUESTER -->
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar-circle">
+                      {{ getRequesterName(refund).charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-meta">
+                      <span class="user-name">{{ getRequesterName(refund) }}</span>
+                      <div class="user-subline">
                         <span class="user-email">{{ refund.user?.email || refund.user_id }}</span>
+                        @if (refund.user?.email) {
+                          <button
+                            class="copy-btn-mini"
+                            (click)="copyText(refund.user!.email, 'email-' + refund.id)"
+                            title="Copy email"
+                          >
+                            @if (copiedTarget() === 'email-' + refund.id) {
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-success"><path d="M20 6L9 17l-5-5"/></svg>
+                            } @else {
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            }
+                          </button>
+                        }
                       </div>
                     </div>
-                  </td>
-                  <td>
-                    @if (refund.appointment) {
-                      <div class="appt-cell">
-                        <span class="appt-title">{{ refund.appointment.title || 'Service Booking' }}</span>
-                        <span class="appt-sub text-muted">ID: #{{ refund.appointment.id.slice(0, 8) }}</span>
-                      </div>
-                    } @else if (refund.appointment_id) {
-                      <span class="text-mono text-xs">Appt #{{ refund.appointment_id.slice(0, 8) }}</span>
-                    } @else {
-                      <span class="text-muted text-xs">Direct Payment</span>
-                    }
-                  </td>
-                  <td>
-                    <div class="pi-cell">
-                      <a [href]="getStripeDashboardUrl(refund.payment_intent_id)" target="_blank" rel="noopener noreferrer" class="font-mono text-xs text-primary d-inline-flex align-items-center gap-1" title="Open Payment in Stripe Dashboard">
-                        <span>{{ refund.payment_intent_id }}</span>
+                  </div>
+                </td>
+
+                <!-- LINKED SERVICE / APPT -->
+                <td>
+                  @if (refund.appointment) {
+                    <div class="appt-cell">
+                      <span class="appt-title">{{ refund.appointment.title || 'Service Booking' }}</span>
+                      <span class="appt-sub">
+                        <code class="mono-badge">#{{ refund.appointment.id.slice(0, 8) }}</code>
+                      </span>
+                    </div>
+                  } @else if (refund.appointment_id) {
+                    <span class="mono-badge">Appt #{{ refund.appointment_id.slice(0, 8) }}</span>
+                  } @else {
+                    <span class="direct-pill">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                      <span>Direct Payment</span>
+                    </span>
+                  }
+                </td>
+
+                <!-- STRIPE PAYMENT INTENT -->
+                <td>
+                  <div class="pi-cell">
+                    <div class="pi-link-row">
+                      <a
+                        [href]="getStripeDashboardUrl(refund.payment_intent_id)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="stripe-pi-pill"
+                        title="Open in Stripe Dashboard"
+                      >
+                        <span class="stripe-dot"></span>
+                        <span class="font-mono">{{ refund.payment_intent_id }}</span>
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                       </a>
-                      @if (refund.stripe_refund_id) {
-                        <span class="badge badge-sm badge-success mt-1 font-mono">
-                          Refund: {{ refund.stripe_refund_id }}
-                        </span>
-                      }
-                    </div>
-                  </td>
-                  <td>
-                    <span class="amount-badge font-mono font-bold">
-                      ${{ refund.amount.toFixed(2) }}
-                    </span>
-                  </td>
-                  <td>
-                    <div class="reason-cell" [attr.title]="refund.reason">
-                      {{ refund.reason }}
-                    </div>
-                  </td>
-                  <td>
-                    <span class="badge" [ngClass]="getStatusClass(refund.status)">
-                      {{ refund.status }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="text-muted text-xs">{{ refund.created_at | date:'short' }}</span>
-                  </td>
-                  <td class="text-right">
-                    <div class="action-buttons">
-                      <button class="btn btn-xs btn-outline-secondary" (click)="viewDetail(refund)" title="View Details">
-                        Details
+                      <button
+                        class="copy-btn-mini"
+                        (click)="copyText(refund.payment_intent_id, 'pi-' + refund.id)"
+                        title="Copy PaymentIntent ID"
+                      >
+                        @if (copiedTarget() === 'pi-' + refund.id) {
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-success"><path d="M20 6L9 17l-5-5"/></svg>
+                        } @else {
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        }
                       </button>
-
-                      @if (refund.status === 'PENDING') {
-                        <button class="btn btn-xs btn-success" (click)="openProcessModal(refund)" title="Execute Stripe Refund">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                          Process
-                        </button>
-                        <button class="btn btn-xs btn-outline-danger" (click)="openRejectModal(refund)" title="Decline Refund">
-                          Decline
-                        </button>
-                      }
                     </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+
+                    @if (refund.stripe_refund_id) {
+                      <div class="re-chip mt-1">
+                        <span class="re-dot"></span>
+                        <span class="font-mono">{{ refund.stripe_refund_id }}</span>
+                      </div>
+                    }
+                  </div>
+                </td>
+
+                <!-- AMOUNT -->
+                <td>
+                  <div class="amount-cell">
+                    <span class="amount-val">${{ refund.amount | number:'1.2-2' }}</span>
+                    <span class="currency-tag">{{ refund.currency || 'USD' }}</span>
+                  </div>
+                </td>
+
+                <!-- REASON FOR REFUND -->
+                <td>
+                  <div class="reason-cell" [title]="refund.reason">
+                    {{ refund.reason }}
+                  </div>
+                </td>
+
+                <!-- STATUS -->
+                <td>
+                  <div class="status-chip" [ngClass]="{
+                    'status-pending': refund.status === 'PENDING',
+                    'status-processed': refund.status === 'PROCESSED' || refund.status === 'APPROVED',
+                    'status-rejected': refund.status === 'REJECTED' || refund.status === 'FAILED'
+                  }">
+                    <span class="status-dot"></span>
+                    <span>{{ refund.status === 'PROCESSED' ? 'Processed' : (refund.status | titlecase) }}</span>
+                  </div>
+                </td>
+
+                <!-- REQUESTED AT -->
+                <td>
+                  <div class="date-cell">
+                    <span class="date-main">{{ refund.created_at | date:'mediumDate' }}</span>
+                    <span class="date-time">{{ refund.created_at | date:'shortTime' }}</span>
+                  </div>
+                </td>
+
+                <!-- ACTIONS -->
+                <td class="text-right">
+                  <div class="action-buttons">
+                    <button class="btn btn-sm btn-outline-secondary btn-action" (click)="viewDetail(refund)" title="Inspect full audit record">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <span>Details</span>
+                    </button>
+
+                    @if (refund.status === 'PENDING') {
+                      <button class="btn btn-sm btn-success btn-action" (click)="openProcessModal(refund)" title="Execute Stripe Card Refund">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Process</span>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger btn-action" (click)="openRejectModal(refund)" title="Decline Refund Claim">
+                        <span>Decline</span>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TABLE FOOTER / PAGINATION -->
+      <div class="table-footer">
+        <div class="footer-stats">
+          <span>
+            Showing <b>{{ startIndex() }}</b> to <b>{{ endIndex() }}</b> of <b>{{ filteredRefunds().length }}</b> records
+          </span>
+
+          <div class="page-size-selector">
+            <span class="text-muted">Per page:</span>
+            <select
+              [ngModel]="pageSize()"
+              (ngModelChange)="changePageSize($event)"
+              class="form-control select-xs"
+            >
+              <option [value]="10">10</option>
+              <option [value]="20">20</option>
+              <option [value]="50">50</option>
+            </select>
+          </div>
         </div>
-      }
-    </div>
+
+        <div class="pagination-buttons">
+          <button
+            class="btn btn-sm btn-secondary"
+            [disabled]="currentPage() <= 1"
+            (click)="changePage(currentPage() - 1)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Previous</span>
+          </button>
+
+          <span class="page-badge">{{ currentPage() }} / {{ totalPages() }}</span>
+
+          <button
+            class="btn btn-sm btn-secondary"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="changePage(currentPage() + 1)"
+          >
+            <span>Next</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    }
   </div>
 </div>
 
@@ -286,7 +560,7 @@
           </div>
           <div class="callout-row">
             <span class="text-muted">Original Requested Amount:</span>
-            <strong class="text-success">${{ selectedRefund()!.amount.toFixed(2) }}</strong>
+            <strong class="text-success">${{ selectedRefund()!.amount | number:'1.2-2' }}</strong>
           </div>
           <div class="callout-row">
             <span class="text-muted">Customer Reason:</span>
@@ -481,7 +755,7 @@
           </div>
           <div class="callout-row">
             <span class="text-muted">Amount:</span>
-            <strong class="text-lg">${{ selectedRefund()!.amount.toFixed(2) }} {{ selectedRefund()!.currency }}</strong>
+            <strong class="text-lg">${{ selectedRefund()!.amount | number:'1.2-2' }} {{ selectedRefund()!.currency }}</strong>
           </div>
           <div class="callout-row">
             <span class="text-muted">Payment Intent:</span>
@@ -523,4 +797,3 @@
     </div>
   </div>
 }
-

@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RefundUseCase } from '../../../core/usecases/refund.usecase';
 import { RefundRequestItem } from '../../../core/domain/entities/refund.model';
 
+export type RefundSortColumn = 'created_at' | 'amount' | 'status' | 'customer';
+
 @Component({
   selector: 'app-refunds',
   standalone: true,
@@ -18,6 +20,15 @@ export class RefundsComponent implements OnInit {
 
   selectedStatus = signal<string>('ALL');
   searchTerm = signal<string>('');
+
+  // Pagination & Sorting state
+  currentPage = signal<number>(1);
+  pageSize = signal<number>(10);
+  sortBy = signal<RefundSortColumn>('created_at');
+  sortOrder = signal<'asc' | 'desc'>('desc');
+
+  // Copy feedback tracking
+  copiedTarget = signal<string | null>(null);
 
   // Modals
   showProcessModal = signal(false);
@@ -54,6 +65,7 @@ export class RefundsComponent implements OnInit {
     this.refunds().filter(r => r.status === 'PROCESSED').reduce((sum, r) => sum + (r.amount || 0), 0)
   );
 
+  // Filtered & Sorted list
   filteredRefunds = computed(() => {
     let list = this.refunds();
     const status = this.selectedStatus();
@@ -70,7 +82,45 @@ export class RefundsComponent implements OnInit {
         (r.stripe_refund_id && r.stripe_refund_id.toLowerCase().includes(term))
       );
     }
-    return list;
+
+    // Sort
+    const col = this.sortBy();
+    const isAsc = this.sortOrder() === 'asc';
+    return [...list].sort((a, b) => {
+      let cmp = 0;
+      if (col === 'created_at') {
+        const da = new Date(a.created_at).getTime() || 0;
+        const db = new Date(b.created_at).getTime() || 0;
+        cmp = da - db;
+      } else if (col === 'amount') {
+        cmp = (a.amount || 0) - (b.amount || 0);
+      } else if (col === 'status') {
+        cmp = (a.status || '').localeCompare(b.status || '');
+      } else if (col === 'customer') {
+        const na = this.getRequesterName(a).toLowerCase();
+        const nb = this.getRequesterName(b).toLowerCase();
+        cmp = na.localeCompare(nb);
+      }
+      return isAsc ? cmp : -cmp;
+    });
+  });
+
+  // Pagination computeds
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredRefunds().length / this.pageSize())));
+
+  startIndex = computed(() => {
+    if (this.filteredRefunds().length === 0) return 0;
+    return (this.currentPage() - 1) * this.pageSize() + 1;
+  });
+
+  endIndex = computed(() => {
+    return Math.min(this.currentPage() * this.pageSize(), this.filteredRefunds().length);
+  });
+
+  paginatedRefunds = computed(() => {
+    const list = this.filteredRefunds();
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return list.slice(start, start + this.pageSize());
   });
 
   constructor(private refundUseCase: RefundUseCase) {}
@@ -96,7 +146,54 @@ export class RefundsComponent implements OnInit {
 
   setStatusFilter(status: string): void {
     this.selectedStatus.set(status);
+    this.currentPage.set(1);
     this.loadRefunds();
+  }
+
+  onSearchChange(term: string): void {
+    this.searchTerm.set(term);
+    this.currentPage.set(1);
+  }
+
+  clearSearch(): void {
+    this.searchTerm.set('');
+    this.currentPage.set(1);
+  }
+
+  toggleSort(column: RefundSortColumn): void {
+    if (this.sortBy() === column) {
+      this.sortOrder.set(this.sortOrder() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortBy.set(column);
+      this.sortOrder.set('desc');
+    }
+  }
+
+  changePage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  changePageSize(newSize: number): void {
+    this.pageSize.set(Number(newSize));
+    this.currentPage.set(1);
+  }
+
+  copyText(text: string, targetKey: string): void {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.copiedTarget.set(targetKey);
+      setTimeout(() => {
+        if (this.copiedTarget() === targetKey) {
+          this.copiedTarget.set(null);
+        }
+      }, 2000);
+    }).catch(() => {
+      // fallback
+      this.copiedTarget.set(targetKey);
+      setTimeout(() => this.copiedTarget.set(null), 2000);
+    });
   }
 
   exportCSV(): void {
@@ -278,4 +375,3 @@ export class RefundsComponent implements OnInit {
     return `User #${r.user_id.slice(0, 8)}`;
   }
 }
-
