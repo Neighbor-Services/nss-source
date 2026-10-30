@@ -781,8 +781,7 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			admin.POST("/refunds/:id/reject/", deps.AdminHandler.RejectRefund)
 			admin.POST("/refunds/direct", deps.AdminHandler.ProcessDirectRefund)
 			admin.POST("/refunds/direct/", deps.AdminHandler.ProcessDirectRefund)
-			admin.GET("/export/refunds", deps.AdminHandler.ExportRefunds)
-			admin.GET("/export/refunds/", deps.AdminHandler.ExportRefunds)
+			// Note: /export/refunds is already registered in the Data Exports block above
 
 
 			// TOTP 2FA Engine

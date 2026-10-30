@@ -29,8 +29,21 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 		logLevel = logger.Warn
 	}
 
+	// Use a custom logger with a 2-second slow-query threshold so normal
+	// GORM schema-introspection queries (information_schema / pg_catalog)
+	// that run during AutoMigrate never appear as "SLOW SQL" warnings.
+	gormLogger := logger.New(
+		log.Default(),
+		logger.Config{
+			SlowThreshold:             2 * time.Second,
+			LogLevel:                  logLevel,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  false,
+		},
+	)
+
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logLevel),
+		Logger: gormLogger,
 	}
 
 	switch cfg.DBDriver {
@@ -73,9 +86,21 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 
 // AutoMigrate migrates all models matching Django and Go database table schemas.
 func AutoMigrate(db *gorm.DB) error {
-	// Silence verbose schema introspection queries during migration
+	// Use a silent logger during AutoMigrate: the information_schema and
+	// pg_catalog introspection queries that GORM fires per model are
+	// expected to take 200-400ms on a loaded Postgres instance and should
+	// not appear as "SLOW SQL" warnings in production logs.
+	silentLogger := logger.New(
+		log.Default(),
+		logger.Config{
+			SlowThreshold:             0, // 0 = never log slow queries
+			LogLevel:                  logger.Error,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  false,
+		},
+	)
 	migrateDB := db.Session(&gorm.Session{
-		Logger: db.Logger.LogMode(logger.Warn),
+		Logger: silentLogger,
 	})
 
 	// 1. Ensure required flash dispatch & AI index tables are created with explicit DDL first

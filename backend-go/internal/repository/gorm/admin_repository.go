@@ -481,7 +481,6 @@ func (r *adminRepository) GetSubscriptionByUserID(ctx context.Context, userID uu
 }
 
 func (r *adminRepository) CreateSubscription(ctx context.Context, sub *entity.Subscription) error {
-	_ = r.db.AutoMigrate(&entity.Subscription{})
 	if sub.ID == uuid.Nil {
 		sub.ID = uuid.New()
 	}
@@ -493,7 +492,6 @@ func (r *adminRepository) UpdateSubscription(ctx context.Context, sub *entity.Su
 }
 
 func (r *adminRepository) ListSubscriptionPlans(ctx context.Context) ([]entity.SubscriptionPlan, error) {
-	_ = r.db.AutoMigrate(&entity.SubscriptionPlan{})
 	var plans []entity.SubscriptionPlan
 	err := r.db.WithContext(ctx).Order("display_order ASC, price ASC").Find(&plans).Error
 	return plans, err
@@ -509,7 +507,6 @@ func (r *adminRepository) GetSubscriptionPlanByID(ctx context.Context, id uuid.U
 }
 
 func (r *adminRepository) CreateSubscriptionPlan(ctx context.Context, plan *entity.SubscriptionPlan) error {
-	_ = r.db.AutoMigrate(&entity.SubscriptionPlan{})
 	if plan.ID == uuid.Nil {
 		plan.ID = uuid.New()
 	}
@@ -517,7 +514,6 @@ func (r *adminRepository) CreateSubscriptionPlan(ctx context.Context, plan *enti
 }
 
 func (r *adminRepository) UpdateSubscriptionPlan(ctx context.Context, plan *entity.SubscriptionPlan) error {
-	_ = r.db.AutoMigrate(&entity.SubscriptionPlan{})
 	return r.db.WithContext(ctx).Save(plan).Error
 }
 
@@ -1222,14 +1218,12 @@ func (r *adminRepository) BatchRejectPayouts(ctx context.Context, ids []uuid.UUI
 // ─── STAFF INTERNAL NOTES ───────────────────────────────────────────────────
 
 func (r *adminRepository) ListStaffNotes(ctx context.Context, userID uuid.UUID) ([]entity.StaffNote, error) {
-	_ = r.db.AutoMigrate(&entity.StaffNote{})
 	var notes []entity.StaffNote
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("is_pinned DESC, created_at DESC").Find(&notes).Error
 	return notes, err
 }
 
 func (r *adminRepository) CreateStaffNote(ctx context.Context, note *entity.StaffNote) error {
-	_ = r.db.AutoMigrate(&entity.StaffNote{})
 	if note.ID == uuid.Nil {
 		note.ID = uuid.New()
 	}
@@ -1411,7 +1405,6 @@ func (r *adminRepository) ExportAppointments(ctx context.Context, status string)
 // ─── REVIEWS & RATINGS MODERATION ───────────────────────────────────────────
 
 func (r *adminRepository) ListReviews(ctx context.Context, rating *float64, isHidden *bool, limit, offset int) ([]entity.Review, int64, error) {
-	_ = r.db.AutoMigrate(&entity.Review{})
 	var list []entity.Review
 	var total int64
 	query := r.db.WithContext(ctx).Model(&entity.Review{}).
@@ -1437,7 +1430,6 @@ func (r *adminRepository) ListReviews(ctx context.Context, rating *float64, isHi
 }
 
 func (r *adminRepository) CreateReview(ctx context.Context, review *entity.Review) error {
-	_ = r.db.AutoMigrate(&entity.Review{})
 	if review.ID == uuid.Nil {
 		review.ID = uuid.New()
 	}
@@ -1450,7 +1442,6 @@ func (r *adminRepository) CreateReview(ctx context.Context, review *entity.Revie
 }
 
 func (r *adminRepository) ToggleReviewVisibility(ctx context.Context, id uuid.UUID, isHidden bool) error {
-	_ = r.db.AutoMigrate(&entity.Review{})
 	return r.db.WithContext(ctx).Model(&entity.Review{}).Where("id = ?", id).Update("is_hidden", isHidden).Error
 }
 
@@ -1461,14 +1452,12 @@ func (r *adminRepository) DeleteReview(ctx context.Context, id uuid.UUID) error 
 // ─── PROMO CODES & MARKETING CAMPAIGNS ───────────────────────────────────────
 
 func (r *adminRepository) ListPromoCodes(ctx context.Context) ([]entity.PromoCode, error) {
-	_ = r.db.AutoMigrate(&entity.PromoCode{})
 	var list []entity.PromoCode
 	err := r.db.WithContext(ctx).Order("created_at DESC").Find(&list).Error
 	return list, err
 }
 
 func (r *adminRepository) CreatePromoCode(ctx context.Context, promo *entity.PromoCode) error {
-	_ = r.db.AutoMigrate(&entity.PromoCode{})
 	if promo.ID == uuid.Nil {
 		promo.ID = uuid.New()
 	}
@@ -1476,12 +1465,10 @@ func (r *adminRepository) CreatePromoCode(ctx context.Context, promo *entity.Pro
 }
 
 func (r *adminRepository) UpdatePromoCode(ctx context.Context, promo *entity.PromoCode) error {
-	_ = r.db.AutoMigrate(&entity.PromoCode{})
 	return r.db.WithContext(ctx).Save(promo).Error
 }
 
 func (r *adminRepository) DeletePromoCode(ctx context.Context, id uuid.UUID) error {
-	_ = r.db.AutoMigrate(&entity.PromoCode{})
 	return r.db.WithContext(ctx).Unscoped().Delete(&entity.PromoCode{}, "id = ?", id).Error
 }
 
@@ -1559,7 +1546,6 @@ func (r *adminRepository) ExportBackgroundChecks(ctx context.Context, status str
 // ─── LEGAL & COMPLIANCE DOCUMENTS ───────────────────────────────────────────
 
 func (r *adminRepository) ListLegalDocuments(ctx context.Context, docType string, isActive *bool) ([]entity.LegalDocument, error) {
-	_ = r.db.AutoMigrate(&entity.LegalDocument{})
 	var docs []entity.LegalDocument
 	q := r.db.WithContext(ctx).Model(&entity.LegalDocument{})
 	if docType != "" {
@@ -1573,7 +1559,6 @@ func (r *adminRepository) ListLegalDocuments(ctx context.Context, docType string
 }
 
 func (r *adminRepository) GetLegalDocumentByID(ctx context.Context, id uuid.UUID) (*entity.LegalDocument, error) {
-	_ = r.db.AutoMigrate(&entity.LegalDocument{})
 	var doc entity.LegalDocument
 	err := r.db.WithContext(ctx).First(&doc, "id = ?", id).Error
 	if err != nil {
@@ -1583,7 +1568,6 @@ func (r *adminRepository) GetLegalDocumentByID(ctx context.Context, id uuid.UUID
 }
 
 func (r *adminRepository) CreateLegalDocument(ctx context.Context, doc *entity.LegalDocument) error {
-	_ = r.db.AutoMigrate(&entity.LegalDocument{})
 	if doc.ID == uuid.Nil {
 		doc.ID = uuid.New()
 	}
@@ -1594,20 +1578,17 @@ func (r *adminRepository) CreateLegalDocument(ctx context.Context, doc *entity.L
 }
 
 func (r *adminRepository) UpdateLegalDocument(ctx context.Context, doc *entity.LegalDocument) error {
-	_ = r.db.AutoMigrate(&entity.LegalDocument{})
 	doc.UpdatedAt = time.Now()
 	return r.db.WithContext(ctx).Save(doc).Error
 }
 
 func (r *adminRepository) DeleteLegalDocument(ctx context.Context, id uuid.UUID) error {
-	_ = r.db.AutoMigrate(&entity.LegalDocument{})
 	return r.db.WithContext(ctx).Unscoped().Delete(&entity.LegalDocument{}, "id = ?", id).Error
 }
 
 // ─── SUPPORT MESSAGES & INQUIRIES ───────────────────────────────────────────
 
 func (r *adminRepository) ListContactMessages(ctx context.Context, isResolved *bool, search string, limit, offset int) ([]entity.ContactMessage, int64, error) {
-	_ = r.db.AutoMigrate(&entity.ContactMessage{})
 	var list []entity.ContactMessage
 	var total int64
 	q := r.db.WithContext(ctx).Model(&entity.ContactMessage{})
@@ -1629,19 +1610,16 @@ func (r *adminRepository) ListContactMessages(ctx context.Context, isResolved *b
 }
 
 func (r *adminRepository) ToggleContactMessageResolved(ctx context.Context, id uuid.UUID, isResolved bool) error {
-	_ = r.db.AutoMigrate(&entity.ContactMessage{})
 	return r.db.WithContext(ctx).Model(&entity.ContactMessage{}).Where("id = ?", id).Update("is_resolved", isResolved).Error
 }
 
 func (r *adminRepository) DeleteContactMessage(ctx context.Context, id uuid.UUID) error {
-	_ = r.db.AutoMigrate(&entity.ContactMessage{})
 	return r.db.WithContext(ctx).Unscoped().Delete(&entity.ContactMessage{}, "id = ?", id).Error
 }
 
 // ─── RESOLUTION REPORTS ─────────────────────────────────────────────────────
 
 func (r *adminRepository) ListResolutionReports(ctx context.Context, isReviewed *bool, search string, limit, offset int) ([]entity.ResolutionReport, int64, error) {
-	_ = r.db.AutoMigrate(&entity.ResolutionReport{})
 	var list []entity.ResolutionReport
 	var total int64
 	q := r.db.WithContext(ctx).Model(&entity.ResolutionReport{})
@@ -1663,19 +1641,16 @@ func (r *adminRepository) ListResolutionReports(ctx context.Context, isReviewed 
 }
 
 func (r *adminRepository) ToggleResolutionReportReviewed(ctx context.Context, id uuid.UUID, isReviewed bool) error {
-	_ = r.db.AutoMigrate(&entity.ResolutionReport{})
 	return r.db.WithContext(ctx).Model(&entity.ResolutionReport{}).Where("id = ?", id).Update("is_reviewed", isReviewed).Error
 }
 
 func (r *adminRepository) DeleteResolutionReport(ctx context.Context, id uuid.UUID) error {
-	_ = r.db.AutoMigrate(&entity.ResolutionReport{})
 	return r.db.WithContext(ctx).Unscoped().Delete(&entity.ResolutionReport{}, "id = ?", id).Error
 }
 
 // ─── PUBLIC SITE CMS ────────────────────────────────────────────────────────
 
 func (r *adminRepository) ListFAQs(ctx context.Context, category string, isActive *bool) ([]entity.FAQ, error) {
-	_ = r.db.AutoMigrate(&entity.FAQ{})
 	var list []entity.FAQ
 	q := r.db.WithContext(ctx).Model(&entity.FAQ{})
 	if category != "" {
@@ -1689,7 +1664,6 @@ func (r *adminRepository) ListFAQs(ctx context.Context, category string, isActiv
 }
 
 func (r *adminRepository) CreateFAQ(ctx context.Context, faq *entity.FAQ) error {
-	_ = r.db.AutoMigrate(&entity.FAQ{})
 	if faq.ID == uuid.Nil {
 		faq.ID = uuid.New()
 	}
@@ -1697,17 +1671,14 @@ func (r *adminRepository) CreateFAQ(ctx context.Context, faq *entity.FAQ) error 
 }
 
 func (r *adminRepository) UpdateFAQ(ctx context.Context, faq *entity.FAQ) error {
-	_ = r.db.AutoMigrate(&entity.FAQ{})
 	return r.db.WithContext(ctx).Save(faq).Error
 }
 
 func (r *adminRepository) DeleteFAQ(ctx context.Context, id uuid.UUID) error {
-	_ = r.db.AutoMigrate(&entity.FAQ{})
 	return r.db.WithContext(ctx).Unscoped().Delete(&entity.FAQ{}, "id = ?", id).Error
 }
 
 func (r *adminRepository) ListTestimonials(ctx context.Context, isActive *bool) ([]entity.Testimonial, error) {
-	_ = r.db.AutoMigrate(&entity.Testimonial{})
 	var list []entity.Testimonial
 	q := r.db.WithContext(ctx).Model(&entity.Testimonial{})
 	if isActive != nil {
@@ -1718,7 +1689,6 @@ func (r *adminRepository) ListTestimonials(ctx context.Context, isActive *bool) 
 }
 
 func (r *adminRepository) CreateTestimonial(ctx context.Context, t *entity.Testimonial) error {
-	_ = r.db.AutoMigrate(&entity.Testimonial{})
 	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
 	}
@@ -1727,17 +1697,14 @@ func (r *adminRepository) CreateTestimonial(ctx context.Context, t *entity.Testi
 }
 
 func (r *adminRepository) UpdateTestimonial(ctx context.Context, t *entity.Testimonial) error {
-	_ = r.db.AutoMigrate(&entity.Testimonial{})
 	return r.db.WithContext(ctx).Save(t).Error
 }
 
 func (r *adminRepository) DeleteTestimonial(ctx context.Context, id uuid.UUID) error {
-	_ = r.db.AutoMigrate(&entity.Testimonial{})
 	return r.db.WithContext(ctx).Unscoped().Delete(&entity.Testimonial{}, "id = ?", id).Error
 }
 
 func (r *adminRepository) GetHeroSection(ctx context.Context) (*entity.HeroSection, error) {
-	_ = r.db.AutoMigrate(&entity.HeroSection{})
 	var hero entity.HeroSection
 	err := r.db.WithContext(ctx).First(&hero).Error
 	if err != nil {
@@ -1750,20 +1717,17 @@ func (r *adminRepository) GetHeroSection(ctx context.Context) (*entity.HeroSecti
 }
 
 func (r *adminRepository) UpdateHeroSection(ctx context.Context, hero *entity.HeroSection) error {
-	_ = r.db.AutoMigrate(&entity.HeroSection{})
 	hero.UpdatedAt = time.Now()
 	return r.db.WithContext(ctx).Save(hero).Error
 }
 
 func (r *adminRepository) ListSiteStats(ctx context.Context) ([]entity.SiteStat, error) {
-	_ = r.db.AutoMigrate(&entity.SiteStat{})
 	var list []entity.SiteStat
 	err := r.db.WithContext(ctx).Find(&list).Error
 	return list, err
 }
 
 func (r *adminRepository) CreateSiteStat(ctx context.Context, stat *entity.SiteStat) error {
-	_ = r.db.AutoMigrate(&entity.SiteStat{})
 	if stat.ID == uuid.Nil {
 		stat.ID = uuid.New()
 	}
@@ -1771,17 +1735,14 @@ func (r *adminRepository) CreateSiteStat(ctx context.Context, stat *entity.SiteS
 }
 
 func (r *adminRepository) UpdateSiteStat(ctx context.Context, stat *entity.SiteStat) error {
-	_ = r.db.AutoMigrate(&entity.SiteStat{})
 	return r.db.WithContext(ctx).Save(stat).Error
 }
 
 func (r *adminRepository) DeleteSiteStat(ctx context.Context, id uuid.UUID) error {
-	_ = r.db.AutoMigrate(&entity.SiteStat{})
 	return r.db.WithContext(ctx).Unscoped().Delete(&entity.SiteStat{}, "id = ?", id).Error
 }
 
 func (r *adminRepository) GetAboutContent(ctx context.Context) (*entity.AboutContent, error) {
-	_ = r.db.AutoMigrate(&entity.AboutContent{})
 	var about entity.AboutContent
 	err := r.db.WithContext(ctx).First(&about).Error
 	if err != nil {
@@ -1794,7 +1755,6 @@ func (r *adminRepository) GetAboutContent(ctx context.Context) (*entity.AboutCon
 }
 
 func (r *adminRepository) UpdateAboutContent(ctx context.Context, about *entity.AboutContent) error {
-	_ = r.db.AutoMigrate(&entity.AboutContent{})
 	about.UpdatedAt = time.Now()
 	return r.db.WithContext(ctx).Save(about).Error
 }
@@ -2510,7 +2470,6 @@ func (r *adminRepository) GetSubscriptionCohortStats(ctx context.Context) (*enti
 // ─── MAKER-CHECKER (DUAL APPROVAL) ──────────────────────────────────────────
 
 func (r *adminRepository) ListApprovalRequests(ctx context.Context, status string) ([]entity.ApprovalRequest, error) {
-	_ = r.db.AutoMigrate(&entity.ApprovalRequest{})
 	var list []entity.ApprovalRequest
 	q := r.db.WithContext(ctx).Model(&entity.ApprovalRequest{})
 	if status != "" && status != "ALL" {
@@ -2521,7 +2480,6 @@ func (r *adminRepository) ListApprovalRequests(ctx context.Context, status strin
 }
 
 func (r *adminRepository) CreateApprovalRequest(ctx context.Context, req *entity.ApprovalRequest) error {
-	_ = r.db.AutoMigrate(&entity.ApprovalRequest{})
 	if req.ID == uuid.Nil {
 		req.ID = uuid.New()
 	}
@@ -2778,14 +2736,12 @@ func (r *adminRepository) ListProviderQualityHealth(ctx context.Context) ([]enti
 // ─── DYNAMIC SURGE PRICING RULES ────────────────────────────────────────────
 
 func (r *adminRepository) ListSurgePricingRules(ctx context.Context) ([]entity.SurgePricingRule, error) {
-	_ = r.db.AutoMigrate(&entity.SurgePricingRule{})
 	var rules []entity.SurgePricingRule
 	err := r.db.WithContext(ctx).Order("created_at DESC").Find(&rules).Error
 	return rules, err
 }
 
 func (r *adminRepository) SaveSurgePricingRule(ctx context.Context, rule *entity.SurgePricingRule) error {
-	_ = r.db.AutoMigrate(&entity.SurgePricingRule{})
 	if rule.ID == uuid.Nil {
 		rule.ID = uuid.New()
 		rule.CreatedAt = time.Now().UTC()
@@ -2799,8 +2755,6 @@ func (r *adminRepository) DeleteSurgePricingRule(ctx context.Context, id uuid.UU
 }
 
 func (r *adminRepository) GetDoubleEntryLedger(ctx context.Context) (*entity.PlatformLedgerReport, error) {
-	_ = r.db.AutoMigrate(&entity.LedgerAccount{}, &entity.LedgerEntry{})
-
 	var accounts []entity.LedgerAccount
 	if err := r.db.WithContext(ctx).Find(&accounts).Error; err != nil {
 		return nil, err
@@ -2846,7 +2800,6 @@ func (r *adminRepository) GetDoubleEntryLedger(ctx context.Context) (*entity.Pla
 }
 
 func (r *adminRepository) ListLedgerEntries(ctx context.Context, limit, offset int) ([]entity.LedgerEntry, int64, error) {
-	_ = r.db.AutoMigrate(&entity.LedgerAccount{}, &entity.LedgerEntry{})
 	var entries []entity.LedgerEntry
 	var total int64
 
@@ -2859,7 +2812,6 @@ func (r *adminRepository) ListLedgerEntries(ctx context.Context, limit, offset i
 }
 
 func (r *adminRepository) CreateNotification(ctx context.Context, notif *entity.Notification) error {
-	_ = r.db.AutoMigrate(&entity.Notification{})
 	return r.db.WithContext(ctx).Create(notif).Error
 }
 
