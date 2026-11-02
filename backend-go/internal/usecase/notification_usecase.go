@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"backend-go/internal/domain/entity"
@@ -35,7 +36,31 @@ func NewNotificationUseCase(
 }
 
 func (u *notificationUseCase) GetNotifications(ctx context.Context, userID uuid.UUID, limit int) ([]entity.Notification, error) {
-	return u.notifRepo.ListByUser(ctx, userID, limit)
+	list, err := u.notifRepo.ListByUser(ctx, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Never return provider-only job notifications to seekers
+	isProvider := false
+	if u.profileRepo != nil {
+		if prof, pErr := u.profileRepo.GetByUserID(ctx, userID); pErr == nil && prof != nil {
+			isProvider = strings.ToUpper(strings.TrimSpace(prof.UserType)) == "PROVIDER"
+		}
+	}
+	if !isProvider {
+		filtered := make([]entity.Notification, 0, len(list))
+		for _, n := range list {
+			nt := strings.ToUpper(strings.TrimSpace(n.NotificationType))
+			if nt == "NEARBY_REQUEST" || nt == "BROADCAST_REQUEST" || nt == "DIRECT_REQUEST" || nt == "EMERGENCY_FLASH_DISPATCH" {
+				continue
+			}
+			filtered = append(filtered, n)
+		}
+		return filtered, nil
+	}
+
+	return list, nil
 }
 
 func (u *notificationUseCase) MarkAsRead(ctx context.Context, notifID, userID uuid.UUID) error {

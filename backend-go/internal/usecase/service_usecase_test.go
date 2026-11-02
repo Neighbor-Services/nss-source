@@ -413,3 +413,66 @@ func TestServiceUseCase_IsProviderSubscribed_CheckrTrial(t *testing.T) {
 		}
 	})
 }
+
+func TestIsProviderServiceMatch(t *testing.T) {
+	plumbingID := uuid.New()
+	electricalID := uuid.New()
+
+	plumbingCatalog := entity.CatalogService{
+		ID:   plumbingID,
+		Name: "Plumbing Repair",
+	}
+	electricalCatalog := entity.CatalogService{
+		ID:   electricalID,
+		Name: "Electrical Wiring",
+	}
+
+	req := &entity.ServiceRequest{
+		ID:               uuid.New(),
+		Title:            "Need electrical panel checked and plumbing fixed",
+		CatalogServiceID: &plumbingID,
+		CatalogService:   &plumbingCatalog,
+		ServiceType:      "Plumbing Repair",
+	}
+
+	t.Run("seeker profile never matches new job notifications", func(t *testing.T) {
+		seeker := &entity.Profile{
+			UserType:        "SEEKER",
+			CatalogServices: []entity.CatalogService{plumbingCatalog},
+			Service:         "Plumbing Repair",
+		}
+		if usecase.IsProviderServiceMatch(seeker, req) {
+			t.Errorf("expected SEEKER profile to never match")
+		}
+	})
+
+	t.Run("provider with matching CatalogServiceID matches", func(t *testing.T) {
+		provider := &entity.Profile{
+			UserType:        "PROVIDER",
+			CatalogServices: []entity.CatalogService{plumbingCatalog},
+		}
+		if !usecase.IsProviderServiceMatch(provider, req) {
+			t.Errorf("expected PROVIDER with matching CatalogServiceID to match")
+		}
+	})
+
+	t.Run("provider with different CatalogService does not match even if title mentions their service", func(t *testing.T) {
+		provider := &entity.Profile{
+			UserType:        "PROVIDER",
+			CatalogServices: []entity.CatalogService{electricalCatalog},
+			Service:         "Electrical Wiring",
+		}
+		if usecase.IsProviderServiceMatch(provider, req) {
+			t.Errorf("expected PROVIDER with unrelated service catalog not to match")
+		}
+	})
+
+	t.Run("provider with empty service catalog does not match", func(t *testing.T) {
+		provider := &entity.Profile{
+			UserType: "PROVIDER",
+		}
+		if usecase.IsProviderServiceMatch(provider, req) {
+			t.Errorf("expected PROVIDER with no service catalog not to match")
+		}
+	})
+}

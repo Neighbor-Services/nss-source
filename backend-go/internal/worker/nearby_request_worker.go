@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"backend-go/internal/config"
@@ -74,12 +75,12 @@ func (w *NearbyRequestWorker) Stop() {
 }
 
 func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
-	// 1. Fetch users and profiles that have coordinates registered
+	// 1. Fetch ONLY provider profiles that have coordinates registered
 	var profiles []entity.Profile
 	err := w.db.Preload("User").
 		Preload("CatalogServices").
 		Preload("CatalogServices.Category").
-		Where("(latitude != 0 OR longitude != 0)").
+		Where("UPPER(user_type) = 'PROVIDER' AND (latitude != 0 OR longitude != 0)").
 		Find(&profiles).Error
 	if err != nil {
 		log.Printf("[NearbyRequestWorker] Error fetching user profiles with coordinates: %v", err)
@@ -120,6 +121,9 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 		if profile.User == nil {
 			continue
 		}
+		if strings.ToUpper(strings.TrimSpace(profile.UserType)) != "PROVIDER" {
+			continue
+		}
 		if profile.Latitude == 0 && profile.Longitude == 0 {
 			continue
 		}
@@ -144,11 +148,9 @@ func (w *NearbyRequestWorker) processNearbyRequestsForUsers() {
 				continue
 			}
 
-			// Ensure service matches provider's offered services/categories
-			if profile.UserType == "PROVIDER" {
-				if !usecase.IsProviderServiceMatch(&profile, &req) {
-					continue
-				}
+			// Strictly require that the request's service catalog matches the provider's specified service catalog
+			if !usecase.IsProviderServiceMatch(&profile, &req) {
+				continue
 			}
 
 			dist := haversineDistanceMiles(userLat, userLon, *req.Latitude, *req.Longitude)

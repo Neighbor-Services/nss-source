@@ -677,9 +677,13 @@ func (u *serviceUseCase) GetRequests(ctx context.Context, userID uuid.UUID, user
 	return requests, nil
 }
 
-// IsProviderServiceMatch checks if a provider's offered services match a service request
+// IsProviderServiceMatch checks if a provider's offered service catalog matches a service request's specified service catalog
 func IsProviderServiceMatch(profile *entity.Profile, req *entity.ServiceRequest) bool {
 	if profile == nil || req == nil {
+		return false
+	}
+	// Never match Seeker profiles as providers
+	if strings.ToUpper(strings.TrimSpace(profile.UserType)) != "PROVIDER" {
 		return false
 	}
 	// Direct request match
@@ -687,6 +691,16 @@ func IsProviderServiceMatch(profile *entity.Profile, req *entity.ServiceRequest)
 		return true
 	}
 
+	// 1. Exact CatalogService UUID match
+	if req.CatalogServiceID != nil && *req.CatalogServiceID != uuid.Nil {
+		for _, cs := range profile.CatalogServices {
+			if cs.ID == *req.CatalogServiceID {
+				return true
+			}
+		}
+	}
+
+	// 2. Collect provider's offered catalog service names
 	var offered []string
 	if s := strings.TrimSpace(profile.Service); s != "" {
 		offered = append(offered, strings.ToLower(s))
@@ -706,47 +720,28 @@ func IsProviderServiceMatch(profile *entity.Profile, req *entity.ServiceRequest)
 		return false
 	}
 
-	var reqTerms []string
-	if s := strings.TrimSpace(req.ServiceType); s != "" {
-		reqTerms = append(reqTerms, strings.ToLower(s))
-	}
-	if s := strings.TrimSpace(req.Title); s != "" {
-		reqTerms = append(reqTerms, strings.ToLower(s))
-	}
+	// 3. Collect ONLY the request's specified service catalog name (never free-text job title)
+	var reqCatalogNames []string
 	if req.CatalogService != nil {
 		if s := strings.TrimSpace(req.CatalogService.Name); s != "" {
-			reqTerms = append(reqTerms, strings.ToLower(s))
+			reqCatalogNames = append(reqCatalogNames, strings.ToLower(s))
 		}
-		if req.CatalogService.Category != nil {
-			if s := strings.TrimSpace(req.CatalogService.Category.Name); s != "" {
-				reqTerms = append(reqTerms, strings.ToLower(s))
-			}
+	}
+	if s := strings.TrimSpace(req.ServiceType); s != "" {
+		// Ignore raw UUID strings in ServiceType; only compare human-readable catalog service names
+		if _, err := uuid.Parse(s); err != nil {
+			reqCatalogNames = append(reqCatalogNames, strings.ToLower(s))
 		}
 	}
 
+	if len(reqCatalogNames) == 0 {
+		return false
+	}
+
 	for _, off := range offered {
-		for _, rt := range reqTerms {
-			if strings.Contains(rt, off) || strings.Contains(off, rt) {
+		for _, rc := range reqCatalogNames {
+			if off == rc || (len(off) >= 3 && len(rc) >= 3 && (strings.Contains(rc, off) || strings.Contains(off, rc))) {
 				return true
-			}
-			offWords := strings.FieldsFunc(off, func(r rune) bool {
-				return r == ' ' || r == '&' || r == '/' || r == ',' || r == '-'
-			})
-			rtWords := strings.FieldsFunc(rt, func(r rune) bool {
-				return r == ' ' || r == '&' || r == '/' || r == ',' || r == '-'
-			})
-			for _, ow := range offWords {
-				if len(ow) < 3 {
-					continue
-				}
-				for _, rw := range rtWords {
-					if len(rw) < 3 {
-						continue
-					}
-					if ow == rw || strings.Contains(rw, ow) || strings.Contains(ow, rw) {
-						return true
-					}
-				}
 			}
 		}
 	}
@@ -789,9 +784,22 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 
 	u.invalidateRequestCaches(ctx)
 
-	// If direct request, notify target provider via in-app notification & email
+	// Ensure CatalogService is loaded on req so service catalog matching has both ID and Name
+	if req.CatalogService == nil && req.CatalogServiceID != nil && *req.CatalogServiceID != uuid.Nil && u.catalogRepo != nil {
+		if cs, csErr := u.catalogRepo.GetByID(ctx, *req.CatalogServiceID); csErr == nil && cs != nil {
+			req.CatalogService = cs
+		}
+	}
+
+	// If direct request, notify target provider ONLY if target user is a PROVIDER
 	if req.TargetProviderID != nil {
-		if u.notifRepo != nil {
+		isTargetProvider := true
+		if u.profileRepo != nil {
+			if tProf, tErr := u.profileRepo.GetByUserID(ctx, *req.TargetProviderID); tErr == nil && tProf != nil {
+				isTargetProvider = strings.ToUpper(strings.TrimSpace(tProf.UserType)) == "PROVIDER"
+			}
+		}
+		if isTargetProvider && u.notifRepo != nil {
 			notif := entity.Notification{
 				ID:               uuid.New(),
 				UserID:           *req.TargetProviderID,
@@ -805,14 +813,16 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 			_ = u.notifRepo.Create(ctx, &notif)
 		}
 
-		u.sendPush(*req.TargetProviderID, "New Direct Request", fmt.Sprintf("You have received a direct service request for %s", req.Title), map[string]string{
+		if isTargetProvider {
+			u.sendPush(*req.TargetProviderID, "New Direct Request", fmt.Sprintf("You have received a direct service request for %s", req.Title), map[string]string{
  "notification_type": "direct_request",
  "request_id":        req.ID.String(),
  "sender_id":         customerID.String(),
-		})
+			})
+		}
 
 		// Asynchronously send direct request email
-		if u.cfg != nil && u.cfg.SMTPHost != "" && u.userRepo != nil {
+		if isTargetProvider && u.cfg != nil && u.cfg.SMTPHost != "" && u.userRepo != nil {
 			go func() {
 				pUser, pErr := u.userRepo.GetByID(context.Background(), *req.TargetProviderID)
 				sUser, sErr := u.userRepo.GetByID(context.Background(), customerID)
@@ -879,8 +889,11 @@ func (u *serviceUseCase) CreateRequest(ctx context.Context, customerID uuid.UUID
 					if p.UserID == customerID {
 						continue
 					}
+					if strings.ToUpper(strings.TrimSpace(p.UserType)) != "PROVIDER" {
+						continue
+					}
 
-					// Only notify providers who actually offer services matching this request
+					// Only notify providers who actually offer the specified service catalog
 					if !IsProviderServiceMatch(&p, req) {
 						continue
 					}
@@ -1648,7 +1661,23 @@ func (u *serviceUseCase) CreateFlashDispatch(ctx context.Context, seekerID uuid.
 		filter.RadiusKm = &radius
 	}
 
-	candidates, _ := u.profileRepo.List(ctx, filter)
+	rawCandidates, _ := u.profileRepo.List(ctx, filter)
+	syntheticReq := &entity.ServiceRequest{
+		ServiceType: strings.ReplaceAll(dispatch.TradeConcept, "_", " "),
+	}
+	var candidates []entity.Profile
+	for _, p := range rawCandidates {
+		if p.UserID == seekerID {
+			continue
+		}
+		if strings.ToUpper(strings.TrimSpace(p.UserType)) != "PROVIDER" {
+			continue
+		}
+		if !IsProviderServiceMatch(&p, syntheticReq) {
+			continue
+		}
+		candidates = append(candidates, p)
+	}
 	dispatch.MatchedCount = len(candidates)
 	if dispatch.MatchedCount == 0 {
 		dispatch.MatchedCount = 6

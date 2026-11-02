@@ -115,11 +115,7 @@ func ValidateAndSaveUploadedFile(fileHeader *multipart.FileHeader, subfolder str
 func StreamToGoStore(subfolder, filename string, reader io.Reader, contentType string) error {
 	gostoreURL := os.Getenv("GOSTORE_URL")
 	if gostoreURL == "" {
-		if os.Getenv("GIN_MODE") == "release" || os.Getenv("ENV") == "production" || os.Getenv("APP_ENV") == "production" {
-			gostoreURL = "https://file.proleadsolutions.co"
-		} else {
-			gostoreURL = "http://localhost:8080"
-		}
+		gostoreURL = "https://file.proleadsolutions.co"
 	}
 
 	apiKey := os.Getenv("GOSTORE_API_KEY")

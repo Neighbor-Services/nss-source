@@ -218,7 +218,7 @@ func (h *PublicHandler) AssetLinks(c *gin.Context) {
  "relation": ["delegate_permission/common.handle_all_urls"],
  "target": {
  "namespace": "android_app",
- "package_name": "com.neighborservicesolutionsllc.nsapp",
+ "package_name": "com.proleadsolutions.nsapp",
  "sha256_cert_fingerprints": [
  "A6:ED:80:4D:3E:A4:63:7D:EB:81:09:FA:72:E1:BC:EA:65:56:64:D5:7D:3F:A5:85:1D:55:D6:7D:F1:06:1E:07",
  "DF:A8:0E:3E:9D:BA:CC:31:C2:0F:34:9F:C3:06:E8:A6:79:22:AF:D1:CA:8C:56:0E:3D:7E:0F:7E:08:FD:19:2F"
