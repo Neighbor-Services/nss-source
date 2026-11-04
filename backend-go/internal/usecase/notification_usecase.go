@@ -52,7 +52,7 @@ func (u *notificationUseCase) GetNotifications(ctx context.Context, userID uuid.
 		filtered := make([]entity.Notification, 0, len(list))
 		for _, n := range list {
 			nt := strings.ToUpper(strings.TrimSpace(n.NotificationType))
-			if nt == "NEARBY_REQUEST" || nt == "BROADCAST_REQUEST" || nt == "DIRECT_REQUEST" || nt == "EMERGENCY_FLASH_DISPATCH" {
+			if nt == "NEARBY_REQUEST" || nt == "BROADCAST_REQUEST" || nt == "DIRECT_REQUEST" || nt == "EMERGENCY_FLASH_DISPATCH" || nt == "REENGAGEMENT" || nt == "PROVIDER_SUBSCRIPTION_PROMO" {
 				continue
 			}
 			filtered = append(filtered, n)

@@ -95,9 +95,12 @@ func (w *InactiveUserWorker) processInactiveUsers() {
 	}
 
 	for _, seg := range segments {
+		// Only target active PROVIDER accounts (Seekers must never receive "New jobs waiting nearby" job notifications)
 		var users []entity.User
 		err := w.db.
-			Where("updated_at <= ? AND is_active = ?", seg.cutoff, true).
+			Table("users").
+			Joins("JOIN profiles ON profiles.user_id = users.id").
+			Where("users.updated_at <= ? AND users.is_active = ? AND UPPER(profiles.user_type) = 'PROVIDER'", seg.cutoff, true).
 			Limit(100).
 			Find(&users).Error
 		if err != nil {
