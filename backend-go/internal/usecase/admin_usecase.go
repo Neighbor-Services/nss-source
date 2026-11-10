@@ -25,21 +25,23 @@ import (
 	"backend-go/pkg/fcm"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v74"
+	"github.com/stripe/stripe-go/v74/paymentintent"
 	"github.com/stripe/stripe-go/v74/refund"
 )
 
 type adminUseCase struct {
-	adminRepo   repository.AdminRepository
-	profileRepo repository.ProfileRepository
-	userRepo    repository.UserRepository
-	walletRepo  repository.WalletRepository
-	refundRepo  repository.RefundRequestRepository
-	aptRepo     repository.AppointmentRepository
-	notifRepo   repository.NotificationRepository
-	tokenRepo   repository.DeviceTokenRepository
-	fcmClient   fcm.Client
-	cache       cache.Cache
-	cfg         *config.Config
+	adminRepo         repository.AdminRepository
+	profileRepo       repository.ProfileRepository
+	userRepo          repository.UserRepository
+	walletRepo        repository.WalletRepository
+	refundRepo        repository.RefundRequestRepository
+	stripePaymentRepo repository.StripePaymentRepository
+	aptRepo           repository.AppointmentRepository
+	notifRepo         repository.NotificationRepository
+	tokenRepo         repository.DeviceTokenRepository
+	fcmClient         fcm.Client
+	cache             cache.Cache
+	cfg               *config.Config
 }
 
 func NewAdminUseCase(
@@ -48,6 +50,7 @@ func NewAdminUseCase(
 	userRepo repository.UserRepository,
 	walletRepo repository.WalletRepository,
 	refundRepo repository.RefundRequestRepository,
+	stripePaymentRepo repository.StripePaymentRepository,
 	aptRepo repository.AppointmentRepository,
 	notifRepo repository.NotificationRepository,
 	tokenRepo repository.DeviceTokenRepository,
@@ -56,17 +59,18 @@ func NewAdminUseCase(
 	cfg *config.Config,
 ) domainUsecase.AdminUseCase {
 	return &adminUseCase{
-		adminRepo:   adminRepo,
-		profileRepo: profileRepo,
-		userRepo:    userRepo,
-		walletRepo:  walletRepo,
-		refundRepo:  refundRepo,
-		aptRepo:     aptRepo,
-		notifRepo:   notifRepo,
-		tokenRepo:   tokenRepo,
-		fcmClient:   fcmClient,
-		cache:       cache,
-		cfg:         cfg,
+		adminRepo:         adminRepo,
+		profileRepo:       profileRepo,
+		userRepo:          userRepo,
+		walletRepo:        walletRepo,
+		refundRepo:        refundRepo,
+		stripePaymentRepo: stripePaymentRepo,
+		aptRepo:           aptRepo,
+		notifRepo:         notifRepo,
+		tokenRepo:         tokenRepo,
+		fcmClient:         fcmClient,
+		cache:             cache,
+		cfg:               cfg,
 	}
 }
 
@@ -2600,6 +2604,20 @@ func (u *adminUseCase) ProcessRefund(ctx context.Context, adminID, refundID uuid
 		return nil, fmt.Errorf("failed to update refund request: %w", err)
 	}
 
+	// 2b. Synchronize StripePayment entity if present
+	if u.stripePaymentRepo != nil && refReq.PaymentIntentID != "" {
+		if sp, sErr := u.stripePaymentRepo.GetByPaymentIntentID(ctx, refReq.PaymentIntentID); sErr == nil && sp != nil {
+			sp.AmountRefunded += refundAmount
+			if sp.AmountRefunded >= sp.Amount-0.009 {
+				sp.Status = "refunded"
+			} else {
+				sp.Status = "partially_refunded"
+			}
+			sp.UpdatedAt = now
+			_ = u.stripePaymentRepo.Update(ctx, sp)
+		}
+	}
+
 	// 3. If linked to an appointment, update appointment funding status
 	if refReq.AppointmentID != nil && *refReq.AppointmentID != uuid.Nil && u.aptRepo != nil {
 		if apt, aErr := u.aptRepo.GetByID(ctx, *refReq.AppointmentID); aErr == nil && apt != nil {
@@ -2728,6 +2746,20 @@ func (u *adminUseCase) RejectRefund(ctx context.Context, adminID, refundID uuid.
 		return nil, fmt.Errorf("failed to update refund request: %w", err)
 	}
 
+	// 2b. Synchronize StripePayment entity if present
+	if u.stripePaymentRepo != nil && refReq.PaymentIntentID != "" {
+		if sp, sErr := u.stripePaymentRepo.GetByPaymentIntentID(ctx, refReq.PaymentIntentID); sErr == nil && sp != nil {
+			sp.AmountRefunded += refundAmount
+			if sp.AmountRefunded >= sp.Amount-0.009 {
+				sp.Status = "refunded"
+			} else {
+				sp.Status = "partially_refunded"
+			}
+			sp.UpdatedAt = now
+			_ = u.stripePaymentRepo.Update(ctx, sp)
+		}
+	}
+
 	// Notify user
 	websocket.GlobalHub.SendToUser(refReq.UserID.String(), map[string]interface{}{
 		"type":              "refund_rejected",
@@ -2805,4 +2837,408 @@ func (u *adminUseCase) ProcessDirectRefund(ctx context.Context, adminID uuid.UUI
 	}
 
 	return u.ProcessRefund(ctx, adminID, refReq.ID, amount, notes)
+}
+
+// ─── STRIPE PAYMENT HISTORY & DIRECT REFUNDS ─────────────────────────────────
+
+func (u *adminUseCase) ListStripePayments(ctx context.Context, adminID uuid.UUID, status, paymentType, search string, limit, offset int) ([]entity.StripePayment, int64, *entity.StripePaymentStats, error) {
+	if u.stripePaymentRepo == nil {
+		return nil, 0, nil, errors.New("stripe payment repository not configured")
+	}
+
+	payments, total, err := u.stripePaymentRepo.List(ctx, status, paymentType, search, limit, offset)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
+	stats, _ := u.stripePaymentRepo.GetStats(ctx)
+	if stats == nil {
+		stats = &entity.StripePaymentStats{
+			TotalCount: total,
+		}
+	}
+
+	return payments, total, stats, nil
+}
+
+func (u *adminUseCase) GetStripePaymentDetail(ctx context.Context, adminID uuid.UUID, id uuid.UUID) (*entity.StripePaymentDetail, error) {
+	if u.stripePaymentRepo == nil {
+		return nil, errors.New("stripe payment repository not configured")
+	}
+
+	payment, err := u.stripePaymentRepo.GetByID(ctx, id)
+	if err != nil || payment == nil {
+		return nil, errors.New("payment record not found")
+	}
+
+	// Fetch any linked refund requests for this PaymentIntent
+	var refunds []entity.RefundRequest
+	if u.refundRepo != nil && payment.PaymentIntentID != "" {
+		if ref, _ := u.refundRepo.GetByPaymentIntentID(ctx, payment.PaymentIntentID); ref != nil {
+			refunds = append(refunds, *ref)
+		}
+	}
+
+	refundable := payment.Amount - payment.AmountRefunded
+	if refundable < 0 {
+		refundable = 0
+	}
+	isRefundable := refundable > 0.009 && (payment.Status == "succeeded" || payment.Status == "partially_refunded")
+
+	stripeDashURL := ""
+	if payment.PaymentIntentID != "" {
+		stripeDashURL = fmt.Sprintf("https://dashboard.stripe.com/payments/%s", payment.PaymentIntentID)
+	}
+
+	return &entity.StripePaymentDetail{
+		Payment:            payment,
+		RefundRequests:     refunds,
+		StripeDashboardURL: stripeDashURL,
+		RefundableAmount:   refundable,
+		IsRefundable:       isRefundable,
+	}, nil
+}
+
+func (u *adminUseCase) RefundStripePayment(ctx context.Context, adminID uuid.UUID, paymentID uuid.UUID, amount float64, reason, notes string) (*entity.StripePaymentDetail, error) {
+	if u.stripePaymentRepo == nil {
+		return nil, errors.New("stripe payment repository not configured")
+	}
+
+	payment, err := u.stripePaymentRepo.GetByID(ctx, paymentID)
+	if err != nil || payment == nil {
+		return nil, errors.New("payment record not found")
+	}
+
+	remaining := payment.Amount - payment.AmountRefunded
+	if remaining <= 0.009 {
+		return nil, errors.New("this payment is already fully refunded")
+	}
+
+	refundAmount := amount
+	if refundAmount <= 0 {
+		refundAmount = remaining
+	}
+	if refundAmount > remaining+0.001 {
+		return nil, fmt.Errorf("requested refund amount ($%.2f) exceeds remaining refundable balance ($%.2f)", refundAmount, remaining)
+	}
+
+	if reason == "" {
+		reason = "Requested by customer"
+	}
+
+	// 1. Process Stripe Refund via Stripe API
+	stripeRefundID := ""
+	if u.cfg != nil && u.cfg.StripeSecretKey != "" && payment.PaymentIntentID != "" {
+		stripe.Key = u.cfg.StripeSecretKey
+		amountCents := int64(refundAmount * 100)
+		refParams := &stripe.RefundParams{
+			PaymentIntent: stripe.String(payment.PaymentIntentID),
+		}
+		if amountCents > 0 {
+			refParams.Amount = stripe.Int64(amountCents)
+		}
+		refParams.Reason = stripe.String(string(stripe.RefundReasonRequestedByCustomer))
+		stRefund, refErr := refund.New(refParams)
+		if refErr != nil {
+			return nil, fmt.Errorf("stripe refund execution failed: %w", refErr)
+		}
+		if stRefund != nil {
+			stripeRefundID = stRefund.ID
+		}
+	} else if payment.PaymentIntentID != "" {
+		stripeRefundID = fmt.Sprintf("re_dev_%s_%d", uuid.New().String()[:12], time.Now().Unix())
+	}
+
+	now := time.Now()
+
+	// 2. Update StripePayment record
+	payment.AmountRefunded += refundAmount
+	if payment.AmountRefunded >= payment.Amount-0.009 {
+		payment.Status = "refunded"
+	} else {
+		payment.Status = "partially_refunded"
+	}
+	payment.UpdatedAt = now
+	_ = u.stripePaymentRepo.Update(ctx, payment)
+
+	// 3. Create or update RefundRequest record
+	var userID uuid.UUID
+	if payment.UserID != nil {
+		userID = *payment.UserID
+	} else {
+		userID = adminID
+	}
+
+	refReq := &entity.RefundRequest{
+		ID:              uuid.New(),
+		UserID:          userID,
+		AppointmentID:   payment.AppointmentID,
+		PaymentIntentID: payment.PaymentIntentID,
+		Amount:          refundAmount,
+		Currency:        payment.Currency,
+		Reason:          reason,
+		Status:          "PROCESSED",
+		StripeRefundID:  stripeRefundID,
+		AdminID:         &adminID,
+		AdminNotes:      notes,
+		ProcessedAt:     &now,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	if u.refundRepo != nil {
+		_ = u.refundRepo.Create(ctx, refReq)
+	}
+
+	// 4. If linked to an appointment, update appointment funding status if fully refunded
+	if payment.AppointmentID != nil && *payment.AppointmentID != uuid.Nil && u.aptRepo != nil {
+		if apt, aErr := u.aptRepo.GetByID(ctx, *payment.AppointmentID); aErr == nil && apt != nil {
+			if payment.Status == "refunded" {
+				apt.IsFunded = false
+				apt.Status = "REFUNDED"
+			}
+			apt.UpdatedAt = now
+			_ = u.aptRepo.Update(ctx, apt)
+
+			websocket.GlobalHub.SendToUser(apt.SeekerID.String(), map[string]interface{}{
+				"type":           "appointment_refunded",
+				"appointment_id": apt.ID.String(),
+				"is_funded":      apt.IsFunded,
+				"refund_amount":  refundAmount,
+				"title":          "Refund Processed",
+				"message":        fmt.Sprintf("A refund of $%.2f for '%s' has been processed back to your card via Stripe.", refundAmount, apt.Title),
+				"created_at":     now.UTC(),
+			})
+		}
+	}
+
+	// 5. Notify user via push & email
+	if payment.UserID != nil {
+		u.sendPush(*payment.UserID, "Refund Issued!", fmt.Sprintf("Your refund of $%.2f has been processed back to your original payment method.", refundAmount), map[string]string{
+			"notification_type": "refund_processed",
+			"payment_intent_id": payment.PaymentIntentID,
+			"stripe_refund_id":  stripeRefundID,
+		})
+
+		if u.userRepo != nil && u.cfg != nil {
+			go func(uID uuid.UUID, amt float64, refID string, userEmail, userName, desc string) {
+				emailCfg := &email.Config{
+					Host:     u.cfg.SMTPHost,
+					Port:     u.cfg.SMTPPort,
+					User:     u.cfg.SMTPUser,
+					Password: u.cfg.SMTPPassword,
+					From:     u.cfg.EmailFrom,
+				}
+				toEmail := userEmail
+				if toEmail == "" {
+					if user, uErr := u.userRepo.GetByID(context.Background(), uID); uErr == nil && user != nil {
+						toEmail = user.Email
+					}
+				}
+				if toEmail != "" {
+					_ = email.SendRefundProcessedEmail(emailCfg, toEmail, userName, desc, amt, refID)
+				}
+			}(*payment.UserID, refundAmount, stripeRefundID, payment.UserEmail, payment.UserName, payment.Description)
+		}
+	}
+
+	// 6. Audit log
+	u.logAudit(ctx, &adminID, "ADMIN_STRIPE_PAYMENT_REFUNDED", "StripePayment", payment.ID.String(), map[string]interface{}{
+		"payment_intent_id": payment.PaymentIntentID,
+		"stripe_refund_id":  stripeRefundID,
+		"refund_amount":     refundAmount,
+		"remaining_balance": payment.Amount - payment.AmountRefunded,
+		"status":            payment.Status,
+		"admin_notes":       notes,
+	})
+
+	return u.GetStripePaymentDetail(ctx, adminID, payment.ID)
+}
+
+func (u *adminUseCase) SyncStripePayments(ctx context.Context, adminID uuid.UUID) (int, error) {
+	if u.stripePaymentRepo == nil {
+		return 0, errors.New("stripe payment repository not configured")
+	}
+
+	syncedCount := 0
+
+	// 1. Backfill from existing appointments that have PaymentIntentID
+	if u.aptRepo != nil {
+		if appointments, _, err := u.aptRepo.List(ctx, "", "", 1000, 0); err == nil {
+			for _, apt := range appointments {
+				if apt.PaymentIntentID != "" {
+					status := "succeeded"
+					amountRef := 0.0
+					if apt.Status == "REFUNDED" {
+						status = "refunded"
+						amountRef = apt.TotalPrice
+					} else if !apt.IsFunded {
+						status = "processing"
+					}
+
+					userEmail := ""
+					userName := ""
+					var userID *uuid.UUID = &apt.SeekerID
+					if apt.Seeker != nil {
+						userEmail = apt.Seeker.Email
+						if apt.Seeker.Profile != nil && apt.Seeker.Profile.FirstName != "" {
+							userName = fmt.Sprintf("%s %s", apt.Seeker.Profile.FirstName, apt.Seeker.Profile.LastName)
+						}
+					}
+
+					aptID := apt.ID
+					sp := &entity.StripePayment{
+						ID:              uuid.New(),
+						PaymentIntentID: apt.PaymentIntentID,
+						UserID:          userID,
+						UserEmail:       userEmail,
+						UserName:        strings.TrimSpace(userName),
+						Amount:          apt.TotalPrice,
+						AmountRefunded:  amountRef,
+						Currency:        "USD",
+						Status:          status,
+						PaymentType:     "APPOINTMENT_ESCROW",
+						AppointmentID:   &aptID,
+						Description:     fmt.Sprintf("Escrow funding for '%s'", apt.Title),
+						CreatedAt:       apt.CreatedAt,
+						UpdatedAt:       apt.UpdatedAt,
+					}
+					if err := u.stripePaymentRepo.Upsert(ctx, sp); err == nil {
+						syncedCount++
+					}
+				}
+			}
+		}
+	}
+
+	// 2. If Stripe API is available, query live Stripe payment intents
+	if u.cfg != nil && u.cfg.StripeSecretKey != "" {
+		stripe.Key = u.cfg.StripeSecretKey
+		params := &stripe.PaymentIntentListParams{}
+		params.Filters.AddFilter("limit", "", "100")
+		i := paymentintent.List(params)
+		for i.Next() {
+			pi := i.PaymentIntent()
+			if pi == nil {
+				continue
+			}
+
+			status := string(pi.Status)
+			amount := float64(pi.Amount) / 100.0
+			amountRefunded := 0.0
+			chargeID := ""
+			receiptURL := ""
+			cardBrand := ""
+			cardLast4 := ""
+
+			if pi.LatestCharge != nil {
+				chargeID = pi.LatestCharge.ID
+				receiptURL = pi.LatestCharge.ReceiptURL
+				amountRefunded = float64(pi.LatestCharge.AmountRefunded) / 100.0
+				if pi.LatestCharge.PaymentMethodDetails != nil && pi.LatestCharge.PaymentMethodDetails.Card != nil {
+					cardBrand = string(pi.LatestCharge.PaymentMethodDetails.Card.Brand)
+					cardLast4 = pi.LatestCharge.PaymentMethodDetails.Card.Last4
+				}
+				if pi.LatestCharge.Refunded {
+					status = "refunded"
+				} else if amountRefunded > 0 {
+					status = "partially_refunded"
+				}
+			}
+
+			customerID := ""
+			if pi.Customer != nil {
+				customerID = pi.Customer.ID
+			}
+
+			paymentType := "GENERAL"
+			var aptUUID *uuid.UUID
+			if pi.Metadata != nil {
+				if aID, ok := pi.Metadata["appointment_id"]; ok && aID != "" {
+					if parsed, pErr := uuid.Parse(aID); pErr == nil {
+						aptUUID = &parsed
+						paymentType = "APPOINTMENT_ESCROW"
+					}
+				}
+				if pType, ok := pi.Metadata["payment_type"]; ok && pType != "" {
+					paymentType = pType
+				}
+			}
+
+			sp := &entity.StripePayment{
+				ID:                uuid.New(),
+				PaymentIntentID:   pi.ID,
+				ChargeID:          chargeID,
+				CustomerID:        customerID,
+				Amount:            amount,
+				AmountRefunded:    amountRefunded,
+				Currency:          strings.ToUpper(string(pi.Currency)),
+				Status:            status,
+				PaymentMethodType: "card",
+				CardBrand:         cardBrand,
+				CardLast4:         cardLast4,
+				ReceiptURL:        receiptURL,
+				Description:       pi.Description,
+				PaymentType:       paymentType,
+				AppointmentID:     aptUUID,
+				CreatedAt:         time.Unix(pi.Created, 0),
+				UpdatedAt:         time.Now(),
+			}
+
+			if err := u.stripePaymentRepo.Upsert(ctx, sp); err == nil {
+				syncedCount++
+			}
+		}
+	}
+
+	u.logAudit(ctx, &adminID, "ADMIN_STRIPE_PAYMENTS_SYNCED", "StripePayment", fmt.Sprintf("synced:%d", syncedCount), nil)
+	return syncedCount, nil
+}
+
+func (u *adminUseCase) ExportStripePaymentsCSV(ctx context.Context, adminID uuid.UUID, status, paymentType string) ([]byte, error) {
+	if u.stripePaymentRepo == nil {
+		return nil, errors.New("stripe payment repository not configured")
+	}
+
+	payments, _, err := u.stripePaymentRepo.List(ctx, status, paymentType, "", 10000, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+
+	_ = writer.Write([]string{
+		"ID", "PaymentIntentID", "ChargeID", "UserEmail", "UserName",
+		"Amount", "AmountRefunded", "Currency", "Status", "PaymentType",
+		"CardBrand", "CardLast4", "Description", "AppointmentID", "ReceiptURL", "CreatedAt",
+	})
+
+	for _, p := range payments {
+		aptID := ""
+		if p.AppointmentID != nil {
+			aptID = p.AppointmentID.String()
+		}
+		_ = writer.Write([]string{
+			p.ID.String(),
+			p.PaymentIntentID,
+			p.ChargeID,
+			p.UserEmail,
+			p.UserName,
+			fmt.Sprintf("%.2f", p.Amount),
+			fmt.Sprintf("%.2f", p.AmountRefunded),
+			p.Currency,
+			p.Status,
+			p.PaymentType,
+			p.CardBrand,
+			p.CardLast4,
+			p.Description,
+			aptID,
+			p.ReceiptURL,
+			p.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	writer.Flush()
+
+	u.logAudit(ctx, &adminID, "ADMIN_EXPORT_PAYMENTS_CSV", "StripePayment", fmt.Sprintf("count:%d", len(payments)), nil)
+	return buf.Bytes(), nil
 }

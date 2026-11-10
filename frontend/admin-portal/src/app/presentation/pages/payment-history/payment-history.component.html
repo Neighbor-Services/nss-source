@@ -1,0 +1,359 @@
+<!-- HOPE UI HERO BANNER -->
+<div class="hope-hero-banner">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="title-with-pill">
+        <h1 class="hero-title">Stripe Payment History</h1>
+        <span class="live-pill"><span class="live-dot"></span> Stripe Live Rails</span>
+      </div>
+      <p class="hero-subtitle">
+        Real-time ledger of all Stripe transactions, booking escrow payments, background check fees, and refunds across Neighbor Services.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-outline-light" (click)="exportCSV()" [disabled]="isLoading()" title="Export Payments as CSV">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+      <button class="btn btn-primary" (click)="syncWithStripe()" [disabled]="isSyncing()" title="Sync and reconcile all payments with Stripe API">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isSyncing()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isSyncing() ? 'Syncing...' : 'Sync Stripe' }}</span>
+      </button>
+      <button class="btn btn-soft-light" (click)="loadPayments()" [disabled]="isLoading()" title="Refresh list">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoading()">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- EMBEDDED HOPE PILL NAVIGATION TABS -->
+  <div class="hero-nav-tabs">
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'ALL'" (click)="setStatus('ALL')">
+      <span>All Payments</span>
+      <span class="tab-badge">{{ stats()?.total_count ?? totalCount() }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'succeeded'" (click)="setStatus('succeeded')">
+      <span>Succeeded</span>
+      <span class="tab-badge green">{{ stats()?.succeeded_count ?? 0 }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'refunded'" (click)="setStatus('refunded')">
+      <span>Refunded</span>
+      <span class="tab-badge purple">{{ stats()?.refunded_count ?? 0 }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'partially_refunded'" (click)="setStatus('partially_refunded')">
+      <span>Partially Refunded</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'processing'" (click)="setStatus('processing')">
+      <span>Processing</span>
+      <span class="tab-badge amber">{{ stats()?.pending_count ?? 0 }}</span>
+    </button>
+    <button class="hero-tab-btn" [class.active]="selectedStatus() === 'failed'" (click)="setStatus('failed')">
+      <span>Failed / Canceled</span>
+    </button>
+  </div>
+</div>
+
+<!-- HOPE CONTENT BODY -->
+<div class="hope-content-body">
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card" (click)="setStatus('ALL')" [class.kpi-active]="selectedStatus() === 'ALL'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+        </div>
+        <span class="badge badge-info">Gross Volume</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL VOLUME</div>
+        <div class="kpi-value">${{ (stats()?.total_volume ?? 0) | number:'1.2-2' }}</div>
+      </div>
+      <div class="kpi-meta">{{ stats()?.total_count ?? totalCount() }} cumulative transactions recorded</div>
+    </div>
+
+    <div class="kpi-card" (click)="setStatus('succeeded')" [class.kpi-active]="selectedStatus() === 'succeeded'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </div>
+        <span class="badge badge-success">Completed</span>
+      </div>
+      <div>
+        <div class="kpi-label">SUCCEEDED CHARGES</div>
+        <div class="kpi-value green-text">{{ stats()?.succeeded_count ?? 0 }}</div>
+      </div>
+      <div class="kpi-meta">Clean settlement with Stripe processing network</div>
+    </div>
+
+    <div class="kpi-card" (click)="setStatus('refunded')" [class.kpi-active]="selectedStatus() === 'refunded'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget purple">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </div>
+        <span class="badge badge-purple">Refunded</span>
+      </div>
+      <div>
+        <div class="kpi-label">TOTAL REFUNDED</div>
+        <div class="kpi-value purple-text">${{ (stats()?.total_refunded_amount ?? 0) | number:'1.2-2' }}</div>
+      </div>
+      <div class="kpi-meta">{{ stats()?.refunded_count ?? 0 }} reversals executed to original payment cards</div>
+    </div>
+
+    <div class="kpi-card" (click)="setStatus('processing')" [class.kpi-active]="selectedStatus() === 'processing'">
+      <div class="kpi-head">
+        <div class="kpi-circle-widget amber">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <span class="badge badge-warning">Pending</span>
+      </div>
+      <div>
+        <div class="kpi-label">IN-FLIGHT CHARGES</div>
+        <div class="kpi-value amber-text">{{ stats()?.pending_count ?? 0 }}</div>
+      </div>
+      <div class="kpi-meta">Awaiting 3D-Secure or bank authorization</div>
+    </div>
+  </div>
+
+  <!-- FILTER & SEARCH TOOLBAR -->
+  <div class="card toolbar-card">
+    <div class="toolbar-row">
+      <div class="search-input-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Search by PaymentIntent ID, customer email, customer name..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchChange()"
+        />
+        @if (searchTerm()) {
+          <button class="btn-clear-search" (click)="searchTerm.set(''); onSearchChange()">✕</button>
+        }
+      </div>
+
+      <div class="filter-controls">
+        <div class="select-wrapper">
+          <label>Type:</label>
+          <select [ngModel]="selectedType()" (ngModelChange)="setType($event)">
+            <option value="ALL">All Payment Types</option>
+            <option value="APPOINTMENT_ESCROW">Booking Escrow</option>
+            <option value="BACKGROUND_CHECK">Background Screening</option>
+            <option value="TIP">Provider Tip</option>
+            <option value="SUBSCRIPTION">Subscription</option>
+            <option value="GENERAL">Direct In-App</option>
+          </select>
+        </div>
+
+        @if (selectedStatus() !== 'ALL' || selectedType() !== 'ALL' || searchTerm()) {
+          <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+            Reset Filters
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENTS DATA TABLE CARD -->
+  <div class="card table-card">
+    <div class="card-header-row">
+      <div class="card-header-title">
+        <span>Payment Records</span>
+        <span class="header-count">({{ totalCount() }})</span>
+      </div>
+      <div class="card-header-actions">
+        <span class="page-indicator">Page {{ currentPage() }} of {{ totalPages() }}</span>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading Stripe payment history...</p>
+      </div>
+    } @else if (payments().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon-circle">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+          </svg>
+        </div>
+        <h3>No payments found</h3>
+        <p>There are no Stripe payments matching your filter criteria.</p>
+        <div class="empty-actions">
+          <button class="btn btn-primary btn-sm" (click)="clearFilters()">Clear Filters</button>
+          <button class="btn btn-outline-secondary btn-sm" (click)="syncWithStripe()">Sync with Stripe</button>
+        </div>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="hope-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Payment Intent ID</th>
+              <th>Customer</th>
+              <th>Purpose</th>
+              <th>Amount</th>
+              <th>Payment Method</th>
+              <th>Created Date</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of payments(); track p.id) {
+              <tr class="table-row-clickable" (click)="viewDetail(p)">
+                <td>
+                  <span class="status-badge" [ngClass]="getStatusBadgeClass(p.status)">
+                    <span class="badge-dot"></span>
+                    {{ p.status | uppercase }}
+                  </span>
+                </td>
+
+                <td>
+                  <div class="pi-code-cell">
+                    <span class="pi-code" title="Click to view details">{{ p.payment_intent_id }}</span>
+                    <button
+                      class="copy-btn"
+                      (click)="copyId(p.payment_intent_id, $event)"
+                      [title]="copiedId() === p.payment_intent_id ? 'Copied!' : 'Copy Payment Intent ID'"
+                    >
+                      @if (copiedId() === p.payment_intent_id) {
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      } @else {
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                </td>
+
+                <td>
+                  <div class="customer-cell">
+                    <div class="customer-avatar">
+                      {{ getRequesterName(p).charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="customer-info">
+                      <span class="customer-name">{{ getRequesterName(p) }}</span>
+                      <span class="customer-email">{{ getRequesterEmail(p) }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <td>
+                  <div class="type-cell">
+                    <span class="type-pill">{{ formatPaymentType(p.payment_type) }}</span>
+                    @if (p.appointment?.title) {
+                      <span class="type-subtitle" [title]="p.appointment?.title">{{ p.appointment?.title }}</span>
+                    }
+                  </div>
+                </td>
+
+                <td>
+                  <div class="amount-cell">
+                    <span class="amount-value">${{ p.amount | number:'1.2-2' }}</span>
+                    <span class="currency-tag">{{ p.currency || 'USD' }}</span>
+                    @if (p.amount_refunded > 0) {
+                      <span class="refunded-pill" title="Amount refunded to customer">
+                        -${{ p.amount_refunded | number:'1.2-2' }}
+                      </span>
+                    }
+                  </div>
+                </td>
+
+                <td>
+                  <div class="method-cell">
+                    <span class="card-brand">{{ p.card_brand ? (p.card_brand | uppercase) : 'CARD' }}</span>
+                    @if (p.card_last4) {
+                      <span class="card-last4">•••• {{ p.card_last4 }}</span>
+                    }
+                  </div>
+                </td>
+
+                <td>
+                  <div class="date-cell">
+                    <span class="date-primary">{{ p.created_at | date:'mediumDate' }}</span>
+                    <span class="date-secondary">{{ p.created_at | date:'shortTime' }}</span>
+                  </div>
+                </td>
+
+                <td class="text-right" (click)="$event.stopPropagation()">
+                  <div class="action-buttons-group">
+                    <button class="btn btn-sm btn-outline-primary" (click)="viewDetail(p)">
+                      <span>Details</span>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION CONTROLS -->
+      <div class="pagination-footer">
+        <div class="pagination-info">
+          Showing {{ ((currentPage() - 1) * pageSize()) + 1 }} to {{ Math.min(currentPage() * pageSize(), totalCount()) }} of {{ totalCount() }} entries
+        </div>
+        <div class="pagination-buttons">
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            Previous
+          </button>
+          <span class="page-current">{{ currentPage() }} / {{ totalPages() }}</span>
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+

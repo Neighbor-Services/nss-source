@@ -139,10 +139,16 @@
           <span>{{ isLoadingBalance() ? 'Refreshing...' : 'Auto-refresh 30s' }}</span>
         </div>
       </div>
-      <button class="btn btn-secondary btn-sm" (click)="loadStripeBalance()" [disabled]="isLoadingBalance()" title="Force refresh Stripe balance">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoadingBalance()"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        <span>Sync Now</span>
-      </button>
+      <div class="stripe-header-actions" style="display: flex; gap: 8px;">
+        <a routerLink="/admin/payments" class="btn btn-outline-primary btn-sm" title="View all Stripe transactions in Payment History">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          <span>Payment History</span>
+        </a>
+        <button class="btn btn-secondary btn-sm" (click)="loadStripeBalance()" [disabled]="isLoadingBalance()" title="Force refresh Stripe balance">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spin]="isLoadingBalance()"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <span>Sync Now</span>
+        </button>
+      </div>
     </div>
 
     @if (stripeBalance()) {

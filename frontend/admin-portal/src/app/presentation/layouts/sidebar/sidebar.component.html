@@ -158,6 +158,15 @@
       }
     </a>
 
+    <a routerLink="/admin/payments" routerLinkActive="active" class="nav-link" [attr.title]="layoutService.isDesktopCollapsed() ? 'Stripe Payment History' : null">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
+      </svg>
+      @if (!layoutService.isDesktopCollapsed()) {
+        <span class="nav-label">Payment History</span>
+      }
+    </a>
+
     <a routerLink="/admin/payouts" routerLinkActive="active" class="nav-link" [attr.title]="layoutService.isDesktopCollapsed() ? 'Payouts & Wallets' : null">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>

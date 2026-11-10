@@ -29,6 +29,7 @@ import { CmsRepository } from './core/repositories/cms.repository';
 import { DispatchRepository } from './core/repositories/dispatch.repository';
 import { GovernanceRepository } from './core/repositories/governance.repository';
 import { RefundRepository } from './core/repositories/refund.repository';
+import { StripePaymentRepository } from './core/repositories/stripe-payment.repository';
 
 // Feature Repository Implementations
 import { DashboardRepositoryImpl } from './data/repositories/dashboard.repository.impl';
@@ -55,6 +56,7 @@ import { CmsRepositoryImpl } from './data/repositories/cms.repository.impl';
 import { DispatchRepositoryImpl } from './data/repositories/dispatch.repository.impl';
 import { GovernanceRepositoryImpl } from './data/repositories/governance.repository.impl';
 import { RefundRepositoryImpl } from './data/repositories/refund.repository.impl';
+import { StripePaymentRepositoryImpl } from './data/repositories/stripe-payment.repository.impl';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -91,6 +93,7 @@ export const appConfig: ApplicationConfig = {
     { provide: CmsRepository, useClass: CmsRepositoryImpl },
     { provide: DispatchRepository, useClass: DispatchRepositoryImpl },
     { provide: GovernanceRepository, useClass: GovernanceRepositoryImpl },
-    { provide: RefundRepository, useClass: RefundRepositoryImpl }
+    { provide: RefundRepository, useClass: RefundRepositoryImpl },
+    { provide: StripePaymentRepository, useClass: StripePaymentRepositoryImpl }
   ]
 };

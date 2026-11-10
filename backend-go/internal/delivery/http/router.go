@@ -787,6 +787,18 @@ func SetupRouter(deps RouterDependencies) *gin.Engine {
 			admin.POST("/refunds/direct/", deps.AdminHandler.ProcessDirectRefund)
 			// Note: /export/refunds is already registered in the Data Exports block above
 
+			// Stripe Payments History & Management
+			admin.GET("/payments", deps.AdminHandler.ListStripePayments)
+			admin.GET("/payments/", deps.AdminHandler.ListStripePayments)
+			admin.GET("/payments/:id", deps.AdminHandler.GetStripePaymentDetail)
+			admin.GET("/payments/:id/", deps.AdminHandler.GetStripePaymentDetail)
+			admin.POST("/payments/:id/refund", deps.AdminHandler.RefundStripePayment)
+			admin.POST("/payments/:id/refund/", deps.AdminHandler.RefundStripePayment)
+			admin.POST("/payments/sync", deps.AdminHandler.SyncStripePayments)
+			admin.POST("/payments/sync/", deps.AdminHandler.SyncStripePayments)
+			admin.GET("/export/payments", deps.AdminHandler.ExportStripePayments)
+			admin.GET("/export/payments/", deps.AdminHandler.ExportStripePayments)
+
 
 			// TOTP 2FA Engine
 			admin.POST("/2fa/setup", deps.AdminHandler.Setup2FA)

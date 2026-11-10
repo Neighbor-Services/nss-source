@@ -152,6 +152,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.WalletTransaction{},
 		&entity.PayoutRequest{},
 		&entity.RefundRequest{},
+		&entity.StripePayment{},
 		&entity.LedgerAccount{},
 		&entity.LedgerEntry{},
 		&entity.SubscriptionPlan{},

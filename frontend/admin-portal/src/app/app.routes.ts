@@ -27,6 +27,8 @@ import { LegalComponent } from './presentation/pages/legal/legal.component';
 import { SupportComponent } from './presentation/pages/support/support.component';
 import { CmsComponent } from './presentation/pages/cms/cms.component';
 import { RefundsComponent } from './presentation/pages/refunds/refunds.component';
+import { PaymentHistoryComponent } from './presentation/pages/payment-history/payment-history.component';
+import { PaymentDetailComponent } from './presentation/pages/payment-detail/payment-detail.component';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -49,6 +51,8 @@ export const routes: Routes = [
       { path: 'reports', component: ReportsComponent },
       { path: 'financial', component: FinancialComponent },
       { path: 'finance', redirectTo: 'financial' },
+      { path: 'payments', component: PaymentHistoryComponent },
+      { path: 'payments/:id', component: PaymentDetailComponent },
       { path: 'payouts', component: PayoutsComponent },
       { path: 'refunds', component: RefundsComponent },
       { path: 'promos', component: PromosComponent },

@@ -216,6 +216,13 @@ type AdminUseCase interface {
 	RejectRefund(ctx context.Context, adminID, refundID uuid.UUID, reason string) (*entity.RefundRequest, error)
 	ProcessDirectRefund(ctx context.Context, adminID uuid.UUID, paymentIntentID string, amount float64, reason, notes string, appointmentID *uuid.UUID) (*entity.RefundRequest, error)
 
+	// Stripe Payment History & Details
+	ListStripePayments(ctx context.Context, adminID uuid.UUID, status, paymentType, search string, limit, offset int) ([]entity.StripePayment, int64, *entity.StripePaymentStats, error)
+	GetStripePaymentDetail(ctx context.Context, adminID uuid.UUID, id uuid.UUID) (*entity.StripePaymentDetail, error)
+	RefundStripePayment(ctx context.Context, adminID uuid.UUID, paymentID uuid.UUID, amount float64, reason, notes string) (*entity.StripePaymentDetail, error)
+	SyncStripePayments(ctx context.Context, adminID uuid.UUID) (int, error)
+	ExportStripePaymentsCSV(ctx context.Context, adminID uuid.UUID, status, paymentType string) ([]byte, error)
+
 	// Additional Data Exports
 	ExportVerificationsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error)
 	ExportBackgroundChecksCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error)

@@ -108,6 +108,7 @@ func main() {
 	walletTxRepo := gormRepo.NewWalletTransactionRepository(db)
 	payoutRepo := gormRepo.NewPayoutRequestRepository(db)
 	refundRepo := gormRepo.NewRefundRequestRepository(db)
+	stripePaymentRepo := gormRepo.NewStripePaymentRepository(db)
 	customerRepo := gormRepo.NewCustomerRepository(db)
 
 	reportRepo := gormRepo.NewReportRepository(db)
@@ -124,11 +125,11 @@ func main() {
 	interUC := usecase.NewInteractionUseCase(favRepo, reviewRepo, aptRepo, disputeRepo, profileRepo, walletRepo, walletTxRepo, userRepo, requestRepo, notifRepo, tokenRepo, fcmClient, cfg)
 	chatUC := usecase.NewChatUseCase(convRepo, msgRepo, chatBlockRepo, tokenRepo, fcmClient, profileRepo)
 	notifUC := usecase.NewNotificationUseCase(notifRepo, tokenRepo, profileRepo, fcmClient)
-	paymentUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, walletTxRepo, payoutRepo, refundRepo, customerRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, userRepo, bgCheckRepo, cfg)
+	paymentUC := usecase.NewPaymentUseCase(planRepo, subRepo, walletRepo, walletTxRepo, payoutRepo, refundRepo, stripePaymentRepo, customerRepo, profileRepo, aptRepo, notifRepo, tokenRepo, fcmClient, userRepo, bgCheckRepo, cfg)
 	consultUC := usecase.NewConsultationUseCase(cfg)
 	moderateUC := usecase.NewModerationUseCase(reportRepo, verificationRepo, bgCheckRepo, profileRepo, userRepo, notifUC, cfg)
 	auditUC := usecase.NewAuditUseCase(auditRepo)
-	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, refundRepo, aptRepo, notifRepo, tokenRepo, fcmClient, redisCache, cfg)
+	adminUC := usecase.NewAdminUseCase(adminRepo, profileRepo, userRepo, walletRepo, refundRepo, stripePaymentRepo, aptRepo, notifRepo, tokenRepo, fcmClient, redisCache, cfg)
 	publicUC := usecase.NewPublicUseCase(publicRepo, catalogRepo, categoryRepo, cfg)
 
 	// Layer: Delivery Handlers (Interface Adapters / Transport)

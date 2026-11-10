@@ -3,6 +3,8 @@ package gorm
 import (
 	"context"
 	"errors"
+	"strings"
+	"time"
 
 	"backend-go/internal/domain/entity"
 	"backend-go/internal/domain/repository"
@@ -423,5 +425,168 @@ func (r *refundRequestRepository) List(ctx context.Context, status string, limit
 
 func (r *refundRequestRepository) Update(ctx context.Context, req *entity.RefundRequest) error {
 	return r.db.WithContext(ctx).Save(req).Error
+}
+
+type stripePaymentRepository struct {
+	db *gorm.DB
+}
+
+func NewStripePaymentRepository(db *gorm.DB) repository.StripePaymentRepository {
+	return &stripePaymentRepository{db: db}
+}
+
+func (r *stripePaymentRepository) Create(ctx context.Context, p *entity.StripePayment) error {
+	return r.db.WithContext(ctx).Create(p).Error
+}
+
+func (r *stripePaymentRepository) Update(ctx context.Context, p *entity.StripePayment) error {
+	return r.db.WithContext(ctx).Save(p).Error
+}
+
+func (r *stripePaymentRepository) Upsert(ctx context.Context, p *entity.StripePayment) error {
+	var existing entity.StripePayment
+	err := r.db.WithContext(ctx).Where("payment_intent_id = ?", p.PaymentIntentID).First(&existing).Error
+	if err == nil {
+		p.ID = existing.ID
+		if p.Amount <= 0 {
+			p.Amount = existing.Amount
+		}
+		if p.AmountRefunded == 0 && existing.AmountRefunded > 0 {
+			p.AmountRefunded = existing.AmountRefunded
+		}
+		if p.UserID == nil && existing.UserID != nil {
+			p.UserID = existing.UserID
+		}
+		if p.UserEmail == "" && existing.UserEmail != "" {
+			p.UserEmail = existing.UserEmail
+		}
+		if p.UserName == "" && existing.UserName != "" {
+			p.UserName = existing.UserName
+		}
+		if p.AppointmentID == nil && existing.AppointmentID != nil {
+			p.AppointmentID = existing.AppointmentID
+		}
+		if p.ReceiptURL == "" && existing.ReceiptURL != "" {
+			p.ReceiptURL = existing.ReceiptURL
+		}
+		if p.CardBrand == "" && existing.CardBrand != "" {
+			p.CardBrand = existing.CardBrand
+		}
+		if p.CardLast4 == "" && existing.CardLast4 != "" {
+			p.CardLast4 = existing.CardLast4
+		}
+		p.CreatedAt = existing.CreatedAt
+		p.UpdatedAt = time.Now()
+		return r.db.WithContext(ctx).Save(p).Error
+	}
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+	return r.db.WithContext(ctx).Create(p).Error
+}
+
+func (r *stripePaymentRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.StripePayment, error) {
+	var p entity.StripePayment
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Preload("User.Profile").
+		Preload("Appointment").
+		Preload("Appointment.Seeker").
+		Preload("Appointment.Seeker.Profile").
+		Preload("Appointment.Provider").
+		Preload("Appointment.Provider.Profile").
+		Where("id = ?", id).
+		First(&p).Error
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *stripePaymentRepository) GetByPaymentIntentID(ctx context.Context, piID string) (*entity.StripePayment, error) {
+	var p entity.StripePayment
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Preload("User.Profile").
+		Preload("Appointment").
+		Where("payment_intent_id = ?", piID).
+		First(&p).Error
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *stripePaymentRepository) List(ctx context.Context, status, paymentType, search string, limit, offset int) ([]entity.StripePayment, int64, error) {
+	var list []entity.StripePayment
+	var total int64
+
+	q := r.db.WithContext(ctx).Model(&entity.StripePayment{})
+	if status != "" && status != "ALL" {
+		q = q.Where("status = ?", status)
+	}
+	if paymentType != "" && paymentType != "ALL" {
+		q = q.Where("payment_type = ?", paymentType)
+	}
+	if search != "" {
+		s := "%" + strings.ToLower(search) + "%"
+		q = q.Where("LOWER(payment_intent_id) LIKE ? OR LOWER(user_email) LIKE ? OR LOWER(user_name) LIKE ? OR LOWER(description) LIKE ?", s, s, s, s)
+	}
+
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	err := q.Preload("User").
+		Preload("User.Profile").
+		Preload("Appointment").
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&list).Error
+
+	return list, total, err
+}
+
+func (r *stripePaymentRepository) GetStats(ctx context.Context) (*entity.StripePaymentStats, error) {
+	var stats entity.StripePaymentStats
+
+	// Total count
+	_ = r.db.WithContext(ctx).Model(&entity.StripePayment{}).Count(&stats.TotalCount).Error
+
+	// Total volume
+	_ = r.db.WithContext(ctx).Model(&entity.StripePayment{}).
+		Where("status IN ('succeeded', 'refunded', 'partially_refunded')").
+		Select("COALESCE(SUM(amount), 0)").
+		Scan(&stats.TotalVolume).Error
+
+	// Succeeded count
+	_ = r.db.WithContext(ctx).Model(&entity.StripePayment{}).
+		Where("status = 'succeeded'").
+		Count(&stats.SucceededCount).Error
+
+	// Refunded count
+	_ = r.db.WithContext(ctx).Model(&entity.StripePayment{}).
+		Where("status IN ('refunded', 'partially_refunded')").
+		Count(&stats.RefundedCount).Error
+
+	// Total refunded amount
+	_ = r.db.WithContext(ctx).Model(&entity.StripePayment{}).
+		Select("COALESCE(SUM(amount_refunded), 0)").
+		Scan(&stats.TotalRefundedAmount).Error
+
+	// Pending count
+	_ = r.db.WithContext(ctx).Model(&entity.StripePayment{}).
+		Where("status IN ('processing', 'requires_payment_method', 'requires_action')").
+		Count(&stats.PendingCount).Error
+
+	return &stats, nil
 }
 

@@ -3245,3 +3245,123 @@ func (h *AdminHandler) ProcessDirectRefund(c *gin.Context) {
 		"refund":  result,
 	})
 }
+
+// ─── STRIPE PAYMENT HISTORY & DIRECT REFUNDS ─────────────────────────────────
+
+type RefundPaymentInput struct {
+	Amount float64 `json:"amount"`
+	Reason string  `json:"reason"`
+	Notes  string  `json:"notes"`
+}
+
+func (h *AdminHandler) ListStripePayments(c *gin.Context) {
+	adminID := h.getAdminID(c)
+
+	status := c.Query("status")
+	paymentType := c.Query("payment_type")
+	search := c.Query("search")
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", c.DefaultQuery("limit", "20")))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	offset := (page - 1) * pageSize
+
+	payments, total, stats, err := h.adminUC.ListStripePayments(c.Request.Context(), adminID, status, paymentType, search, pageSize, offset)
+	if err != nil {
+		response.InternalError(c, "Failed to load payments: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"results":   payments,
+		"count":     total,
+		"page":      page,
+		"page_size": pageSize,
+		"stats":     stats,
+	})
+}
+
+func (h *AdminHandler) GetStripePaymentDetail(c *gin.Context) {
+	adminID := h.getAdminID(c)
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid payment ID")
+		return
+	}
+
+	detail, err := h.adminUC.GetStripePaymentDetail(c.Request.Context(), adminID, id)
+	if err != nil {
+		response.NotFound(c, "Payment record not found: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, detail)
+}
+
+func (h *AdminHandler) RefundStripePayment(c *gin.Context) {
+	adminID := h.getAdminID(c)
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid payment ID")
+		return
+	}
+
+	var req RefundPaymentInput
+	if err := c.ShouldBindJSON(&req); err != nil && err.Error() != "EOF" {
+		response.BadRequest(c, "Invalid refund payload: "+err.Error())
+		return
+	}
+
+	detail, err := h.adminUC.RefundStripePayment(c.Request.Context(), adminID, id, req.Amount, req.Reason, req.Notes)
+	if err != nil {
+		response.BadRequest(c, "Failed to issue refund: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Stripe refund processed successfully",
+		"detail":  detail,
+	})
+}
+
+func (h *AdminHandler) SyncStripePayments(c *gin.Context) {
+	adminID := h.getAdminID(c)
+
+	count, err := h.adminUC.SyncStripePayments(c.Request.Context(), adminID)
+	if err != nil {
+		response.InternalError(c, "Failed to sync Stripe payments: "+err.Error())
+		return
+	}
+
+	response.JSON(c, http.StatusOK, gin.H{
+		"status":  "success",
+		"message": fmt.Sprintf("Successfully synced %d payment records", count),
+		"synced":  count,
+	})
+}
+
+func (h *AdminHandler) ExportStripePayments(c *gin.Context) {
+	adminID := h.getAdminID(c)
+	status := c.Query("status")
+	paymentType := c.Query("payment_type")
+
+	data, err := h.adminUC.ExportStripePaymentsCSV(c.Request.Context(), adminID, status, paymentType)
+	if err != nil {
+		response.InternalError(c, "Failed to export payments: "+err.Error())
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename=stripe_payments_export.csv")
+	c.Data(http.StatusOK, "text/csv", data)
+}

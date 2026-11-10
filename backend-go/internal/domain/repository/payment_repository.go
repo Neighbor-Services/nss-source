@@ -53,6 +53,16 @@ type RefundRequestRepository interface {
 	Update(ctx context.Context, req *entity.RefundRequest) error
 }
 
+type StripePaymentRepository interface {
+	Create(ctx context.Context, p *entity.StripePayment) error
+	Update(ctx context.Context, p *entity.StripePayment) error
+	Upsert(ctx context.Context, p *entity.StripePayment) error
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.StripePayment, error)
+	GetByPaymentIntentID(ctx context.Context, piID string) (*entity.StripePayment, error)
+	List(ctx context.Context, status, paymentType, search string, limit, offset int) ([]entity.StripePayment, int64, error)
+	GetStats(ctx context.Context) (*entity.StripePaymentStats, error)
+}
+
 type LedgerRepository interface {
 	GetOrCreateAccount(ctx context.Context, code, name, accType, currency string) (*entity.LedgerAccount, error)
 	RecordEntry(ctx context.Context, entry *entity.LedgerEntry) error

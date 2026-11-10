@@ -83,7 +83,9 @@ export const ADMIN_API_CONFIG = {
     systemWorkers: '/admin/system/workers',
     ledgerSummary: '/admin/financial/ledger/summary',
     ledgerEntries: '/admin/financial/ledger/entries',
-    refunds: '/admin/refunds'
+    refunds: '/admin/refunds',
+    payments: '/admin/payments',
+    exportPayments: '/admin/export/payments'
   }
 };
 

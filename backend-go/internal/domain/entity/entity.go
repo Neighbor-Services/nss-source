@@ -861,6 +861,52 @@ type RefundRequest struct {
 
 func (RefundRequest) TableName() string { return "payments_refundrequest" }
 
+type StripePayment struct {
+	ID                uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	PaymentIntentID   string         `gorm:"size:255;uniqueIndex;not null" json:"payment_intent_id"`
+	ChargeID          string         `gorm:"size:255;index" json:"charge_id,omitempty"`
+	CustomerID        string         `gorm:"size:255;index" json:"customer_id,omitempty"`
+	UserID            *uuid.UUID     `gorm:"type:uuid;index" json:"user_id,omitempty"`
+	UserEmail         string         `gorm:"size:255;index" json:"user_email,omitempty"`
+	UserName          string         `gorm:"size:255" json:"user_name,omitempty"`
+	Amount            float64        `gorm:"not null" json:"amount"`
+	AmountRefunded    float64        `gorm:"default:0.00" json:"amount_refunded"`
+	Currency          string         `gorm:"size:10;default:'USD'" json:"currency"`
+	Status            string         `gorm:"size:50;index;default:'succeeded'" json:"status"` // succeeded, requires_payment_method, requires_action, processing, canceled, refunded, partially_refunded, failed
+	PaymentMethodType string         `gorm:"size:50;default:'card'" json:"payment_method_type"`
+	CardBrand         string         `gorm:"size:50" json:"card_brand,omitempty"`
+	CardLast4         string         `gorm:"size:10" json:"card_last4,omitempty"`
+	ReceiptURL        string         `gorm:"type:text" json:"receipt_url,omitempty"`
+	Description       string         `gorm:"type:text" json:"description,omitempty"`
+	PaymentType       string         `gorm:"size:50;index;default:'APPOINTMENT_ESCROW'" json:"payment_type"` // APPOINTMENT_ESCROW, BACKGROUND_CHECK, TIP, SUBSCRIPTION, DIRECT, GENERAL
+	AppointmentID     *uuid.UUID     `gorm:"type:uuid;index" json:"appointment_id,omitempty"`
+	Metadata          JSONMap        `gorm:"type:text" json:"metadata,omitempty"`
+	CreatedAt         time.Time      `gorm:"autoCreateTime;index" json:"created_at"`
+	UpdatedAt         time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+
+	User        *User        `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Appointment *Appointment `gorm:"foreignKey:AppointmentID" json:"appointment,omitempty"`
+}
+
+func (StripePayment) TableName() string { return "payments_stripepayment" }
+
+type StripePaymentStats struct {
+	TotalVolume         float64 `json:"total_volume"`
+	TotalCount          int64   `json:"total_count"`
+	SucceededCount      int64   `json:"succeeded_count"`
+	RefundedCount       int64   `json:"refunded_count"`
+	TotalRefundedAmount float64 `json:"total_refunded_amount"`
+	PendingCount        int64   `json:"pending_count"`
+}
+
+type StripePaymentDetail struct {
+	Payment            *StripePayment  `json:"payment"`
+	RefundRequests     []RefundRequest `json:"refund_requests"`
+	StripeDashboardURL string          `json:"stripe_dashboard_url"`
+	RefundableAmount   float64         `json:"refundable_amount"`
+	IsRefundable       bool            `json:"is_refundable"`
+}
+
 type LedgerAccount struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	Code      string    `gorm:"size:64;uniqueIndex;not null" json:"code"` // e.g. ESCROW_HOLD, PLATFORM_REVENUE, PROVIDER_WALLET_{ID}

@@ -423,6 +423,26 @@ func (m *mockAdminUseCase) ProcessDirectRefund(ctx context.Context, adminID uuid
 	return &entity.RefundRequest{ID: uuid.New(), Status: "PROCESSED"}, m.err
 }
 
+func (m *mockAdminUseCase) ListStripePayments(ctx context.Context, adminID uuid.UUID, status, paymentType, search string, limit, offset int) ([]entity.StripePayment, int64, *entity.StripePaymentStats, error) {
+	return []entity.StripePayment{}, 0, &entity.StripePaymentStats{}, m.err
+}
+
+func (m *mockAdminUseCase) GetStripePaymentDetail(ctx context.Context, adminID uuid.UUID, id uuid.UUID) (*entity.StripePaymentDetail, error) {
+	return &entity.StripePaymentDetail{Payment: &entity.StripePayment{ID: id}}, m.err
+}
+
+func (m *mockAdminUseCase) RefundStripePayment(ctx context.Context, adminID uuid.UUID, paymentID uuid.UUID, amount float64, reason, notes string) (*entity.StripePaymentDetail, error) {
+	return &entity.StripePaymentDetail{Payment: &entity.StripePayment{ID: paymentID, Status: "refunded"}}, m.err
+}
+
+func (m *mockAdminUseCase) SyncStripePayments(ctx context.Context, adminID uuid.UUID) (int, error) {
+	return 1, m.err
+}
+
+func (m *mockAdminUseCase) ExportStripePaymentsCSV(ctx context.Context, adminID uuid.UUID, status, paymentType string) ([]byte, error) {
+	return []byte("ID,PaymentIntentID\n"), m.err
+}
+
 func (m *mockAdminUseCase) ExportVerificationsCSV(ctx context.Context, adminID uuid.UUID, status string) ([]byte, error) {
 	return []byte("ID,Status\n"), m.err
 }

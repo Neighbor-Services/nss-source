@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ReportUseCase } from '../../../core/usecases/report.usecase';
 import { DashboardUseCase } from '../../../core/usecases/dashboard.usecase';
 import { DialogService } from '../../../core/services/dialog.service';
@@ -9,7 +10,7 @@ import { FinancialReport } from '../../../core/domain/entities/report.model';
 @Component({
   selector: 'app-financial',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './financial.component.html',
   styleUrl: './financial.component.css'
 })

@@ -35,21 +35,22 @@ import (
 )
 
 type paymentUseCase struct {
-	planRepo     repository.SubscriptionPlanRepository
-	subRepo      repository.UserSubscriptionRepository
-	walletRepo   repository.WalletRepository
-	txRepo       repository.WalletTransactionRepository
-	payoutRepo   repository.PayoutRequestRepository
-	refundRepo   repository.RefundRequestRepository
-	customerRepo repository.CustomerRepository
-	profileRepo  repository.ProfileRepository
-	aptRepo      repository.AppointmentRepository
-	notifRepo    repository.NotificationRepository
-	tokenRepo    repository.DeviceTokenRepository
-	fcmClient    fcm.Client
-	userRepo     repository.UserRepository
-	bgCheckRepo  repository.BackgroundCheckRepository
-	cfg          *config.Config
+	planRepo          repository.SubscriptionPlanRepository
+	subRepo           repository.UserSubscriptionRepository
+	walletRepo        repository.WalletRepository
+	txRepo            repository.WalletTransactionRepository
+	payoutRepo        repository.PayoutRequestRepository
+	refundRepo        repository.RefundRequestRepository
+	stripePaymentRepo repository.StripePaymentRepository
+	customerRepo      repository.CustomerRepository
+	profileRepo       repository.ProfileRepository
+	aptRepo           repository.AppointmentRepository
+	notifRepo         repository.NotificationRepository
+	tokenRepo         repository.DeviceTokenRepository
+	fcmClient         fcm.Client
+	userRepo          repository.UserRepository
+	bgCheckRepo       repository.BackgroundCheckRepository
+	cfg               *config.Config
 }
 
 func NewPaymentUseCase(
@@ -59,6 +60,7 @@ func NewPaymentUseCase(
 	txRepo repository.WalletTransactionRepository,
 	payoutRepo repository.PayoutRequestRepository,
 	refundRepo repository.RefundRequestRepository,
+	stripePaymentRepo repository.StripePaymentRepository,
 	customerRepo repository.CustomerRepository,
 	profileRepo repository.ProfileRepository,
 	aptRepo repository.AppointmentRepository,
@@ -70,21 +72,22 @@ func NewPaymentUseCase(
 	cfg *config.Config,
 ) domainUsecase.PaymentUseCase {
 	return &paymentUseCase{
-		planRepo:     planRepo,
-		subRepo:      subRepo,
-		walletRepo:   walletRepo,
-		txRepo:       txRepo,
-		payoutRepo:   payoutRepo,
-		refundRepo:   refundRepo,
-		customerRepo: customerRepo,
-		profileRepo:  profileRepo,
-		aptRepo:      aptRepo,
-		notifRepo:    notifRepo,
-		tokenRepo:    tokenRepo,
-		fcmClient:    fcmClient,
-		userRepo:     userRepo,
-		bgCheckRepo:  bgCheckRepo,
-		cfg:          cfg,
+		planRepo:          planRepo,
+		subRepo:           subRepo,
+		walletRepo:        walletRepo,
+		txRepo:            txRepo,
+		payoutRepo:        payoutRepo,
+		refundRepo:        refundRepo,
+		stripePaymentRepo: stripePaymentRepo,
+		customerRepo:      customerRepo,
+		profileRepo:       profileRepo,
+		aptRepo:           aptRepo,
+		notifRepo:         notifRepo,
+		tokenRepo:         tokenRepo,
+		fcmClient:         fcmClient,
+		userRepo:          userRepo,
+		bgCheckRepo:       bgCheckRepo,
+		cfg:               cfg,
 	}
 }
 
@@ -634,6 +637,35 @@ func (u *paymentUseCase) FundBackgroundCheck(ctx context.Context, userID uuid.UU
 		}
 		if pi, err := paymentintent.New(piParams); err == nil && pi != nil {
 			clientSecret = pi.ClientSecret
+			if u.stripePaymentRepo != nil {
+				userEmail := ""
+				userName := ""
+				if u.userRepo != nil {
+					if usr, _ := u.userRepo.GetByID(ctx, userID); usr != nil {
+						userEmail = usr.Email
+					}
+				}
+				if u.profileRepo != nil {
+					if prof, _ := u.profileRepo.GetByUserID(ctx, userID); prof != nil {
+						userName = fmt.Sprintf("%s %s", prof.FirstName, prof.LastName)
+					}
+				}
+				_ = u.stripePaymentRepo.Upsert(ctx, &entity.StripePayment{
+					ID:              uuid.New(),
+					PaymentIntentID: pi.ID,
+					CustomerID:      cust.StripeCustomerID,
+					UserID:          &userID,
+					UserEmail:       userEmail,
+					UserName:        strings.TrimSpace(userName),
+					Amount:          29.99,
+					Currency:        "USD",
+					Status:          "processing",
+					PaymentType:     "BACKGROUND_CHECK",
+					Description:     "Comprehensive Provider Background Check Fee",
+					CreatedAt:       time.Now(),
+					UpdatedAt:       time.Now(),
+				})
+			}
 		}
 	}
 
@@ -650,11 +682,11 @@ func (u *paymentUseCase) FundBackgroundCheck(ctx context.Context, userID uuid.UU
 	}
 
 	return map[string]interface{}{
- "paymentIntent":  clientSecret,
- "ephemeralKey":   ephemeralSecret,
- "customer":       cust.StripeCustomerID,
- "publishableKey": pubKey,
- "amount_cents":   amountCents,
+		"paymentIntent":  clientSecret,
+		"ephemeralKey":   ephemeralSecret,
+		"customer":       cust.StripeCustomerID,
+		"publishableKey": pubKey,
+		"amount_cents":   amountCents,
 	}, nil
 }
 
@@ -1241,6 +1273,35 @@ func (u *paymentUseCase) PaymentSheet(ctx context.Context, userID uuid.UUID, amo
 		}
 		if pi, err := paymentintent.New(piParams); err == nil && pi != nil {
 			clientSecret = pi.ClientSecret
+			if u.stripePaymentRepo != nil {
+				userEmail := ""
+				userName := ""
+				if u.userRepo != nil {
+					if usr, _ := u.userRepo.GetByID(ctx, userID); usr != nil {
+						userEmail = usr.Email
+					}
+				}
+				if u.profileRepo != nil {
+					if prof, _ := u.profileRepo.GetByUserID(ctx, userID); prof != nil {
+						userName = fmt.Sprintf("%s %s", prof.FirstName, prof.LastName)
+					}
+				}
+				_ = u.stripePaymentRepo.Upsert(ctx, &entity.StripePayment{
+					ID:              uuid.New(),
+					PaymentIntentID: pi.ID,
+					CustomerID:      cust.StripeCustomerID,
+					UserID:          &userID,
+					UserEmail:       userEmail,
+					UserName:        strings.TrimSpace(userName),
+					Amount:          amount,
+					Currency:        "USD",
+					Status:          "processing",
+					PaymentType:     "GENERAL",
+					Description:     "Direct In-App Payment Sheet",
+					CreatedAt:       time.Now(),
+					UpdatedAt:       time.Now(),
+				})
+			}
 		}
 	}
 
@@ -1307,6 +1368,42 @@ func (u *paymentUseCase) FundAppointment(ctx context.Context, userID, appointmen
 		}
 		if pi, err := paymentintent.New(piParams); err == nil && pi != nil {
 			clientSecret = pi.ClientSecret
+			if u.stripePaymentRepo != nil {
+				userEmail := ""
+				userName := ""
+				if u.userRepo != nil {
+					if usr, _ := u.userRepo.GetByID(ctx, userID); usr != nil {
+						userEmail = usr.Email
+					}
+				}
+				if u.profileRepo != nil {
+					if prof, _ := u.profileRepo.GetByUserID(ctx, userID); prof != nil {
+						userName = fmt.Sprintf("%s %s", prof.FirstName, prof.LastName)
+					}
+				}
+				aptTitle := ""
+				if u.aptRepo != nil {
+					if apt, _ := u.aptRepo.GetByID(ctx, appointmentID); apt != nil {
+						aptTitle = apt.Title
+					}
+				}
+				_ = u.stripePaymentRepo.Upsert(ctx, &entity.StripePayment{
+					ID:              uuid.New(),
+					PaymentIntentID: pi.ID,
+					CustomerID:      cust.StripeCustomerID,
+					UserID:          &userID,
+					UserEmail:       userEmail,
+					UserName:        strings.TrimSpace(userName),
+					Amount:          amount,
+					Currency:        "USD",
+					Status:          "processing",
+					PaymentType:     "APPOINTMENT_ESCROW",
+					AppointmentID:   &appointmentID,
+					Description:     fmt.Sprintf("Escrow funding for appointment: %s", aptTitle),
+					CreatedAt:       time.Now(),
+					UpdatedAt:       time.Now(),
+				})
+			}
 		}
 	}
 
@@ -1439,6 +1536,33 @@ func (u *paymentUseCase) ProcessStripeWebhook(ctx context.Context, payload []byt
 	case "payment_intent.succeeded":
 		var pi stripe.PaymentIntent
 		if err := json.Unmarshal(event.Data.Raw, &pi); err == nil {
+			if u.stripePaymentRepo != nil && pi.ID != "" {
+				sp, _ := u.stripePaymentRepo.GetByPaymentIntentID(ctx, pi.ID)
+				if sp == nil {
+					sp = &entity.StripePayment{
+						ID:              uuid.New(),
+						PaymentIntentID: pi.ID,
+						Currency:        strings.ToUpper(string(pi.Currency)),
+						CreatedAt:       time.Now(),
+					}
+				}
+				sp.Status = "succeeded"
+				sp.Amount = float64(pi.Amount) / 100.0
+				if pi.Customer != nil {
+					sp.CustomerID = pi.Customer.ID
+				}
+				if pi.LatestCharge != nil {
+					sp.ChargeID = pi.LatestCharge.ID
+					sp.ReceiptURL = pi.LatestCharge.ReceiptURL
+					if pi.LatestCharge.PaymentMethodDetails != nil && pi.LatestCharge.PaymentMethodDetails.Card != nil {
+						sp.CardBrand = string(pi.LatestCharge.PaymentMethodDetails.Card.Brand)
+						sp.CardLast4 = pi.LatestCharge.PaymentMethodDetails.Card.Last4
+					}
+				}
+				sp.UpdatedAt = time.Now()
+				_ = u.stripePaymentRepo.Upsert(ctx, sp)
+			}
+
 			if pi.Metadata != nil && pi.Metadata["appointment_id"] != "" {
 				aptID, _ := uuid.Parse(pi.Metadata["appointment_id"])
 				seekerID, _ := uuid.Parse(pi.Metadata["seeker_id"])
@@ -1607,6 +1731,31 @@ func (u *paymentUseCase) ProcessStripeWebhook(ctx context.Context, payload []byt
 							_ = u.aptRepo.Update(ctx, apt)
 						}
 					}
+				}
+			}
+
+			// Synchronize StripePayment entity on refund
+			if piID != "" && u.stripePaymentRepo != nil {
+				if sp, _ := u.stripePaymentRepo.GetByPaymentIntentID(ctx, piID); sp != nil {
+					sp.AmountRefunded = amountRefunded
+					if isFullyRefunded || sp.AmountRefunded >= sp.Amount-0.009 {
+						sp.Status = "refunded"
+					} else if amountRefunded > 0 {
+						sp.Status = "partially_refunded"
+					}
+					sp.UpdatedAt = now
+					_ = u.stripePaymentRepo.Update(ctx, sp)
+				}
+			}
+		}
+	case "payment_intent.payment_failed":
+		var pi stripe.PaymentIntent
+		if err := json.Unmarshal(event.Data.Raw, &pi); err == nil && pi.ID != "" {
+			if u.stripePaymentRepo != nil {
+				if sp, _ := u.stripePaymentRepo.GetByPaymentIntentID(ctx, pi.ID); sp != nil {
+					sp.Status = "failed"
+					sp.UpdatedAt = time.Now()
+					_ = u.stripePaymentRepo.Update(ctx, sp)
 				}
 			}
 		}
