@@ -171,6 +171,10 @@ func AutoMigrate(db *gorm.DB) error {
 		&entity.FraudRiskAlert{},
 		&entity.NotificationTemplate{},
 		&entity.BackupSnapshot{},
+		&entity.StaffNote{},
+		&entity.PromoCode{},
+		&entity.ApprovalRequest{},
+		&entity.SurgePricingRule{},
 
 		// Public Landing Site CMS
 		&entity.HeroSection{},
@@ -276,6 +280,71 @@ func ensureExplicitTables(db *gorm.DB) {
 		`CREATE INDEX IF NOT EXISTS idx_services_servicerequest_coords ON services_servicerequest (latitude, longitude)`,
 		`CREATE INDEX IF NOT EXISTS idx_services_request_status_created ON services_servicerequest (status, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_chat_message_convo_created ON chat_message (conversation_id, created_at)`,
+
+		// Marketing Promo Codes & Coupons
+		`CREATE TABLE IF NOT EXISTS billing_promocode (
+			id UUID PRIMARY KEY,
+			code VARCHAR(50) NOT NULL UNIQUE,
+			discount_type VARCHAR(20) DEFAULT 'PERCENTAGE',
+			discount_value NUMERIC NOT NULL,
+			min_spend NUMERIC DEFAULT 0,
+			max_discount NUMERIC DEFAULT 0,
+			max_uses BIGINT DEFAULT 0,
+			uses_count BIGINT DEFAULT 0,
+			is_active BOOLEAN DEFAULT TRUE,
+			expires_at TIMESTAMPTZ,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_promocode_code ON billing_promocode (code)`,
+
+		// Admin Staff Notes
+		`CREATE TABLE IF NOT EXISTS admin_staff_notes (
+			id UUID PRIMARY KEY,
+			user_id UUID NOT NULL,
+			author_admin_id UUID NOT NULL,
+			author_email VARCHAR(255) NOT NULL,
+			content TEXT NOT NULL,
+			category VARCHAR(50) DEFAULT 'GENERAL',
+			is_pinned BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_admin_staff_notes_user_id ON admin_staff_notes (user_id)`,
+
+		// Maker-Checker Dual Approvals
+		`CREATE TABLE IF NOT EXISTS system_approval_requests (
+			id UUID PRIMARY KEY,
+			requester_id UUID NOT NULL,
+			requester_email VARCHAR(255),
+			approver_id UUID,
+			approver_email VARCHAR(255),
+			action_type VARCHAR(50) NOT NULL,
+			target_resource VARCHAR(255) NOT NULL,
+			target_id VARCHAR(255) NOT NULL,
+			payload_json TEXT,
+			amount DOUBLE PRECISION DEFAULT 0.00,
+			status VARCHAR(20) DEFAULT 'PENDING',
+			rejection_reason TEXT,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			resolved_at TIMESTAMPTZ
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_system_approval_requests_requester ON system_approval_requests (requester_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_system_approval_requests_status ON system_approval_requests (status)`,
+
+		// Dynamic Surge Pricing Rules
+		`CREATE TABLE IF NOT EXISTS pricing_surge_rules (
+			id UUID PRIMARY KEY,
+			region_zip VARCHAR(20) NOT NULL,
+			service_category_id UUID,
+			category_name VARCHAR(100),
+			multiplier NUMERIC(3,2) DEFAULT 1.00,
+			reason VARCHAR(255) NOT NULL,
+			is_active BOOLEAN DEFAULT TRUE,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			expires_at TIMESTAMPTZ
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_pricing_surge_rules_zip ON pricing_surge_rules (region_zip)`,
 	}
 	for _, ddl := range ddls {
 		if err := db.Exec(ddl).Error; err != nil {
