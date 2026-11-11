@@ -58,7 +58,7 @@ export class PromosComponent implements OnInit {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err?.error?.message || 'Failed to load promo codes.');
+        this.errorMessage.set(this.extractErrorMessage(err, 'Failed to load promo codes.'));
       }
     });
   }
@@ -121,7 +121,7 @@ export class PromosComponent implements OnInit {
         },
         error: (err) => {
           this.isActioning.set(false);
-          this.errorMessage.set(err?.error?.message || 'Failed to update promo code.');
+          this.errorMessage.set(this.extractErrorMessage(err, 'Failed to update promo code.'));
         }
       });
     } else {
@@ -135,7 +135,7 @@ export class PromosComponent implements OnInit {
         },
         error: (err) => {
           this.isActioning.set(false);
-          this.errorMessage.set(err?.error?.message || 'Failed to create promo code.');
+          this.errorMessage.set(this.extractErrorMessage(err, 'Failed to create promo code.'));
         }
       });
     }
@@ -154,7 +154,7 @@ export class PromosComponent implements OnInit {
       },
       error: (err) => {
         this.isActioning.set(false);
-        this.errorMessage.set(err?.error?.message || 'Failed to toggle promo code status.');
+        this.errorMessage.set(this.extractErrorMessage(err, 'Failed to toggle promo code status.'));
       }
     });
   }
@@ -172,8 +172,25 @@ export class PromosComponent implements OnInit {
       },
       error: (err) => {
         this.isActioning.set(false);
-        this.errorMessage.set(err?.error?.message || 'Failed to delete promo code.');
+        this.errorMessage.set(this.extractErrorMessage(err, 'Failed to delete promo code.'));
       }
     });
+  }
+
+  private extractErrorMessage(err: any, fallback: string): string {
+    if (err?.status === 401) {
+      return 'Your session has expired. Please refresh the page or sign in again.';
+    }
+    if (err?.status === 403) {
+      return 'You do not have permission to perform this action.';
+    }
+    if (
+      err?.status === 0 ||
+      err?.message?.toLowerCase().includes('fetch') ||
+      err?.error?.message?.toLowerCase().includes('fetch')
+    ) {
+      return 'Unable to reach the server. The backend service may be restarting, please try again in a few moments.';
+    }
+    return err?.error?.message || err?.error?.error || err?.message || fallback;
   }
 }
