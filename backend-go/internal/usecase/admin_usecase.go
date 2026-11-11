@@ -2746,20 +2746,6 @@ func (u *adminUseCase) RejectRefund(ctx context.Context, adminID, refundID uuid.
 		return nil, fmt.Errorf("failed to update refund request: %w", err)
 	}
 
-	// 2b. Synchronize StripePayment entity if present
-	if u.stripePaymentRepo != nil && refReq.PaymentIntentID != "" {
-		if sp, sErr := u.stripePaymentRepo.GetByPaymentIntentID(ctx, refReq.PaymentIntentID); sErr == nil && sp != nil {
-			sp.AmountRefunded += refundAmount
-			if sp.AmountRefunded >= sp.Amount-0.009 {
-				sp.Status = "refunded"
-			} else {
-				sp.Status = "partially_refunded"
-			}
-			sp.UpdatedAt = now
-			_ = u.stripePaymentRepo.Update(ctx, sp)
-		}
-	}
-
 	// Notify user
 	websocket.GlobalHub.SendToUser(refReq.UserID.String(), map[string]interface{}{
 		"type":              "refund_rejected",
@@ -3063,7 +3049,7 @@ func (u *adminUseCase) SyncStripePayments(ctx context.Context, adminID uuid.UUID
 
 	// 1. Backfill from existing appointments that have PaymentIntentID
 	if u.aptRepo != nil {
-		if appointments, _, err := u.aptRepo.List(ctx, "", "", 1000, 0); err == nil {
+		if appointments, err := u.aptRepo.List(ctx, nil, nil, ""); err == nil {
 			for _, apt := range appointments {
 				if apt.PaymentIntentID != "" {
 					status := "succeeded"
