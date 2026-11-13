@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	domainUsecase "backend-go/internal/domain/usecase"
 	"backend-go/pkg/response"
@@ -456,26 +458,65 @@ func (h *PaymentHandler) Transfer(c *gin.Context) {
 	response.JSON(c, http.StatusOK, gin.H{"status": "Transfer successful", "transfer_id": txID})
 }
 
+type flexibleFloat64 float64
+
+func (f *flexibleFloat64) UnmarshalJSON(data []byte) error {
+	trimmed := strings.TrimSpace(string(data))
+	if trimmed == "" || trimmed == "null" {
+		*f = 0
+		return nil
+	}
+	if len(trimmed) >= 2 && trimmed[0] == '"' && trimmed[len(trimmed)-1] == '"' {
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		s = strings.TrimSpace(s)
+		if s == "" {
+			*f = 0
+			return nil
+		}
+		val, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return fmt.Errorf("invalid amount: %w", err)
+		}
+		*f = flexibleFloat64(val)
+		return nil
+	}
+	var val float64
+	if err := json.Unmarshal(data, &val); err != nil {
+		return fmt.Errorf("invalid amount: %w", err)
+	}
+	*f = flexibleFloat64(val)
+	return nil
+}
+
 func (h *PaymentHandler) FundAppointment(c *gin.Context) {
 	userIDStr := c.GetString("userID")
 	userUUID, _ := uuid.Parse(userIDStr)
 
 	var body struct {
-		AppointmentID string  `json:"appointment_id" binding:"required"`
-		Amount        float64 `json:"amount"`
+		AppointmentID string          `json:"appointment_id"`
+		Amount        flexibleFloat64 `json:"amount"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
+		response.BadRequest(c, "Invalid request body: "+err.Error())
+		return
+	}
+
+	appointmentID := strings.TrimSpace(body.AppointmentID)
+	if appointmentID == "" {
 		response.BadRequest(c, "appointment_id is required")
 		return
 	}
 
-	aptUUID, err := uuid.Parse(body.AppointmentID)
+	aptUUID, err := cleanUUID(appointmentID)
 	if err != nil {
 		response.BadRequest(c, "Invalid appointment_id")
 		return
 	}
 
-	res, err := h.paymentUC.FundAppointment(c.Request.Context(), userUUID, aptUUID, body.Amount)
+	res, err := h.paymentUC.FundAppointment(c.Request.Context(), userUUID, aptUUID, float64(body.Amount))
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
